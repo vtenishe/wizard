@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AMPS v2025 &mdash; SEP/GCR Transport &mdash; CCMC Runs-on-Request</title>
+
+
+
+
+<style>
+/* ==== tokens.css ==== */
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMPS CCMC — DESIGN TOKENS
+   All CSS custom properties (variables) for the entire interface.
+   Dark NASA mission-control aesthetic:
+     deep navy backgrounds · electric blue accents
+     terminal green for validated states · amber for warnings
+   Typography: IBM Plex Sans (UI) + IBM Plex Mono (data / code)
+═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* ── Background layers ── */
+  --bg-deep:    #070e1c;   /* page root — near-black navy */
+  --bg-panel:   #0d1a2e;   /* section cards / sidebar */
+  --bg-mid:     #112240;   /* slightly lighter panel variant */
+  --bg-inset:   #0a1628;   /* code blocks, input fields, SVG canvases */
+  --bg-hover:   #162a4a;   /* hover state overlay */
+
+  /* ── Borders ── */
+  --border:     #1a3358;   /* default border */
+  --border-lit: #1e4580;   /* hover / focus border */
+  --border-dim: #0f2240;   /* very subtle separator */
+
+  /* ── Brand & accent ── */
+  --accent:        #1a88d4;              /* primary interactive blue */
+  --accent-bright: #38c0ff;             /* highlights, column labels */
+  --accent-glow:   rgba(26,136,212,.25);/* focus ring */
+  --accent-dim:    rgba(26,136,212,.12);/* tinted background */
+
+  /* ── Semantic colours ── */
+  --green:      #2dd4a0;              /* validated / pass */
+  --green-dim:  rgba(45,212,160,.15); /* tinted green bg */
+  --orange:     #ff9a3c;              /* warning */
+  --orange-dim: rgba(255,154,60,.15);
+  --red:        #ff5a5a;              /* error / fatal */
+  --red-dim:    rgba(255,90,90,.1);
+  --yellow:     #ffd04b;              /* active selection */
+  --purple:     #8b6ff7;              /* Year-2 / experimental */
+  --cyan:       #36e4da;              /* info accent */
+
+  /* ── Text ── */
+  --text:       #e0eaf6;  /* primary body text */
+  --text-dim:   #6a88b0;  /* secondary / hint */
+  --text-muted: #3a5878;  /* very dim / disabled */
+  --text-bright:#ffffff;
+
+  /* ── Column colour tokens (trajectory & ts05 file diagrams) ── */
+  --col-year:  #38c0ff;   /* YYYY  — bright blue   */
+  --col-mon:   #5aeacf;   /* MM    — teal           */
+  --col-day:   #5aeacf;   /* DD    — teal           */
+  --col-hr:    #a8d8ff;   /* HH    — light blue     */
+  --col-min:   #a8d8ff;   /* mm    — light blue     */
+  --col-sec:   #c5e8ff;   /* ss.s  — pale blue      */
+  --col-lat:   #ff9a3c;   /* Lat   — orange         */
+  --col-lon:   #ffb866;   /* Lon   — light orange   */
+  --col-alt:   #ffd04b;   /* Alt   — yellow         */
+  --col-dst:   #ff5a5a;   /* Dst   — red            */
+  --col-pdyn:  #ff9a3c;   /* Pdyn  — orange         */
+  --col-bz:    #ff6b6b;   /* Bz    — red-orange     */
+  --col-vx:    #c5a0ff;   /* Vx    — purple         */
+  --col-nsw:   #8bb4ff;   /* Nsw   — light blue     */
+  --col-by:    #78d4ff;   /* By    — sky blue       */
+  --col-bx:    #78d4ff;   /* Bx    — sky blue       */
+
+  /* ── Typography ── */
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', monospace;
+
+  /* ── Geometry ── */
+  --radius:    6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.4);
+  --shadow:    0 4px 24px rgba(0,0,0,.6);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,.8);
+
+  /* ── Transitions ── */
+  --t-fast:  0.15s ease;
+  --t-med:   0.25s ease;
+  --t-slow:  0.4s ease;
+
+  /* ── Z-index scale ── */
+  --z-base:    1;
+  --z-card:    10;
+  --z-sticky:  100;
+  --z-overlay: 200;
+  --z-modal:   300;
+}
+
+/* ── Global reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--accent); color: #fff; }
+
+/* scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-lit); }
+
+/* focus-visible ring for accessibility */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==== layout.css ==== */
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMPS CCMC — LAYOUT
+   Structural layout: top bar, page header, wizard navigation,
+   main content / sidebar two-column grid, submit bar.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* TOP BAR */
+.topbar{background:#000810;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 24px;height:48px;position:sticky;top:0;z-index:100;}
+.tb-nasa{font-size:11px;font-weight:700;background:var(--accent);color:#fff;padding:3px 9px;border-radius:3px;letter-spacing:1.2px;}
+.tb-sep{color:var(--border-lit);font-size:18px;}
+.tb-title{font-size:12px;color:var(--text-dim);}
+.tb-title b{color:var(--accent-bright);font-weight:600;}
+.tb-right{margin-left:auto;display:flex;gap:4px;align-items:center;font-size:11px;}
+.tb-link{color:var(--text-dim);padding:4px 10px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;white-space:nowrap;}
+.tb-link:hover{color:var(--accent-bright);background:rgba(26,136,212,.1);}
+.tb-divider{width:1px;height:20px;background:var(--border);margin:0 4px;}
+.tb-badge{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,212,160,.3);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;}
+
+/* PAGE HEADER */
+.page-hd{background:linear-gradient(135deg,#0e1c30 0%,#070e1c 60%);border-bottom:1px solid var(--border);padding:20px 32px 18px;position:relative;overflow:hidden;}
+.page-hd::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(26,136,212,.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
+.page-hd-inner{position:relative;z-index:1;}
+.model-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(26,136,212,.1);border:1px solid rgba(26,136,212,.25);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;color:var(--accent-bright);letter-spacing:.3px;margin-bottom:10px;}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-anim 2s infinite;flex-shrink:0;}
+@keyframes pulse-anim{0%,100%{opacity:1}50%{opacity:.25}}
+.page-hd h1{font-size:21px;font-weight:700;color:#fff;margin-bottom:5px;letter-spacing:-.3px;}
+.page-hd p{font-size:12px;color:var(--text-dim);max-width:960px;line-height:1.7;}
+
+/* WIZARD NAV */
+.wizard{display:flex;background:var(--bg-mid);border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.wizard::-webkit-scrollbar{display:none;}
+.wz-step{display:flex;align-items:center;gap:8px;padding:11px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;font-size:11px;font-weight:600;color:var(--text-dim);transition:all .15s;user-select:none;flex-shrink:0;}
+.wz-step:hover{background:rgba(26,136,212,.06);color:var(--text);}
+.wz-step.done{border-bottom-color:var(--green);color:var(--green);}
+.wz-step.active{border-bottom-color:var(--accent);color:#fff;}
+.wz-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.wz-step.done .wz-num{background:var(--green);color:#000;}
+.wz-step.active .wz-num{background:var(--accent);color:#fff;}
+.wz-step:not(.done):not(.active) .wz-num{background:var(--border);color:var(--text-dim);}
+
+/* MAIN GRID */
+.layout{display:grid;grid-template-columns:1fr 310px;min-height:calc(100vh - 190px);align-items:start;}
+.main-col{padding:24px 28px 40px;min-width:0;}
+.side-col{background:var(--bg-panel);border-left:1px solid var(--border);padding:18px 16px;display:flex;flex-direction:column;gap:14px;position:sticky;top:48px;max-height:calc(100vh - 110px);overflow-y:auto;scrollbar-width:thin;}
+
+/* STEP PANELS */
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+/* SECTION CARDS */
+.sect{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:20px;overflow:hidden;transition:border-color .15s;}
+.sect:hover{border-color:var(--border-lit);}
+.sect-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background .15s;}
+.sect-hd:hover{background:rgba(255,255,255,.015);}
+.sect-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.sect-title{font-size:13px;font-weight:600;color:#fff;}
+.sect-sub{font-size:11px;color:var(--text-dim);margin-left:auto;display:flex;align-items:center;gap:8px;}
+.chevron{color:var(--text-dim);font-size:11px;transition:transform .15s;flex-shrink:0;}
+.sect.closed .chevron{transform:rotate(-90deg);}
+.sect.closed .sect-body{display:none;}
+.sect-body{padding:18px;}
+
+/* SUBMIT BAR */
+.submit-bar{background:var(--bg-panel);border-top:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;gap:12px;position:sticky;bottom:0;z-index:100;}
+.btn-primary{background:var(--accent);color:#fff;font-family:var(--font-sans);font-weight:700;font-size:13px;padding:9px 22px;border:none;border-radius:var(--radius);cursor:pointer;transition:all .15s;}
+.btn-primary:hover{background:#1daef0;box-shadow:0 0 16px rgba(26,136,212,.45);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-sans);font-size:12px;padding:9px 16px;border-radius:var(--radius);cursor:pointer;transition:all .15s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text);}
+.btn-danger{background:transparent;border:1px solid rgba(255,90,90,.4);color:var(--red);font-family:var(--font-sans);font-size:12px;padding:9px 16px;border-radius:var(--radius);cursor:pointer;transition:all .15s;}
+.btn-danger:hover{background:rgba(255,90,90,.08);border-color:var(--red);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.run-est{margin-left:auto;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;font-size:11px;color:var(--text-dim);display:flex;gap:10px;}
+.run-est b{color:var(--orange);font-family:var(--font-mono);font-weight:600;}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.layout{grid-template-columns:1fr 260px;}}
+@media(max-width:900px){.layout{grid-template-columns:1fr;}.side-col{position:static;max-height:none;border-left:none;border-top:1px solid var(--border);}}
+@media(max-width:600px){.wz-label{display:none;}.page-hd h1{font-size:17px;}.submit-bar{flex-wrap:wrap;}.run-est{margin-left:0;width:100%;}}
+
+/* ==== components.css ==== */
+/* ═══════════════════════════════════════════════════════════════════
+   AMPS CCMC — COMPONENTS
+   All reusable UI primitives: fields, toggles, cards, info boxes,
+   tables, upload zones, sidebar, tags, badges, misc helpers.
+═══════════════════════════════════════════════════════════════════ */
+
+/* FIELD ROWS */
+.frow{display:grid;gap:12px;margin-bottom:14px;}
+.frow.c2{grid-template-columns:1fr 1fr;}
+.frow.c3{grid-template-columns:1fr 1fr 1fr;}
+.frow.c4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.frow.c5{grid-template-columns:repeat(5,1fr);}
+@media(max-width:700px){.frow.c3,.frow.c4,.frow.c5{grid-template-columns:1fr 1fr;}}
+@media(max-width:480px){.frow.c2,.frow.c3,.frow.c4,.frow.c5{grid-template-columns:1fr;}}
+
+/* FIELD WRAPPER */
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;}
+.field label .unit{text-transform:none;letter-spacing:0;font-weight:400;opacity:.8;}
+.field label .req{color:var(--red);margin-left:2px;}
+.field label .opt{color:var(--text-muted);font-size:9px;font-weight:400;}
+.field input,.field select,.field textarea{
+  background:var(--bg-inset);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font-mono);font-size:12px;
+  padding:7px 10px;border-radius:var(--radius);outline:none;
+  transition:border-color .15s,box-shadow .15s;
+  width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow);
+}
+.field input.valid{border-color:var(--green);}
+.field input.warn {border-color:var(--orange);}
+.field input.error{border-color:var(--red);}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a88b0'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.field select option{background:var(--bg-deep);}
+.field textarea{resize:vertical;min-height:70px;font-size:11px;line-height:1.5;}
+.field .hint{font-size:10px;color:var(--text-dim);line-height:1.5;margin-top:2px;}
+.field .hint code,.field .hint kbd{font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,.3);padding:0 4px;border-radius:2px;color:var(--accent-bright);}
+.field-note{font-size:10px;color:var(--text-muted);font-style:italic;margin-top:2px;}
+
+/* CHARACTER COUNTER for textarea */
+.char-count{font-size:10px;color:var(--text-muted);text-align:right;margin-top:2px;}
+.char-count.near{color:var(--orange);}
+.char-count.over{color:var(--red);}
+
+/* TOGGLE GROUP */
+.tog{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;}
+.tog-btn{flex:1;background:var(--bg-inset);border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:11px;padding:7px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;text-align:center;}
+.tog-btn:last-child{border-right:none;}
+.tog-btn:hover{background:rgba(26,136,212,.1);color:var(--text);}
+.tog-btn.on{background:var(--accent);color:#fff;font-weight:600;}
+.tog-btn.disabled{opacity:.35;cursor:not-allowed;pointer-events:none;}
+
+/* OPTION CARDS GRID */
+.opt-grid{display:grid;gap:10px;margin-bottom:14px;}
+.opt-grid.c2{grid-template-columns:1fr 1fr;}
+.opt-grid.c3{grid-template-columns:repeat(3,1fr);}
+.opt-grid.c4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:700px){.opt-grid.c3,.opt-grid.c4{grid-template-columns:1fr 1fr;}}
+@media(max-width:480px){.opt-grid.c2,.opt-grid.c3,.opt-grid.c4{grid-template-columns:1fr;}}
+.opt-card{background:var(--bg-inset);border:2px solid var(--border);border-radius:var(--radius-lg);padding:13px 14px;cursor:pointer;position:relative;transition:all .18s;}
+.opt-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
+.opt-card.sel{border-color:var(--accent);background:rgba(26,136,212,.07);}
+.opt-card.sel::after{content:"✓";position:absolute;top:9px;right:11px;color:var(--green);font-weight:700;font-size:13px;}
+.opt-card.disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.oc-icon{font-size:22px;margin-bottom:6px;}
+.oc-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;}
+.oc-sub{font-size:11px;color:var(--text-dim);line-height:1.4;}
+.oc-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;margin-top:6px;letter-spacing:.4px;}
+
+/* BADGE VARIANTS */
+.badge-green{background:rgba(45,212,160,.18);color:var(--green);border:1px solid rgba(45,212,160,.3);}
+.badge-blue {background:rgba(26,136,212,.18);color:var(--accent-bright);border:1px solid rgba(26,136,212,.3);}
+.badge-orange{background:rgba(255,154,60,.18);color:var(--orange);border:1px solid rgba(255,154,60,.3);}
+.badge-purple{background:rgba(139,111,247,.18);color:var(--purple);border:1px solid rgba(139,111,247,.3);}
+.badge-red{background:rgba(255,90,90,.15);color:var(--red);border:1px solid rgba(255,90,90,.3);}
+
+/* INFO BOXES */
+.infobox{border-radius:var(--radius);padding:10px 13px;font-size:11px;line-height:1.65;margin-bottom:12px;}
+.infobox b{color:var(--text-bright);}
+.infobox code{font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:2px;color:var(--accent-bright);}
+.infobox em{color:var(--accent-bright);font-style:normal;}
+.info-blue  {background:rgba(26,136,212,.07);border:1px solid rgba(26,136,212,.2);color:var(--text-dim);}
+.info-green {background:var(--green-dim);border:1px solid rgba(45,212,160,.25);color:var(--text-dim);}
+.info-orange{background:var(--orange-dim);border:1px solid rgba(255,154,60,.25);color:var(--orange);}
+.info-red   {background:rgba(255,90,90,.06);border:1px solid rgba(255,90,90,.2);color:#ff9898;}
+.info-purple{background:rgba(139,111,247,.07);border:1px solid rgba(139,111,247,.22);color:#b8a0ff;}
+
+/* INLINE STATUS BADGE */
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.4px;}
+.tag-new{background:var(--green-dim);color:var(--green);border:1px solid rgba(45,212,160,.3);}
+.tag-upd{background:rgba(26,136,212,.18);color:var(--accent-bright);border:1px solid rgba(26,136,212,.3);}
+.tag-exp{background:rgba(139,111,247,.18);color:var(--purple);border:1px solid rgba(139,111,247,.3);}
+.tag-warn{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,154,60,.3);}
+.tag-err{background:rgba(255,90,90,.12);color:var(--red);border:1px solid rgba(255,90,90,.3);}
+
+/* VALIDATION TABLE */
+.val-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px;}
+.val-table th{background:rgba(26,136,212,.1);color:var(--text-dim);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.val-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--font-mono);font-size:11px;}
+.val-table tr:last-child td{border-bottom:none;}
+.vt-pass{color:var(--green);font-weight:600;}
+.vt-warn{color:var(--orange);}
+.vt-fail{color:var(--red);font-weight:600;}
+.vt-na  {color:var(--text-muted);}
+
+/* INLINE VALIDATION */
+.val-row{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;margin-top:6px;padding:6px 0;}
+.v-item{display:flex;align-items:center;gap:4px;}
+.v-ok  {color:var(--green);}
+.v-warn{color:var(--orange);}
+.v-err {color:var(--red);}
+.v-na  {color:var(--text-muted);}
+
+/* FILE DROP ZONE */
+.dropzone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-inset);}
+.dropzone:hover{border-color:var(--accent);background:rgba(26,136,212,.04);}
+.dropzone.drag-over{border-color:var(--accent);background:rgba(26,136,212,.08);transform:scale(1.01);}
+.dropzone.loaded{border-color:var(--green);border-style:solid;background:var(--green-dim);}
+.dropzone.error{border-color:var(--red);background:var(--red-dim);}
+.dz-icon{font-size:30px;margin-bottom:8px;opacity:.55;}
+.dz-primary{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.dz-sub{font-size:11px;color:var(--text-dim);}
+
+/* DATA TABLE (trajectory preview, etc.) */
+.data-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px;}
+.data-table th{background:rgba(26,136,212,.12);color:var(--accent-bright);font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.data-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.025);vertical-align:middle;}
+.data-table tr:hover td{background:rgba(255,255,255,.02);}
+.data-table tr.ellipsis td{color:var(--text-muted);text-align:center;letter-spacing:3px;}
+
+/* SIDEBAR CARDS */
+.sb-card{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;}
+.sb-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.sb-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.sb-row:last-child{border:none;}
+.sb-k{font-size:10px;color:var(--text-dim);}
+.sb-v{font-size:10px;font-family:var(--font-mono);color:var(--accent-bright);}
+.sb-v.g{color:var(--green);}
+.sb-v.o{color:var(--orange);}
+.sb-v.r{color:var(--red);}
+.progress{background:var(--border);border-radius:2px;height:4px;margin:6px 0 4px;}
+.progress-fill{height:4px;border-radius:2px;background:var(--accent);transition:width .35s ease;}
+
+/* KEYWORD STRIP (AMPS_PARAM.in preview) */
+.kw-strip{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.85;overflow-x:auto;white-space:pre;}
+.kw-strip .kw-section{color:var(--accent-bright);}
+.kw-strip .kw-key{color:var(--text);}
+.kw-strip .kw-val{color:#fff;}
+.kw-strip .kw-comment{color:#2e4a6a;}
+.kw-strip .kw-auto{color:var(--orange);}
+.kw-strip .kw-ok  {color:var(--green);}
+
+/* DIVIDERS & MISC */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.divider-label{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+.divider-label::before,.divider-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.hlabel{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.hlabel h4{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.4px;}
+.subsection{background:rgba(0,0,0,.2);border:1px solid var(--border-dim);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.subsection-title{font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
+.loading-dots{display:inline-flex;gap:4px;align-items:center;}
+.loading-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:ld .9s infinite;}
+.loading-dots span:nth-child(2){animation-delay:.2s;}
+.loading-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes ld{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.code-block{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-family:var(--font-mono);font-size:11px;color:var(--text);overflow-x:auto;white-space:pre;line-height:1.7;}
+.inline-code{font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;color:var(--accent-bright);}
+.copy-btn{font-size:10px;padding:3px 8px;cursor:pointer;background:var(--bg-mid);border:1px solid var(--border);border-radius:3px;color:var(--text-dim);float:right;transition:all .15s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent-bright);}
+.copy-btn.copied{border-color:var(--green);color:var(--green);}
+
+/* ══════════════════════════════════════════════════════════════════
+   TEMPORAL VARIABILITY & BACKGROUND FIELD — from AMPS_Format_Interface2
+   Ported verbatim for parity with reference implementation
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── TEMPORAL MODE CARDS ── */
+.temp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.temp-card{background:var(--bg-inset);border:2px solid var(--border);border-radius:var(--radius-lg);padding:14px 12px;cursor:pointer;transition:all .18s;}
+.temp-card:hover{border-color:var(--accent);}
+.temp-card.sel{border-color:var(--yellow);background:rgba(255,208,75,.05);}
+.temp-card.disabled{opacity:.4;cursor:not-allowed;}
+.tc-icon{font-size:22px;margin-bottom:6px;}
+.tc-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;}
+.tc-desc{font-size:10px;color:var(--text-dim);line-height:1.4;}
+.tc-badge{margin-top:5px;}
+
+/* ── FIELD UPDATE DIAGRAM ── */
+.field-update-viz{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.fu-timeline{position:relative;height:40px;margin:8px 0 20px;}
+.fu-axis{position:absolute;top:20px;left:0;right:0;height:2px;background:var(--border);}
+.fu-tick{position:absolute;width:2px;background:var(--accent);height:10px;top:15px;}
+.fu-label{position:absolute;top:28px;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);transform:translateX(-50%);}
+.fu-particle{position:absolute;top:5px;font-size:14px;}
+.fu-arrow{position:absolute;top:14px;font-size:10px;color:var(--green);}
+.fu-legend{display:flex;gap:16px;flex-wrap:wrap;}
+.fu-leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);}
+.fu-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── OMNI FETCH WIDGET ── */
+.omni-widget{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-top:12px;}
+.omni-title{font-size:11px;font-weight:700;color:var(--accent-bright);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;}
+.omni-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.omni-step{display:flex;align-items:center;gap:8px;font-size:11px;}
+.os-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.os-num.pending{background:var(--border);color:var(--text-dim);}
+.os-num.done{background:var(--green);color:#000;}
+.omni-status{background:rgba(0,0,0,.3);border-radius:var(--radius);padding:8px 10px;font-family:var(--font-mono);font-size:10px;margin-bottom:10px;line-height:1.7;}
+.omni-status .ok{color:var(--green);}
+.omni-status .warn{color:var(--orange);}
+
+/* ── DROPZONE ── */
+.dropzone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all .18s;}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:rgba(26,136,212,.04);}
+.dropzone.loaded{border-color:var(--green);background:var(--green-dim);}
+.dz-icon{font-size:28px;margin-bottom:8px;}
+.dz-primary{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.dz-sub{font-size:10px;color:var(--text-dim);}
+
+/* ── DOMAIN BOUNDARY — exact from reference ── */
+.bnd-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.bnd-card{background:var(--bg-inset);border:2px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;position:relative;transition:all .2s;}
+.bnd-card:hover{border-color:var(--accent);}
+.bnd-card.sel{border-color:var(--accent);background:rgba(26,136,212,.08);}
+.bnd-card.sel::after{content:"✓";position:absolute;top:10px;right:12px;color:var(--green);font-weight:700;font-size:14px;}
+.bc-icon{font-size:28px;margin-bottom:6px;}
+.bc-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;}
+.bc-desc{font-size:11px;color:var(--text-dim);line-height:1.5;}
+.bc-formula{margin-top:8px;padding:6px 10px;background:rgba(0,0,0,.3);border-radius:4px;font-family:var(--font-mono);font-size:11px;color:var(--accent-bright);}
+.bnd-layout{display:grid;grid-template-columns:1fr 420px;gap:16px;align-items:start;}
+@media(max-width:900px){.bnd-layout{grid-template-columns:1fr;}}
+.bnd-diagram{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.bnd-diag-title{background:rgba(26,136,212,.1);border-bottom:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--accent-bright);letter-spacing:.3px;display:flex;align-items:center;justify-content:space-between;}
+.bnd-diag-sub{font-size:10px;color:var(--text-dim);font-weight:400;}
+.bnd-svg-wrap{padding:8px;}
+
+/* ── DIM GRID / DIM PAIR — box face inputs ── */
+.dim-grid{display:grid;gap:8px;margin-bottom:10px;}
+.dim-grid.box6{grid-template-columns:repeat(3,1fr);}
+.dim-grid.shue2{grid-template-columns:1fr 1fr;}
+.dim-pair{display:flex;flex-direction:column;gap:3px;}
+.dim-pair label{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;}
+.dim-pair .unit{font-size:9px;font-weight:400;color:var(--text-dim);}
+.dim-pair input{background:var(--bg-inset);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:13px;padding:6px 8px;border-radius:var(--radius);outline:none;width:100%;transition:border-color .18s,box-shadow .18s;}
+.dim-pair input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow);}
+.dim-pair input.warn{border-color:var(--orange);}
+.dim-pair input.err{border-color:var(--red);}
+.dim-pair .hint-val{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+/* ── SHUE AUTO BOX ── */
+.shue-auto{background:rgba(45,212,160,.05);border:1px solid rgba(45,212,160,.2);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;}
+.shue-auto-title{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.shue-params{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.shue-param{display:flex;flex-direction:column;gap:2px;}
+.shue-param-label{font-size:9px;color:var(--text-dim);}
+.shue-param-val{font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--green);}
+.shue-param-eq{font-size:9px;color:var(--text-dim);margin-top:1px;}
+
+/* ── BOUNDARY VALIDATION ROW ── */
+.bnd-val-row{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;margin-top:6px;}
+.bv-item{display:flex;align-items:center;gap:4px;}
+.bv-ok{color:var(--green);}
+.bv-warn{color:var(--orange);}
+.bv-err{color:var(--red);}
+
+/* ── KEYWORD STRIP — AMPS_PARAM.in preview ── */
+.keyword-strip{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.8;}
+.kw-key{color:var(--accent-bright);}
+.kw-val{color:#fff;}
+.kw-comment{color:#3a5070;}
+
+/* ── HLABEL ── */
+.hlabel{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hlabel h4{font-size:12px;font-weight:700;color:var(--text);}
+
+/* ── TAG BADGES ── */
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.4px;}
+.tag-new{background:rgba(45,212,160,.18);color:var(--green);border:1px solid rgba(45,212,160,.3);}
+.tag-exp{background:rgba(255,154,60,.18);color:var(--orange);border:1px solid rgba(255,154,60,.3);}
+
+/* ── BADGE VARIANTS ── */
+.badge-y1{background:rgba(45,212,160,.18);color:var(--green);border:1px solid rgba(45,212,160,.3);}
+.badge-y2{background:rgba(255,154,60,.18);color:var(--orange);border:1px solid rgba(255,154,60,.3);}
+.badge-def{background:rgba(26,136,212,.18);color:var(--accent-bright);border:1px solid rgba(26,136,212,.3);}
+
+/* ── SUBSECTION ── */
+.subsection{background:var(--bg-mid);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:12px;}
+.subsection-title{font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
+
+/* ── TS05 TABLE ── */
+.ts05-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:10px;}
+.ts05-table th{background:rgba(26,136,212,.12);color:var(--accent-bright);padding:5px 8px;text-align:left;font-size:9px;letter-spacing:.3px;}
+.ts05-table td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.03);}
+.ts05-table .c-dst{color:#ff5a5a;}
+.ts05-table .c-pdyn{color:#ff9a3c;}
+.ts05-table .c-bz{color:#ff6b6b;}
+.ts05-table .c-vx{color:#c5a0ff;}
+.ts05-table .c-nsw{color:#8bb4ff;}
+.ts05-table .c-by{color:#78d4ff;}
+
+/* ══════════════════════════════════════════════════════════════════
+   BACKGROUND FIELD MODEL SELECTOR
+   Model choice cards at top of Panel 3, selects TS05 (default),
+   T04s (alternative), or IGRF+T89 (future).
+════════════════════════════════════════════════════════════════════ */
+.model-sel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.model-sel-card{background:var(--bg-inset);border:2px solid var(--border);border-radius:var(--radius-lg);
+  padding:12px 14px;cursor:pointer;position:relative;transition:all .18s;}
+.model-sel-card:hover{border-color:var(--accent);}
+.model-sel-card.sel{border-color:var(--accent);background:rgba(26,136,212,.08);}
+.model-sel-card.sel::after{content:"✓";position:absolute;top:8px;right:10px;color:var(--green);font-weight:700;}
+.model-sel-card.disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.msc-icon{font-size:22px;margin-bottom:6px;}
+.msc-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;}
+.msc-sub{font-size:10px;color:var(--text-dim);line-height:1.45;}
+.msc-badge{margin-top:6px;}
+.msc-years{font-size:9px;color:var(--orange);}
+
+/* ── OMNI FETCH OPTIONS (data cadence, gap fill, fallback) ── */
+.omni-fetch-opts{background:rgba(26,136,212,.05);border:1px solid rgba(26,136,212,.12);
+  border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;}
+.omni-fetch-opts-title{font-size:10px;font-weight:700;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+
+/* ── DIM-PAIR: uniform compact input style for boundary dimension fields ── */
+.dim-grid{display:grid;gap:8px;margin-bottom:10px;}
+.dim-grid.box6{grid-template-columns:repeat(3,1fr);}
+.dim-grid.shue2{grid-template-columns:1fr 1fr;}
+.dim-pair{display:flex;flex-direction:column;gap:3px;}
+.dim-pair label{font-size:10px;font-weight:700;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:.4px;}
+.dim-pair label .unit{font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:2px;}
+.dim-pair input{background:var(--bg-inset);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font-mono);font-size:13px;padding:6px 8px;
+  border-radius:var(--radius);outline:none;width:100%;transition:border-color .18s,box-shadow .18s;}
+.dim-pair input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow);}
+.dim-pair input.warn{border-color:var(--orange);}
+.dim-pair input.err{border-color:var(--red);}
+.dim-pair .hint-val{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+/* ── SHUE AUTO-COMPUTE DISPLAY ── */
+.shue-auto{background:rgba(45,212,160,.05);border:1px solid rgba(45,212,160,.2);
+  border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;}
+.shue-auto-title{font-size:10px;font-weight:700;color:var(--green);
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.shue-params{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.shue-param{display:flex;flex-direction:column;gap:2px;}
+.shue-param-label{font-size:9px;color:var(--text-dim);}
+.shue-param-val{font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--green);}
+.shue-param-eq{font-size:9px;color:var(--text-dim);margin-top:1px;}
+
+/* ── OMNI STATUS / DATA CADENCE SELECTS ── */
+.omni-status{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin:10px 0;}
+.omni-status .ok{color:var(--green);}
+.omni-status .warn{color:var(--orange);}
+
+/* ── BND COMPARISON FOOTER ── */
+.bnd-compare-strip{padding:8px 12px;border-top:1px solid var(--border);
+  display:flex;gap:20px;font-size:10px;flex-wrap:wrap;}
+
+/* ── FETCH BTN WRAPPER ── */
+.omni-fetch-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+
+/* ==== diagrams.css ==== */
+/* ═══════════════════════════════════════════════════════════════════
+   AMPS CCMC — FORMAT DIAGRAMS & SVG BOUNDARY DIAGRAMS
+   Color-coded column annotation components for file format
+   documentation, plus SVG wrapper styles for boundary geometry.
+═══════════════════════════════════════════════════════════════════ */
+
+/* FORMAT DIAGRAM COMPONENT */
+.fmt-diagram{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;}
+.fmt-title{background:rgba(26,136,212,.12);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;color:var(--accent-bright);letter-spacing:.3px;}
+.fmt-title-left{display:flex;align-items:center;gap:8px;}
+.fmt-title-icon{font-size:14px;}
+.fmt-sub{font-size:10px;font-weight:400;color:var(--text-dim);}
+.fmt-sample{padding:12px 14px;font-family:var(--font-mono);font-size:13px;color:#fff;letter-spacing:.04em;overflow-x:auto;white-space:nowrap;border-bottom:1px solid var(--border);line-height:1.8;}
+.fmt-ruler{padding:4px 14px 8px;font-family:var(--font-mono);font-size:9px;color:var(--text-muted);overflow-x:auto;white-space:nowrap;border-bottom:1px solid var(--border);}
+
+/* Column colour tokens — applied as span classes */
+.f-year{color:#38c0ff;}
+.f-mon {color:#5aeacf;}
+.f-day {color:#5aeacf;}
+.f-hr  {color:#a8d8ff;}
+.f-min {color:#a8d8ff;}
+.f-sec {color:#c5e8ff;}
+.f-lat {color:#ff9a3c;}
+.f-lon {color:#ffb866;}
+.f-alt {color:#ffd04b;}
+.f-dst {color:#ff5a5a;}
+.f-pdyn{color:#ff9a3c;}
+.f-bz  {color:#ff6b6b;}
+.f-vx  {color:#c5a0ff;}
+.f-nsw {color:#8bb4ff;}
+.f-by  {color:#78d4ff;}
+.f-bx  {color:#78d4ff;}
+.f-comment{color:#3a5878;font-style:italic;}
+
+/* Legend grid below the sample line */
+.fmt-legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:0;border-top:1px solid var(--border);}
+.fmt-leg-item{display:flex;align-items:flex-start;gap:7px;padding:7px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.fmt-leg-item:last-child{border-right:none;}
+.fmt-leg-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;margin-top:3px;}
+.fmt-leg-name{font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;}
+.fmt-leg-desc{font-size:10px;color:var(--text-dim);line-height:1.4;}
+
+/* TRAJECTORY PREVIEW TABLE */
+.traj-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px;margin-bottom:12px;}
+.traj-table th{background:rgba(26,136,212,.12);color:var(--accent-bright);font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.traj-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.025);}
+.traj-table tr:hover td{background:rgba(255,255,255,.02);}
+.traj-table .c-year{color:#38c0ff;}
+.traj-table .c-date{color:#5aeacf;}
+.traj-table .c-time{color:#a8d8ff;}
+.traj-table .c-lat {color:#ff9a3c;}
+.traj-table .c-lon {color:#ffb866;}
+.traj-table .c-alt {color:#ffd04b;}
+.traj-table .c-err {color:var(--red);}
+.traj-table .c-ok  {color:var(--green);}
+
+/* TS05 DRIVING TABLE */
+.ts05-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px;margin-bottom:10px;}
+.ts05-table th{background:rgba(255,90,90,.07);color:var(--text-dim);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:5px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.ts05-table td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.025);}
+.ts05-table .c-dst {color:#ff5a5a;}
+.ts05-table .c-pdyn{color:#ff9a3c;}
+.ts05-table .c-bz  {color:#ff6b6b;}
+.ts05-table .c-vx  {color:#c5a0ff;}
+.ts05-table .c-nsw {color:#8bb4ff;}
+.ts05-table .c-by  {color:#78d4ff;}
+
+/* TEMPORAL TIMELINE */
+.fu-timeline-wrap{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.fu-tl{position:relative;height:50px;margin:8px 0 24px;}
+.fu-axis{position:absolute;top:24px;left:0;right:0;height:2px;background:var(--border);}
+.fu-tick{position:absolute;width:2px;background:var(--accent);height:12px;top:18px;}
+.fu-tick.inject{background:var(--green);height:16px;top:16px;}
+.fu-label{position:absolute;top:32px;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);transform:translateX(-50%);white-space:nowrap;}
+.fu-particle{position:absolute;top:6px;font-size:13px;}
+.fu-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:10px;}
+.fu-leg{display:flex;align-items:center;gap:5px;color:var(--text-dim);}
+.fu-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* OMNI-WEB WIDGET */
+.omni-widget{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-top:12px;}
+.omni-title{font-size:11px;font-weight:700;color:var(--accent-bright);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;}
+.omni-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.omni-step{display:flex;align-items:center;gap:9px;font-size:11px;}
+.os-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.os-num.pending{background:var(--border);color:var(--text-dim);}
+.os-num.done{background:var(--green);color:#000;}
+.os-num.running{background:var(--orange);color:#000;animation:pulse-anim 1s infinite;}
+.omni-status{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.7;}
+.omni-status .ok  {color:var(--green);}
+.omni-status .warn{color:var(--orange);}
+.omni-status .gap {color:var(--red);}
+
+/* BOUNDARY SVG DIAGRAM */
+.bnd-diagram{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.bnd-diag-title{background:rgba(26,136,212,.1);border-bottom:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--accent-bright);letter-spacing:.3px;display:flex;align-items:center;justify-content:space-between;}
+.bnd-diag-sub{font-size:10px;color:var(--text-dim);font-weight:400;}
+.bnd-svg-wrap{padding:8px;}
+.bnd-svg-footer{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:10px;flex-wrap:wrap;}
+.bnd-compare{color:var(--text-dim);}
+.bnd-compare span{font-family:var(--font-mono);}
+
+/* BOUNDARY SELECTOR CARDS */
+.bnd-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:600px){.bnd-cards{grid-template-columns:1fr;}}
+.bnd-card{background:var(--bg-inset);border:2px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;position:relative;transition:all .2s;}
+.bnd-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
+.bnd-card.sel{border-color:var(--accent);background:rgba(26,136,212,.07);}
+.bnd-card.sel::after{content:"✓";position:absolute;top:10px;right:12px;color:var(--green);font-weight:700;font-size:14px;}
+.bc-icon{font-size:28px;margin-bottom:6px;}
+.bc-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;}
+.bc-desc{font-size:11px;color:var(--text-dim);line-height:1.5;}
+.bc-formula{margin-top:8px;padding:6px 10px;background:rgba(0,0,0,.3);border-radius:4px;font-family:var(--font-mono);font-size:11px;color:var(--accent-bright);line-height:1.6;}
+
+/* SHUE AUTO-COMPUTE DISPLAY */
+.shue-auto{background:rgba(45,212,160,.05);border:1px solid rgba(45,212,160,.2);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;}
+.shue-auto-title{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.shue-params{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media(max-width:500px){.shue-params{grid-template-columns:1fr 1fr;}}
+.shue-param{display:flex;flex-direction:column;gap:2px;}
+.shue-param-label{font-size:9px;color:var(--text-dim);}
+.shue-param-val{font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--green);}
+.shue-param-eq{font-size:9px;color:var(--text-muted);margin-top:1px;}
+
+/* SPECTRUM WIDGET */
+.spectrum-display{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px;}
+.spec-title{font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
+.spec-chart-wrap{height:160px;position:relative;background:rgba(0,0,0,.2);border-radius:var(--radius);border:1px solid var(--border-dim);overflow:hidden;}
+canvas.spec-canvas{width:100%;height:100%;display:block;}
+
+/* ENERGY BIN ROWS */
+.ebin-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-dim);font-size:11px;}
+.ebin-row:last-child{border:none;}
+.ebin-range{font-family:var(--font-mono);color:var(--text);}
+.ebin-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.ebin-bar{height:100%;background:var(--accent);border-radius:3px;}
+.ebin-del{cursor:pointer;color:var(--text-muted);padding:2px 6px;border-radius:3px;transition:color .15s;}
+.ebin-del:hover{color:var(--red);}
+
+/* REVIEW SECTION */
+.review-param-file{background:var(--bg-inset);border:1px solid var(--green);border-radius:var(--radius-lg);padding:16px;font-family:var(--font-mono);font-size:11.5px;color:var(--text);line-height:1.85;overflow-x:auto;white-space:pre;}
+.review-param-file .r-section{color:var(--accent-bright);font-weight:600;}
+.review-param-file .r-key{color:var(--text-bright);}
+.review-param-file .r-val{color:var(--green);}
+.review-param-file .r-auto{color:var(--orange);}
+.review-param-file .r-comment{color:#2e4a6a;}
+.review-block{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+@media(max-width:700px){.review-block{grid-template-columns:1fr 1fr;}}
+.review-item{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;}
+.ri-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.ri-val{font-size:13px;font-weight:700;font-family:var(--font-mono);color:#fff;}
+.ri-sub{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.ri-ok{border-color:rgba(45,212,160,.3);background:rgba(45,212,160,.04);}
+.ri-ok .ri-val{color:var(--green);}
+.ri-warn{border-color:rgba(255,154,60,.3);}
+.ri-warn .ri-val{color:var(--orange);}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tb-nasa">NASA</div><div class="tb-sep">|</div>
+  <div class="tb-title"><b>Community Coordinated Modeling Center</b> &mdash; Runs-on-Request</div>
+  <div class="tb-right">
+    <a class="tb-link" href="#">Model Catalog</a>
+    <a class="tb-link" href="#">My Runs</a>
+    <a class="tb-link" href="#">Docs</a>
+    <a class="tb-link" href="#">Help</a>
+    <div class="tb-divider"></div>
+    <div class="tb-badge">AMPS v2025</div>
+  </div>
+</div>
+<div class="page-hd"><div class="page-hd-inner">
+  <div class="model-chip"><div class="pulse"></div>AMPS v2025 &mdash; SEP &amp; GCR Transport Model &mdash; ISFM Extension</div>
+  <h1>Simulation Setup &mdash; Runs-on-Request Submission Wizard</h1>
+  <p>Configure your AMPS run: particle species, TS05 background field, domain boundary (BOX or Shue 1998 magnetopause), temporal variability, particle source spectrum, and output domain.
+  All inputs generate <code style="background:rgba(26,136,212,.15);padding:1px 5px;border-radius:3px;color:#38c0ff;font-family:monospace;">AMPS_PARAM.in</code> keywords &mdash; preview updates live in the sidebar.</p>
+</div></div>
+<div class="wizard">
+  <div class="wz-step active"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
+  <div class="wz-step"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
+  <div class="wz-step"><div class="wz-num">3</div><span class="wz-label">Bkg Field</span></div>
+  <div class="wz-step"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
+  <div class="wz-step"><div class="wz-num">5</div><span class="wz-label">Temporal</span></div>
+  <div class="wz-step"><div class="wz-num">6</div><span class="wz-label">Spectrum</span></div>
+  <div class="wz-step"><div class="wz-num">7</div><span class="wz-label">Output Domain</span></div>
+  <div class="wz-step"><div class="wz-num">8</div><span class="wz-label">Output Options</span></div>
+  <div class="wz-step"><div class="wz-num">9</div><span class="wz-label">Review &amp; Submit</span></div>
+</div>
+<div class="layout">
+<div class="main-col">
+
+<div id="panel-1" class="step-panel active">
+<div class="sect" id="s-runinfo">
+  <div class="sect-hd" onclick="toggleSection('s-runinfo')">
+    <div class="sect-icon" style="background:rgba(26,136,212,.15)">&#128203;</div>
+    <div><div class="sect-title">Run Information</div>
+    <div style="font-size:11px;color:var(--text-dim)">Run name, PI contact details, science goal, AMPS version</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 1</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="infobox info-blue"><b>Required fields</b> marked <span style="color:var(--red)">*</span> must be complete before submission. Optional fields help CCMC staff triage and archive your run.</div>
+    <div class="frow c2">
+      <div class="field"><label>Run Name <span class="req">*</span></label>
+        <input id="run-name" type="text" value="SEP_Sep2017_VanAllenProbeA" maxlength="80" oninput="liveUpdate()"/>
+        <div class="hint">Alphanumeric + underscores only. Becomes the output directory name and NetCDF global attribute.</div>
+        <div id="run-name-err" style="font-size:10px;color:var(--red);"></div>
+      </div>
+      <div class="field"><label>AMPS Version</label>
+        <select id="model-ver" onchange="liveUpdate()">
+          <option value="AMPS_2025" selected>AMPS v2025 (current — recommended)</option>
+          <option value="AMPS_2023">AMPS v2023</option>
+          <option value="AMPS_2016">AMPS v2016 (legacy — BOX boundary only)</option>
+        </select>
+        <div class="hint">v2025 adds Shue boundary, coupled-MHD, Band spectrum, and NetCDF4 output.</div>
+      </div>
+    </div>
+    <div class="frow c3">
+      <div class="field"><label>PI Name <span class="req">*</span></label>
+        <input id="pi-name" type="text" placeholder="Dr. Jane Smith" oninput="liveUpdate()"/>
+      </div>
+      <div class="field"><label>PI Email <span class="req">*</span></label>
+        <input id="pi-email" type="email" placeholder="j.smith@university.edu" oninput="liveUpdate()"/>
+        <div class="hint">Run notifications and completion alerts sent here.</div>
+      </div>
+      <div class="field"><label>Institution</label>
+        <input id="pi-inst" type="text" placeholder="Johns Hopkins APL" oninput="liveUpdate()"/>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>Science Goal</label>
+      <select id="science-goal" onchange="goalHint(this.value)">
+        <option value="storm_validation" selected>Storm-time validation — Van Allen Probes comparison</option>
+        <option value="gcr_baseline">GCR baseline — quiet-time cosmic ray flux</option>
+        <option value="sep_radiation">SEP radiation environment — ISS / crew dose</option>
+        <option value="parameter_study">Parameter sensitivity study</option>
+        <option value="custom">Custom / other</option>
+      </select>
+      <div class="hint" id="goal-hint" style="color:var(--accent-bright);">Compare AMPS-predicted cutoff rigidity with Van Allen Probe particle data during the storm main phase.</div>
+    </div>
+    <div class="field">
+      <label>Run Description <span class="opt">(optional, 500 chars max)</span></label>
+      <textarea id="run-desc" rows="3" maxlength="500" placeholder="Brief scientific description — event context, instrument, expected outputs..." oninput="charCount(this,'run-desc-count',500)"></textarea>
+      <div class="char-count" id="run-desc-count">0/500</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-2" class="step-panel">
+<div class="sect" id="s-particle">
+  <div class="sect-hd" onclick="toggleSection('s-particle')">
+    <div class="sect-icon" style="background:rgba(56,192,255,.12)">&#9883;</div>
+    <div><div class="sect-title">Particle Species &amp; Charge State</div>
+    <div style="font-size:11px;color:var(--text-dim)">Sets SPECIES, CHARGE, MASS_AMU in AMPS_PARAM.in. One species per run.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 2</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="infobox info-blue"><b>AMPS uses backward-in-time tracing</b> — one particle species per run. Protons are most common for SEP events. Electrons use a relativistic guiding-center integrator activated automatically.</div>
+    <div class="opt-grid c3">
+      <div class="opt-card sel" id="sp-proton" onclick="selectSpecies('proton',this)"><div class="oc-icon">&#128309;</div>
+        <div class="oc-title">H&#8314; Proton</div><div class="oc-sub">Most common SEP species. Mass = 1.007 AMU, charge = +1e. Full radiation belt treatment.</div>
+        <span class="oc-badge badge-green">DEFAULT</span></div>
+      <div class="opt-card" id="sp-helium" onclick="selectSpecies('helium',this)"><div class="oc-icon">&#128993;</div>
+        <div class="oc-title">He&#178;&#8314; Alpha</div><div class="oc-sub">Alpha particles. Second most abundant SEP ion. Mass = 4.003 AMU, charge = +2e.</div></div>
+      <div class="opt-card" id="sp-electron" onclick="selectSpecies('electron',this)"><div class="oc-icon">&#128995;</div>
+        <div class="oc-title">e&#8315; Electron</div><div class="oc-sub">Relativistic electrons. Drift periods &lt;1 min at L=4. Requires enhanced integrator.</div></div>
+      <div class="opt-card" id="sp-oxygen" onclick="selectSpecies('oxygen',this)"><div class="oc-icon">&#128992;</div>
+        <div class="oc-title">O&#8312;&#8314; Oxygen</div><div class="oc-sub">Heavy SEP ion — dominant in impulsive events. Mass = 16.0 AMU, charge = +8e.</div></div>
+      <div class="opt-card" id="sp-iron" onclick="selectSpecies('iron',this)"><div class="oc-icon">&#128308;</div>
+        <div class="oc-title">Fe&#178;&#8310;&#8314; Iron</div><div class="oc-sub">Heaviest common SEP species. Mass = 55.8 AMU, charge = +26e. High rigidity.</div></div>
+      <div class="opt-card" id="sp-custom" onclick="selectSpecies('custom',this)"><div class="oc-icon">&#9881;</div>
+        <div class="oc-title">Custom Ion</div><div class="oc-sub">Manually specify charge state and mass for exotic or partially-stripped ions.</div></div>
+    </div>
+    <div id="custom-species-panel" style="display:none;" class="subsection">
+      <div class="subsection-title">Custom Ion Parameters</div>
+      <div class="frow c3">
+        <div class="field"><label>Charge State Z <span class="unit">[e]</span></label>
+          <input id="charge-input" type="number" value="1" min="-1" max="92" step="1" oninput="updateRigidity()"/>
+          <div class="hint">Net charge in elementary charge units. e.g. +2 for He&#178;&#8314;.</div></div>
+        <div class="field"><label>Mass <span class="unit">[AMU]</span></label>
+          <input id="mass-input" type="number" value="1.0" min="0.0005" max="250" step="0.001" oninput="updateRigidity()"/>
+          <div class="hint">Atomic mass in unified atomic mass units.</div></div>
+        <div class="field"><label>Ion Label</label>
+          <input id="ion-symbol" type="text" value="?" maxlength="8" placeholder="e.g. Na&#8314;"/>
+          <div class="hint">Display label only — cosmetic.</div></div>
+      </div>
+    </div>
+    <div class="subsection" style="margin-top:4px;">
+      <div style="font-size:11px;color:var(--text-dim);">Magnetic rigidity at 100 MeV/n:
+        <span id="rigidity-info" style="font-family:var(--font-mono);color:var(--accent-bright);margin-left:6px;">R = 1.093 GV</span>
+        <span style="font-size:10px;color:var(--text-muted);margin-left:8px;">(R = p/(q&#183;e) — particles with R &lt; R<sub>cutoff</sub> cannot reach LEO)</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-3" class="step-panel">
+<div class="sect" id="s-bgfield">
+  <div class="sect-hd" onclick="toggleSection('s-bgfield')">
+    <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#129522;</div>
+    <div><div class="sect-title">Background Magnetic Field — TS05 Driving Parameters</div>
+    <div style="font-size:11px;color:var(--text-dim)">Tsyganenko 2005 empirical model. Eight scalar parameters. Also sets Shue boundary inputs (Panel 4).</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 3</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+
+    <!-- MAGNETIC FIELD MODEL SELECTOR ─────────────────────────────────── -->
+    <!-- Maps to: FIELD_MODEL keyword in AMPS_PARAM.in.
+         TS05 (Tsyganenko & Sitnov 2005) is the recommended model for SEP runs.
+         T04s is faster but less accurate for storm-time; IGRF+T89 is Year-2 only. -->
+    <div class="model-sel-grid">
+      <!-- TS05: full storm-time model, default -->
+      <div class="model-sel-card sel" id="msc-ts05" onclick="selectFieldModel('TS05', this)">
+        <div class="msc-icon">🧲</div>
+        <div class="msc-title">TS05 — Recommended</div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2005). Eight driving parameters (Dst, Pdyn, Bz, Vx, Nsw, By, Bx, epoch). Best for storm-time SEP access studies.</div>
+        <div class="msc-badge"><span class="oc-badge badge-green">FIELD_MODEL = TS05</span></div>
+      </div>
+      <!-- T04s: simpler, fewer parameters -->
+      <div class="model-sel-card" id="msc-t04s" onclick="selectFieldModel('T04s', this)">
+        <div class="msc-icon">⚡</div>
+        <div class="msc-title">T04s — Fast Alternative</div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004) with 6 W-functions. Fewer driving parameters; suitable for quiet-time studies and parameter sweeps.</div>
+        <div class="msc-badge"><span class="oc-badge badge-blue">FIELD_MODEL = T04s</span></div>
+      </div>
+      <!-- IGRF+T89: legacy/simple -->
+      <div class="model-sel-card disabled" id="msc-t89" onclick="selectFieldModel('T89', this)">
+        <div class="msc-icon">🌍</div>
+        <div class="msc-title">IGRF + T89 <span class="msc-years">Year 2</span></div>
+        <div class="msc-sub">Internal IGRF13 dipole + Tsyganenko (1989) external field. Simple Kp-driven model. Planned for Year 2 extension.</div>
+        <div class="msc-badge"><span class="oc-badge badge-y2">FIELD_MODEL = T89 — 2026</span></div>
+      </div>
+    </div>
+
+    <div class="infobox info-orange">
+      <b>Sep 2017 storm main phase loaded as default</b> — Dst=&#8722;142&#160;nT, Pdyn=3.5&#160;nPa, Bz=&#8722;18.5&#160;nT (Sep&#160;7, 23:30&#160;UTC). Subsolar magnetopause compressed to ~8.6&#160;R<sub>E</sub>. Mid-latitude cutoff rigidity reduced ~40% from quiet-time values.
+    </div>
+    <div class="frow c4">
+      <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+        <input id="ts05-dst" type="number" value="-142.0" step="1" min="-600" max="50" class="error" oninput="ts05Change()"/>
+        <div id="ts05-dst-status" class="field-note" style="color:var(--red);">&#10007; Storm-time — verify data source</div>
+        <div class="hint">Storm main phase: &#8722;100 to &#8722;300 nT. TS05 limit: &#8722;600 nT.</div>
+      </div>
+      <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+        <input id="ts05-pdyn" type="number" value="3.5" step="0.1" min="0.1" max="30" class="valid" oninput="ts05Change()"/>
+        <div id="ts05-pdyn-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+        <div class="hint">Dynamic pressure. Sets magnetopause standoff distance.</div>
+      </div>
+      <div class="field"><label>IMF Bz <span class="unit">[nT GSM]</span> <span class="req">*</span></label>
+        <input id="ts05-bz" type="number" value="-18.5" step="0.1" min="-50" max="20" class="warn" oninput="ts05Change()"/>
+        <div id="ts05-bz-status" class="field-note" style="color:var(--orange);">&#9888; Strong southward — storm driver</div>
+        <div class="hint">Negative = southward = reconnection onset.</div>
+      </div>
+      <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
+        <input id="ts05-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="liveUpdate()"/>
+        <div class="hint">Snapshot timestamp for STEADY_STATE mode.</div>
+      </div>
+    </div>
+    <div class="frow c4">
+      <div class="field"><label>Vx <span class="unit">[km/s]</span></label>
+        <input id="ts05-vx" type="number" value="-650.0" step="10" min="-900" max="-200" class="valid" oninput="ts05Change()"/>
+        <div id="ts05-vx-status" class="field-note" style="color:var(--green);">&#10003; OK</div>
+        <div class="hint">Solar wind velocity (negative = sunward). Typical &#8722;400 km/s.</div>
+      </div>
+      <div class="field"><label>Nsw <span class="unit">[cm&#8315;&#179;]</span></label>
+        <input id="ts05-nsw" type="number" value="12.0" step="0.5" min="0.5" max="80" class="valid" oninput="ts05Change()"/>
+        <div id="ts05-nsw-status" class="field-note" style="color:var(--green);">&#10003; OK</div>
+        <div class="hint">Proton number density.</div>
+      </div>
+      <div class="field"><label>IMF By <span class="unit">[nT]</span> <span class="opt">opt</span></label>
+        <input id="ts05-by" type="number" value="3.2" step="0.1" min="-40" max="40" class="valid" oninput="ts05Change()"/>
+        <div class="hint">Dawn-dusk asymmetry. Set 0 if unknown.</div>
+      </div>
+      <div class="field"><label>IMF Bx <span class="unit">[nT]</span> <span class="opt">opt</span></label>
+        <input id="ts05-bx" type="number" value="0.0" step="0.1" min="-40" max="40" class="valid" oninput="ts05Change()"/>
+        <div class="hint">Usually 0.</div>
+      </div>
+    </div>
+    <div class="kw-strip" id="ts05-kw-preview">
+<span class="kw-section">#BACKGROUND_FIELD</span>
+<span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment">! Tsyganenko &amp; Sitnov (2005)</span>
+<span class="kw-key">TS05_DST</span>        <span class="kw-val" id="kv-dst">-142.0</span>     <span class="kw-comment">! nT ring current</span>
+<span class="kw-key">TS05_PDYN</span>       <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa</span>
+<span class="kw-key">TS05_BZ</span>         <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM</span>
+<span class="kw-key">TS05_VX</span>         <span class="kw-val" id="kv-vx">-650.0</span>    <span class="kw-comment">! km/s</span>
+<span class="kw-key">TS05_NSW</span>        <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm&#8315;&#179;</span>
+<span class="kw-key">TS05_BY</span>         <span class="kw-val" id="kv-by">3.20</span>      <span class="kw-comment">! nT</span>
+<span class="kw-key">TS05_BX</span>         <span class="kw-val" id="kv-bx">0.00</span>
+<span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span></div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-3b" class="step-panel">
+<div class="sect" id="s-boundary">
+  <div class="sect-hd" onclick="toggleSection('s-boundary')">
+    <div class="sect-icon" style="background:rgba(139,111,247,.15)">&#128754;</div>
+    <div><div class="sect-title">Simulation Domain Boundary</div>
+    <div style="font-size:11px;color:var(--text-dim)">Outer boundary where particles are injected and escape. Maps to #DOMAIN_BOUNDARY in AMPS_PARAM.in.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">NEW &middot; Step 4</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="infobox info-blue"><b>Physical role:</b> AMPS traces test particles backward in time. Particles reaching this outer boundary are assigned the source spectrum (Panel 6). A physics-based Shue boundary eliminates ~20&#8211;30% of wasted traces vs. a fixed box during storms.</div>
+    <div class="bnd-cards">
+      <div class="bnd-card" id="bc-box" onclick="bndSet('BOX')">
+        <div class="bc-icon">&#128230;</div>
+        <div class="bc-title">Rectangular Box (GSM)</div>
+        <div class="bc-desc">Axis-aligned cuboid in GSM coordinates. Simple, predictable geometry. Reproduces AMPS 2016 legacy behavior. Best for GCR runs and systematic sweeps.</div>
+        <div class="bc-formula">BOUNDARY_TYPE = BOX</div>
+      </div>
+      <div class="bnd-card sel" id="bc-shue" onclick="bndSet('SHUE')">
+        <div class="bc-icon">&#127760;</div>
+        <div class="bc-title">Shue Magnetopause (1998) &#9733; Recommended</div>
+        <div class="bc-desc">Physics-based magnetopause surface. r&#8320; and &#945; respond to TS05 Pdyn and Bz. Automatically compresses during storms. Fewer wasted particle traces.</div>
+        <div class="bc-formula">BOUNDARY_TYPE = SHUE<br>r(&#952;) = r&#8320; &middot; (2&#8725;(1+cos&#952;))^&#945;</div>
+      </div>
+    </div>
+
+    <!-- BOX PANEL -->
+    <div id="bnd-box-panel" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:16px;align-items:start;">
+        <div>
+          <div class="hlabel">
+            <h4>Box Faces &#8212; GSM [R<sub>E</sub>]</h4>
+            <span style="font-size:10px;color:var(--text-dim);">1 R<sub>E</sub> = 6,371 km</span>
+          </div>
+          <div class="infobox info-blue" style="margin-bottom:10px;font-size:11px;">
+            <b>Convention:</b> X<sub>GSM</sub> sunward (+), Z<sub>GSM</sub> northward (+), Y<sub>GSM</sub> dawnward = Z×X.
+            Particles leaving this box are recorded as "escaped to solar wind."
+          </div>
+
+          <div class="dim-grid box6">
+            <div class="dim-pair">
+              <label>X<sub>max</sub> <span class="unit">[R<sub>E</sub>, dayside]</span></label>
+              <input id="box-xmax" type="number" value="15" step="0.5" oninput="bndBoxUpdate()"
+                title="Dayside (sunward) face. Must exceed magnetopause standoff (~10–12 RE quiet)."/>
+              <div class="hint-val">Typical: 12–20 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>X<sub>min</sub> <span class="unit">[R<sub>E</sub>, nightside]</span></label>
+              <input id="box-xmin" type="number" value="-60" step="1" oninput="bndBoxUpdate()"
+                title="Nightside tail. Typical −40 to −100 RE."/>
+              <div class="hint-val">Typical: −40 to −100 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Y<sub>max</sub> <span class="unit">[R<sub>E</sub>, dusk]</span></label>
+              <input id="box-ymax" type="number" value="25" step="0.5" oninput="bndBoxUpdate()"
+                title="Dusk flank. Typically ±20–30 RE."/>
+              <div class="hint-val">Typical: 20–30 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Y<sub>min</sub> <span class="unit">[R<sub>E</sub>, dawn]</span></label>
+              <input id="box-ymin" type="number" value="-25" step="0.5" oninput="bndBoxUpdate()"
+                title="Dawn flank. Symmetric by default."/>
+              <div class="hint-val">Typical: −20 to −30 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Z<sub>max</sub> <span class="unit">[R<sub>E</sub>, north]</span></label>
+              <input id="box-zmax" type="number" value="20" step="0.5" oninput="bndBoxUpdate()"
+                title="North polar boundary. At X~0, magnetopause ~15–18 RE."/>
+              <div class="hint-val">Typical: 15–25 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Z<sub>min</sub> <span class="unit">[R<sub>E</sub>, south]</span></label>
+              <input id="box-zmin" type="number" value="-20" step="0.5" oninput="bndBoxUpdate()"
+                title="South polar boundary. Typically symmetric with Z_max."/>
+              <div class="hint-val">Typical: −15 to −25 R<sub>E</sub></div>
+            </div>
+          </div>
+
+          <div style="margin-top:4px;margin-bottom:10px;">
+            <div class="dim-pair" style="max-width:200px;">
+              <label>R<sub>inner</sub> <span class="unit">[R<sub>E</sub>]</span></label>
+              <input id="box-rinner" type="number" value="2.0" step="0.1" min="1.0" max="4.0" oninput="bndBoxUpdate()"
+                title="Inner loss boundary. Particles reaching this sphere precipitate."/>
+              <div class="hint-val">Loss cone sphere. Default 2 R<sub>E</sub>. Maps to <code style="font-family:var(--font-mono);font-size:9px;">R_INNER</code>.</div>
+            </div>
+          </div>
+          <div class="val-row">
+            <div class="v-item" id="bv-xrange"><span class="v-ok">&#10003; Dayside OK</span></div>
+            <div class="v-item" id="bv-yrange"><span class="v-ok">&#10003; Flanks OK</span></div>
+            <div class="v-item" id="bv-zrange"><span class="v-ok">&#10003; Z OK</span></div>
+            <div class="v-item" id="bv-inner"><span class="v-ok">&#10003; R_inner OK</span></div>
+          </div>
+          <div class="kw-strip" style="margin-top:10px;">
+<span class="kw-section">#DOMAIN_BOUNDARY</span>
+<span class="kw-key">BOUNDARY_TYPE</span>  <span class="kw-val">BOX</span>
+<span class="kw-key">DOMAIN_X_MAX</span>   <span class="kw-val" id="kw-xmax">15.0</span>
+<span class="kw-key">DOMAIN_X_MIN</span>   <span class="kw-val" id="kw-xmin">-60.0</span>
+<span class="kw-key">DOMAIN_Y_MAX</span>   <span class="kw-val" id="kw-ymax">25.0</span>
+<span class="kw-key">DOMAIN_Y_MIN</span>   <span class="kw-val" id="kw-ymin">-25.0</span>
+<span class="kw-key">DOMAIN_Z_MAX</span>   <span class="kw-val" id="kw-zmax">20.0</span>
+<span class="kw-key">DOMAIN_Z_MIN</span>   <span class="kw-val" id="kw-zmin">-20.0</span>
+<span class="kw-key">R_INNER</span>        <span class="kw-val" id="kw-rinner">2.0</span></div>
+        </div>
+        <div class="bnd-diagram">
+          <div class="bnd-diag-title">GSM X&#8211;Z plane (Y=0) <span class="bnd-diag-sub">live update</span></div>
+          <div class="bnd-svg-wrap">
+            <svg id="box-svg" viewBox="0 0 400 320" style="width:100%;height:290px;background:#060e1c;border-radius:4px;display:block;">
+              <defs><marker id="ah" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#38c0ff"/></marker></defs>
+              <g id="box-grid"></g>
+              <line x1="10" y1="160" x2="390" y2="160" stroke="#1a3358" stroke-width="1"/>
+              <line x1="200" y1="10" x2="200" y2="310" stroke="#1a3358" stroke-width="1"/>
+              <text x="368" y="155" fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">+X &#9728;</text>
+              <text x="182" y="22" fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">+Z N</text>
+              <circle cx="200" cy="160" r="6" fill="#1a88d4"/>
+              <circle id="inner-box" cx="200" cy="160" r="10" fill="rgba(255,90,90,.07)" stroke="#ff5a5a" stroke-width="1.2" stroke-dasharray="3,3"/>
+              <rect id="box-rect" x="40" y="60" width="284" height="200" fill="rgba(56,192,255,.04)" stroke="#38c0ff" stroke-width="1.5" stroke-dasharray="7,4"/>
+              <text id="box-lbl-xmax" x="305" y="173" fill="#38c0ff" font-size="9" font-family="IBM Plex Mono">Xmax=15</text>
+              <text id="box-lbl-xmin" x="14" y="173" fill="#38c0ff" font-size="9" font-family="IBM Plex Mono">-60</text>
+              <text id="box-lbl-zmax" x="204" y="54" fill="#38c0ff" font-size="9" font-family="IBM Plex Mono">Zmax=20</text>
+              <text id="box-lbl-zmin" x="204" y="274" fill="#38c0ff" font-size="9" font-family="IBM Plex Mono">Zmin=-20</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHUE PANEL -->
+    <div id="bnd-shue-panel">
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:16px;align-items:start;">
+        <div>
+          <div class="shue-auto" id="shue-auto-box">
+            <div class="shue-auto-title">🔁 Auto-computed from TS05 driving parameters (Panel 3)</div>
+            <div class="shue-params">
+              <div class="shue-param">
+                <div class="shue-param-label">r₀ <span style="font-size:9px;">[R<sub>E</sub>]</span></div>
+                <div class="shue-param-val" id="shue-r0-val">8.56</div>
+                <div class="shue-param-eq">= (11.4+0.013Bz)·Pdyn^(−1/6.6)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">α</div>
+                <div class="shue-param-val" id="shue-alpha-val">0.617</div>
+                <div class="shue-param-eq">= (0.58−0.007Bz)·(1+0.024 ln Pdyn)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">X<sub>sub</sub> [R<sub>E</sub>]</div>
+                <div class="shue-param-val" id="shue-xsub-val">8.56</div>
+                <div class="shue-param-eq">= r₀ (θ=0°)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">R<sub>flank</sub> [R<sub>E</sub>]</div>
+                <div class="shue-param-val" id="shue-rflank-val">13.4</div>
+                <div class="shue-param-eq">= r(θ=90°)</div>
+              </div>
+            </div>
+          </div>
+          <div class="tog" id="shue-mode-tog" style="margin-bottom:10px;">
+            <button class="tog-btn on" id="shue-auto-btn" onclick="shueMode('auto')">🔄 Auto from TS05</button>
+            <button class="tog-btn" id="shue-manual-btn" onclick="shueMode('manual')">✏️ Manual override</button>
+          </div>
+          <div id="shue-manual-fields" style="display:none;">
+            <div class="infobox info-orange" style="font-size:11px;margin-bottom:10px;">
+              Manual override disables auto-coupling to TS05. Use the Shue (1998) formulas as a guide:
+              r₀ = (11.4 + 0.013·Bz)·Pdyn^(−1/6.6), α = (0.58 − 0.007·Bz)·(1 + 0.024·ln Pdyn).
+            </div>
+            <div class="dim-grid shue2" style="margin-bottom:10px;">
+              <div class="dim-pair">
+                <label>r₀ — Subsolar standoff <span class="unit">[R<sub>E</sub>]</span></label>
+                <input id="shue-r0-in" type="number" value="8.56" step="0.1" min="4" max="14" oninput="bndShueUpdate()"/>
+                <div class="hint-val">Quiet: ~11.2 · Storm: ~8.6 · Extreme: ~6.5 R<sub>E</sub></div>
+              </div>
+              <div class="dim-pair">
+                <label>α — Flaring parameter</label>
+                <input id="shue-alpha-in" type="number" value="0.617" step="0.01" min="0.3" max="0.9" oninput="bndShueUpdate()"/>
+                <div class="hint-val">Typical 0.50–0.65. Southward Bz → larger α.</div>
+              </div>
+            </div>
+          </div>
+          <div class="dim-grid shue2" style="margin-bottom:10px;">
+            <div class="dim-pair">
+              <label>R<sub>inner</sub> <span class="unit">[R<sub>E</sub>]</span></label>
+              <input id="shue-rinner" type="number" value="2.0" step="0.1" min="1" max="4" oninput="bndShueUpdate()"/>
+              <div class="hint-val">Inner loss sphere. Default 2 R<sub>E</sub>. Maps to R_INNER.</div>
+            </div>
+            <div class="dim-pair">
+              <label>X<sub>tail</sub> <span class="unit">[R<sub>E</sub>, nightside cap]</span></label>
+              <input id="shue-xtail" type="number" value="-60" step="5" max="-20" oninput="bndShueUpdate()"/>
+              <div class="hint-val">Closes the open Shue surface tailward. Typical −40 to −100 R<sub>E</sub>.</div>
+            </div>
+          </div>
+          <div class="val-row" style="margin-bottom:10px;">
+            <div class="v-item" id="sv-r0"><span class="v-ok">&#10003; r&#8320;=8.56 OK</span></div>
+            <div class="v-item" id="sv-alpha"><span class="v-ok">&#10003; &#945;=0.617 OK</span></div>
+            <div class="v-item" id="sv-tail"><span class="v-ok">&#10003; Tail cap OK</span></div>
+          </div>
+          <div class="kw-strip">
+<span class="kw-section">#DOMAIN_BOUNDARY</span>
+<span class="kw-key">BOUNDARY_TYPE</span>  <span class="kw-val">SHUE</span>         <span class="kw-comment">! Shue et al. 1998</span>
+<span class="kw-key">SHUE_R0</span>        <span class="kw-auto" id="kw-shue-r0">AUTO</span>         <span class="kw-comment">! RE; AUTO = from TS05 Bz,Pdyn</span>
+<span class="kw-key">SHUE_ALPHA</span>     <span class="kw-auto" id="kw-shue-alpha">AUTO</span>         <span class="kw-comment">! AUTO = from TS05</span>
+<span class="kw-key">DOMAIN_X_TAIL</span>  <span class="kw-val" id="kw-xtail">-60.0</span>       <span class="kw-comment">! RE flat nightside cap</span>
+<span class="kw-key">R_INNER</span>        <span class="kw-val" id="kw-shue-rinner">2.0</span>         <span class="kw-comment">! RE inner loss sphere</span></div>
+        </div>
+        <div class="bnd-diagram">
+          <div class="bnd-diag-title">Shue Magnetopause &#8212; GSM X&#8211;Z plane <span class="bnd-diag-sub">live</span></div>
+          <div class="bnd-svg-wrap">
+            <svg id="shue-svg" viewBox="0 0 400 320" style="width:100%;height:300px;background:#060e1c;border-radius:4px;display:block;">
+              <defs>
+                <marker id="arr-shue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#2dd4a0"/>
+                </marker>
+                <clipPath id="sclip"><rect x="0" y="0" width="400" height="320"/></clipPath>
+              </defs>
+              <g id="shue-grid"></g>
+              <!-- Axes -->
+              <line x1="10" y1="160" x2="390" y2="160" stroke="#1a3358" stroke-width="1"/>
+              <line x1="200" y1="10" x2="200" y2="310" stroke="#1a3358" stroke-width="1"/>
+              <!-- Axis labels -->
+              <text x="374" y="155" fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">+X</text>
+              <text x="182" y="22"  fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">+Z</text>
+              <text x="15"  y="155" fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">−X</text>
+              <text x="182" y="308" fill="#6a88b0" font-size="10" font-family="IBM Plex Mono">−Z</text>
+              <text x="340" y="174" fill="#6a88b0" font-size="9"  font-family="IBM Plex Mono">☀ Sun</text>
+              <text x="204" y="157" fill="#3a5070" font-size="9"  font-family="IBM Plex Mono">0</text>
+              <!-- Shue magnetopause path -->
+              <path id="shue-path" d="" fill="rgba(45,212,160,.07)" stroke="#2dd4a0" stroke-width="2" clip-path="url(#sclip)"/>
+              <!-- Nightside tail-cap -->
+              <line id="shue-tailcap" x1="80" y1="20" x2="80" y2="300" stroke="#38c0ff" stroke-width="1.5" stroke-dasharray="5,4"/>
+              <text id="shue-tailcap-lbl" x="84" y="100" fill="#38c0ff" font-size="9" font-family="IBM Plex Mono">X_tail</text>
+              <!-- Earth -->
+              <circle cx="200" cy="160" r="5" fill="#1a88d4"/>
+              <!-- Inner boundary sphere -->
+              <circle id="inner-shue" cx="200" cy="160" r="10" fill="rgba(255,90,90,.07)" stroke="#ff5a5a" stroke-width="1" stroke-dasharray="3,3"/>
+              <text id="inner-shue-lbl" x="215" y="145" fill="#ff5a5a" font-size="9" font-family="IBM Plex Mono">R_in=2RE</text>
+              <!-- r₀ annotation arrow: Earth → subsolar point -->
+              <line id="shue-r0-line" x1="200" y1="160" x2="243" y2="160" stroke="#ffd04b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-shue)"/>
+              <text id="shue-r0-lbl"  x="210" y="152" fill="#ffd04b" font-size="9" font-family="IBM Plex Mono">r₀</text>
+              <!-- Flank annotation arrow: Earth → terminator (X=0, Z=R_flank) -->
+              <line id="shue-flank-line" x1="200" y1="160" x2="200" y2="90" stroke="#8b6ff7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-shue)"/>
+              <text id="shue-flank-lbl" x="204" y="115" fill="#8b6ff7" font-size="9" font-family="IBM Plex Mono">R_flk</text>
+              <!-- Dynamic parameter readouts -->
+              <text id="shue-svg-r0"    x="12" y="290" fill="#2dd4a0" font-size="9" font-family="IBM Plex Mono">r₀=8.56 RE</text>
+              <text id="shue-svg-alpha" x="12" y="302" fill="#2dd4a0" font-size="9" font-family="IBM Plex Mono">α=0.617</text>
+              <text id="shue-svg-dst"   x="120" y="290" fill="#ff9a3c" font-size="9" font-family="IBM Plex Mono">Dst=−142nT</text>
+              <text id="shue-svg-pdyn"  x="120" y="302" fill="#ff9a3c" font-size="9" font-family="IBM Plex Mono">Pdyn=3.5nPa</text>
+            </svg>
+          </div>
+          <div class="bnd-svg-footer">
+            <span class="bnd-compare">Quiet (Dst=0, Pdyn=2): <span style="color:#fff;font-family:var(--font-mono);">r₀ ≈ 11.2 R<sub>E</sub></span></span>
+            <span class="bnd-compare">Sep 2017 storm peak: <span style="color:var(--orange);font-family:var(--font-mono);">r₀ ≈ 8.6 R<sub>E</sub></span></span>
+            <span class="bnd-compare">Extreme (Dst=−300): <span style="color:var(--red);font-family:var(--font-mono);">r₀ ≈ 6.5 R<sub>E</sub></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-4a" class="step-panel">
+<div class="sect" id="s-temporal">
+  <div class="sect-hd" onclick="toggleSection('s-temporal')">
+    <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#8987;</div>
+    <div><div class="sect-title">Temporal Variability of the Background Field</div>
+    <div style="font-size:11px;color:var(--text-dim)">How TS05 parameters evolve during the simulation. Maps to TEMPORAL_MODE in AMPS_PARAM.in.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 5</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="infobox info-blue"><b>Why this matters:</b> Mid-latitude cutoff rigidity drops 30&#8211;50% during a storm main phase. Steady-state captures a single snapshot. Time-Series tracks storm evolution needed for instrument comparison.</div>
+    <div class="temp-cards">
+      <div class="temp-card" id="tc-steady" data-mode="STEADY_STATE" onclick="setTempMode('STEADY_STATE')">
+        <div class="tc-icon">&#9889;</div><div class="tc-title">Steady-State</div>
+        <div class="tc-desc">Single epoch snapshot. Field fixed at TS05 scalars from Panel 3. Fastest; best for cutoff maps and sweeps.</div>
+        <div class="tc-badge"><span class="oc-badge badge-green">STEADY_STATE</span></div>
+      </div>
+      <div class="temp-card sel" id="tc-series" data-mode="TIME_SERIES" onclick="setTempMode('TIME_SERIES')">
+        <div class="tc-icon">&#128200;</div><div class="tc-title">Time-Series</div>
+        <div class="tc-desc">Field updated every &#916;t min from OMNIWeb auto-fetch or ts05_driving.txt. Required for storm-phase validation.</div>
+        <div class="tc-badge"><span class="oc-badge badge-blue">TIME_SERIES</span></div>
+      </div>
+      <div class="temp-card disabled" id="tc-coupled" data-mode="COUPLED_MHD">
+        <div class="tc-icon">&#128260;</div><div class="tc-title">Coupled MHD <span class="tag tag-exp">Year 2</span></div>
+        <div class="tc-desc">Self-consistent BATS-R-US/GAMERA magnetosphere. 10&#215; resources. Not yet available — coming 2026.</div>
+        <div class="tc-badge"><span class="oc-badge badge-purple">COUPLED_MHD — 2026</span></div>
+      </div>
+    </div>
+    <!-- TIME-SERIES SUB-FORM: shown only when Time-Series mode is selected -->
+    <div id="ts-form" style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--bg-mid);">
+      <div class="hlabel">
+        <h4>Time-Series Event Window &amp; Cadence</h4>
+        <span class="tag tag-new">Active</span>
+      </div>
+
+      <div class="frow c4">
+        <div class="field">
+          <label>Event Start <span class="req">*</span></label>
+          <input id="event-start" type="datetime-local" value="2017-09-07T00:00" oninput="liveUpdate()"/>
+          <div class="hint">UTC. Maps to <code>EVENT_START</code> in AMPS_PARAM.in</div>
+        </div>
+        <div class="field">
+          <label>Event End <span class="req">*</span></label>
+          <input id="event-end" type="datetime-local" value="2017-09-10T20:00" oninput="liveUpdate()"/>
+          <div class="hint">UTC. Maps to <code>EVENT_END</code></div>
+        </div>
+        <div class="field">
+          <label>Field Update Δt <span class="unit">[min]</span></label>
+          <input id="field-update-dt" type="number" value="5" min="1" max="60" oninput="checkDtPair()"/>
+          <div class="hint">TS05 refresh cadence. <code>FIELD_UPDATE_DT</code>. Recommend ≤5 min during storms.</div>
+        </div>
+        <div class="field">
+          <label>Particle Inject Δt <span class="unit">[min]</span></label>
+          <input id="inject-dt" type="number" value="30" min="5" max="240" oninput="checkDtPair()"/>
+          <div class="hint">New particle batch frequency. <code>INJECT_DT</code>. Must be ≥ Field Update Δt.</div>
+        </div>
+      </div>
+
+      <div id="dt-warn" class="infobox info-orange" style="display:none;">⚠ Inject Δt must be ≥ Field Update Δt — particles can only be injected after a field update.</div>
+
+      <!-- FIELD UPDATE VISUALIZATION -->
+      <div class="field-update-viz">
+        <div style="font-size:11px;font-weight:700;color:var(--accent-bright);margin-bottom:8px;">
+          🗂️ How time-series field updating works in AMPS
+        </div>
+        <div class="fu-timeline" id="ts-timeline">
+          <div class="fu-axis"></div>
+          <!-- TS05 field update ticks every 5 min -->
+          <div class="fu-tick" style="left:0%"></div><div class="fu-tick" style="left:10%"></div>
+          <div class="fu-tick" style="left:20%"></div><div class="fu-tick" style="left:30%"></div>
+          <div class="fu-tick" style="left:40%"></div><div class="fu-tick" style="left:50%"></div>
+          <div class="fu-tick" style="left:60%"></div><div class="fu-tick" style="left:70%"></div>
+          <div class="fu-tick" style="left:80%"></div><div class="fu-tick" style="left:90%"></div>
+          <div class="fu-tick" style="left:100%"></div>
+          <!-- Particle injection events every 30 min -->
+          <div class="fu-particle" style="left:0%">🚀</div>
+          <div class="fu-particle" style="left:50%">🚀</div>
+          <div class="fu-particle" style="left:100%">🚀</div>
+          <div class="fu-label" style="left:0%">t=0</div>
+          <div class="fu-label" style="left:25%">+12.5 min</div>
+          <div class="fu-label" style="left:50%">+25 min</div>
+          <div class="fu-label" style="left:100%">+50 min</div>
+        </div>
+        <div class="fu-legend">
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--accent)"></div>TS05 field refresh every 5 min (FIELD_UPDATE_DT)</div>
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--orange)"></div>New particle batch injected every 30 min (INJECT_DT)</div>
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--text-dim)"></div>Particles propagated in quasi-static field snapshot between refreshes</div>
+        </div>
+      </div>
+
+      <!-- TS05 DRIVING DATA SOURCE -->
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">TS05 Driving Data Source</div>
+      <div class="tog" id="ts-source-tog">
+        <button class="tog-btn on" id="ts-omni-btn" onclick="setTsSource(this,'omni')">🌐 Auto-fetch (OMNIWeb)</button>
+        <button class="tog-btn"    id="ts-file-btn"   onclick="setTsSource(this,'file')">📁 Upload ts05_driving.txt</button>
+        <button class="tog-btn"    id="ts-scalar-btn" onclick="setTsSource(this,'scalar')">📌 Scalar (all steps)</button>
+      </div>
+
+      <!-- OMNIWEB AUTO-FETCH PANEL -->
+      <div id="omni-panel" class="omni-widget">
+        <div class="omni-title">🌐 OMNIWeb + WDC Kyoto Auto-Fetch Pipeline</div>
+        <div class="omni-steps">
+          <div class="omni-step">
+            <div class="os-num done" id="os-1">1</div>
+            <span>Query <code style="font-family:var(--mono);font-size:10px;background:rgba(0,0,0,.3);padding:0 3px;">omniweb.gsfc.nasa.gov</code> for 1-min OMNI SW: Bz, By, Bx (GSM), Pdyn, Vx, Nsw</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num done" id="os-2">2</div>
+            <span>Query <code style="font-family:var(--mono);font-size:10px;background:rgba(0,0,0,.3);padding:0 3px;">wdc.kugi.kyoto-u.ac.jp</code> for hourly Dst or 1-min Sym-H proxy</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num" id="os-3">3</div>
+            <span style="color:var(--text-dim);">Merge streams → fill gaps → write ts05_driving.txt to run staging directory</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num pending" id="os-4">4</div>
+            <span style="color:var(--text-dim);">Display data summary for user confirmation before HPC dispatch</span>
+          </div>
+        </div>
+
+        <div class="frow c3">
+          <div class="field">
+            <label>Data cadence</label>
+            <select id="omni-cadence">
+              <option>1 min (OMNI 1-min)</option>
+              <option selected>5 min (OMNI 5-min, recommended)</option>
+              <option>1 hr (hourly, not recommended for storms)</option>
+            </select>
+            <div class="hint">Sets <code>ts05_driving.txt</code> row spacing. Recommended: ≤5 min for Dst gradients &gt;20 nT/hr.</div>
+          </div>
+          <div class="field">
+            <label>Gap fill method</label>
+            <select id="omni-gapfill">
+              <option selected>Linear interpolation (gaps &lt; 30 min)</option>
+              <option>Fill with FILL_VALUE (−9999)</option>
+              <option>Previous valid value (hold)</option>
+            </select>
+            <div class="hint">AMPS stops at <code>FILL_VALUE</code> rows; linear interpolation is safer.</div>
+          </div>
+          <div class="field">
+            <label>Fallback for &lt;24h events</label>
+            <select id="omni-fallback">
+              <option selected>DSCOVR L1 / ACE L2 (~15 min latency)</option>
+              <option>OMNI real-time (1–4 hr latency)</option>
+            </select>
+            <div class="hint">OMNI has ~1–24 hr latency. Recent events need DSCOVR/ACE.</div>
+          </div>
+        </div>
+
+        <div class="omni-status" id="omni-status">
+          <span class="ok">✓ Ready to fetch</span>&nbsp;&nbsp;Time range: <span style="color:#fff;">2017-09-07 00:00 → 2017-09-10 20:00 UTC</span><br/>
+          Estimated rows: <span style="color:#fff;">~1,056 rows @ 5 min cadence</span>&nbsp;·&nbsp;
+          <span class="warn">⚠ Note: OMNI data gap 2017-09-10 19:00–19:30 UTC — gap-fill will apply</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <button class="btn-primary" style="font-size:12px;padding:8px 18px;" onclick="simulateOmniFetch()">🌐 Fetch Now &amp; Preview Data</button>
+          <button class="btn-secondary" style="font-size:11px;padding:6px 12px;" onclick="simulateOmniFetch()">🔄 Re-fetch</button>
+          <span style="font-size:10px;color:var(--text-dim);">Triggers OMNIWeb + Kyoto queries at submission</span>
+        </div>
+
+        <!-- DATA PREVIEW TABLE -->
+        <div style="overflow-x:auto;">
+          <table class="ts05-table">
+            <tr><th>YYYY MM DD HH mm</th><th class="c-dst">Dst[nT]</th><th class="c-pdyn">Pdyn[nPa]</th><th class="c-bz">Bz[nT]</th><th class="c-vx">Vx[km/s]</th><th class="c-nsw">Nsw[cm⁻³]</th><th class="c-by">By[nT]</th></tr>
+            <tr><td style="font-family:var(--mono)">2017 09 07 00 00</td><td class="c-dst">-15.0</td><td class="c-pdyn">2.1</td><td class="c-bz">-2.5</td><td class="c-vx">-420</td><td class="c-nsw">6.8</td><td class="c-by">1.2</td></tr>
+            <tr><td style="font-family:var(--mono)">2017 09 07 23 30</td><td class="c-dst">-142.0</td><td class="c-pdyn">3.5</td><td class="c-bz">-18.5</td><td class="c-vx">-650</td><td class="c-nsw">12.0</td><td class="c-by">3.2</td></tr>
+            <tr><td style="font-family:var(--mono);color:var(--text-dim)" colspan="7">… 1,052 more rows …</td></tr>
+            <tr><td style="font-family:var(--mono)">2017 09 10 20 00</td><td class="c-dst">-45.0</td><td class="c-pdyn">1.8</td><td class="c-bz">+3.2</td><td class="c-vx">-380</td><td class="c-nsw">4.5</td><td class="c-by">2.1</td></tr>
+          </table>
+        </div>
+      </div><!-- /omni-panel -->
+
+      <!-- FILE UPLOAD PANEL -->
+      <div id="file-panel" style="display:none;margin-top:12px;">
+        <div class="infobox info-blue">
+          <b>ts05_driving.txt column specification:</b><br/>
+          <code>YYYY MM DD HH mm  Dst[nT]  Pdyn[nPa]  Bz[nT]  Vx[km/s]  Nsw[cm⁻³]  By[nT](opt)  Bx[nT](opt)</code><br/>
+          Comment lines start with <code>#</code>. Whitespace-delimited. Times must be monotonically increasing UTC.
+        </div>
+        <div class="dropzone" id="ts05-dropzone" onclick="this.classList.toggle('loaded')">
+          <div class="dz-icon">📄</div>
+          <div class="dz-primary">Drop ts05_driving.txt here or click to browse</div>
+          <div class="dz-sub">.txt · .csv · .dat · max 50 MB</div>
+        </div>
+      </div>
+
+      <!-- FORMAT REFERENCE -->
+      <div class="fmt-diagram" style="margin-top:14px;">
+        <div class="fmt-title"><div class="fmt-title-left"><span class="fmt-title-icon">📄</span>ts05_driving.txt — Format Reference</div><span class="fmt-sub">whitespace-delimited ASCII · comment lines: #</span></div>
+        <div class="fmt-sample">
+          <span class="f-comment"># YYYY MM DD HH mm   Dst[nT]  Pdyn[nPa]  Bz[nT]  Vx[km/s]  Nsw[cm-3]  By[nT]  Bx[nT]</span><br>
+          <span class="f-year">2017</span> <span class="f-mon">09</span> <span class="f-day">07</span> <span class="f-hr">23</span> <span class="f-min">30</span>&nbsp;&nbsp;<span class="f-dst">-142.0</span>&nbsp;&nbsp;<span class="f-pdyn">3.50</span>&nbsp;&nbsp;&nbsp;<span class="f-bz">-18.5</span>&nbsp;&nbsp;<span class="f-vx">-650.0</span>&nbsp;&nbsp;<span class="f-nsw">12.0</span>&nbsp;&nbsp;<span class="f-by">3.2</span>&nbsp;&nbsp;<span class="f-bx">0.0</span>
+        </div>
+        <div class="fmt-legend">
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#38c0ff"></div><div><div class="fmt-leg-name">YYYY MM DD HH mm</div><div class="fmt-leg-desc">UTC timestamp (5 cols)</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff5a5a"></div><div><div class="fmt-leg-name">Dst [nT]</div><div class="fmt-leg-desc">Ring current index</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff9a3c"></div><div><div class="fmt-leg-name">Pdyn [nPa]</div><div class="fmt-leg-desc">Solar wind dynamic pressure</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff6b6b"></div><div><div class="fmt-leg-name">Bz [nT GSM]</div><div class="fmt-leg-desc">IMF southward component</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#c5a0ff"></div><div><div class="fmt-leg-name">Vx [km/s]</div><div class="fmt-leg-desc">SW bulk velocity (−)</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#8bb4ff"></div><div><div class="fmt-leg-name">Nsw [cm⁻³]</div><div class="fmt-leg-desc">Proton number density</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#78d4ff"></div><div><div class="fmt-leg-name">By, Bx [nT]</div><div class="fmt-leg-desc">IMF Y,X optional columns</div></div></div>
+        </div>
+      </div>
+    </div><!-- /ts-form -->
+  </div>
+</div>
+</div>
+
+
+<div id="panel-4b" class="step-panel">
+<div class="sect" id="s-spectrum">
+  <div class="sect-hd" onclick="toggleSection('s-spectrum')">
+    <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128202;</div>
+    <div><div class="sect-title">Particle Source Spectrum / Boundary Condition</div>
+    <div style="font-size:11px;color:var(--text-dim)">SEP energy spectrum injected at the outer boundary. Maps to #SPECTRUM in AMPS_PARAM.in.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 6</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="opt-grid c3">
+      <div class="opt-card sel spec-card" id="sc-pl" onclick="setSpec('POWER_LAW',this)"><div class="oc-icon">&#128201;</div>
+        <div class="oc-title">Power Law</div>
+        <div class="oc-sub">J(E) = J&#8320;(E/E&#8320;)^&#8722;&#947;. Widely used for SEP and quiet-time GCR studies.</div>
+        <span class="oc-badge badge-green">POWER_LAW</span></div>
+      <div class="opt-card spec-card" id="sc-band" onclick="setSpec('BAND',this)"><div class="oc-icon">&#12316;</div>
+        <div class="oc-title">Band Function</div>
+        <div class="oc-sub">Broken power law with spectral softening above E&#8320; (Band 1993). Better for large events.</div>
+        <span class="oc-badge badge-blue">BAND_FUNCTION</span></div>
+      <div class="opt-card spec-card" id="sc-table" onclick="setSpec('TABLE',this)"><div class="oc-icon">&#128203;</div>
+        <div class="oc-title">Table Upload</div>
+        <div class="oc-sub">Upload measured spectrum from GOES-15/16 or EPAM as 2-column ASCII.</div>
+        <span class="oc-badge badge-orange">TABLE FILE</span></div>
+    </div>
+    <div id="pl-form" class="subsection">
+      <div class="subsection-title">Power Law: J(E) = J&#8320; &middot; (E / E&#8320;)^&#8722;&#947;</div>
+      <div class="frow c3">
+        <div class="field"><label>J&#8320; <span class="unit">[p/cm&#178;/s/sr/(MeV/n)]</span></label>
+          <input id="spec-j0" type="number" value="10000" step="100" min="0.001" oninput="drawSpec()"/>
+          <div class="hint">Flux normalization at pivot energy E&#8320;.</div></div>
+        <div class="field"><label>&#947; — Spectral index</label>
+          <input id="spec-gamma" type="number" value="3.5" step="0.1" min="0.5" max="10" oninput="drawSpec()"/>
+          <div class="hint">Typical SEP: 2&#8211;5. Harder spectra (&#947;&lt;3) penetrate deeper into the magnetosphere.</div></div>
+        <div class="field"><label>E&#8320; — Pivot <span class="unit">[MeV/n]</span></label>
+          <input id="spec-e0" type="number" value="10" step="1" min="0.1" oninput="drawSpec()"/>
+          <div class="hint">Reference energy. Convention: 10 MeV/n.</div></div>
+      </div>
+    </div>
+    <div id="band-form" style="display:none;" class="subsection">
+      <div class="subsection-title">Band Function: broken power law with e-folding</div>
+      <div class="frow c4">
+        <div class="field"><label>J&#8320;</label><input id="band-j0" type="number" value="10000" step="100" oninput="drawSpec()"/></div>
+        <div class="field"><label>&#947;&#8321; — low-E slope</label><input id="band-gamma1" type="number" value="3.5" step="0.1" oninput="drawSpec()"/><div class="hint">Below E<sub>break</sub></div></div>
+        <div class="field"><label>&#947;&#8322; — high-E slope</label><input id="band-gamma2" type="number" value="1.5" step="0.1" oninput="drawSpec()"/><div class="hint">Above E<sub>break</sub></div></div>
+        <div class="field"><label>E&#8320; <span class="unit">[MeV/n]</span></label><input id="band-e0" type="number" value="10" step="1" oninput="drawSpec()"/></div>
+      </div>
+    </div>
+    <div id="table-form" style="display:none;" class="subsection">
+      <div class="subsection-title">Table Upload — sep_spectrum_H+.txt</div>
+      <div class="infobox info-blue">Two-column whitespace-delimited ASCII: <code>E[MeV/n]   dJ/dE</code>. Min 5 points. Range must span E<sub>min</sub> to E<sub>max</sub>.</div>
+      <div class="dropzone" id="spec-dropzone" onclick="this.classList.toggle('loaded')"><div class="dz-icon">&#128194;</div>
+        <div class="dz-primary">Drop sep_spectrum_H+.txt or click to browse</div>
+        <div class="dz-sub">2-col ASCII: E[MeV/n]  dJ/dE[p/cm&#178;/s/sr/(MeV/n)]</div></div>
+    </div>
+    <div class="spectrum-display">
+      <div class="spec-title">Spectrum Preview &#8212; log J vs log E</div>
+      <div class="spec-chart-wrap"><canvas id="spec-canvas" style="width:100%;height:160px;"></canvas></div>
+      <div style="display:flex;gap:16px;font-size:10px;color:var(--text-dim);margin-top:8px;align-items:center;">
+        <span>Energy range:</span>
+        <input id="spec-emin" type="number" value="1" step="0.5" min="0.1" style="width:65px;padding:4px 6px;font-size:11px;background:var(--bg-inset);border:1px solid var(--border);color:var(--text);border-radius:4px;font-family:var(--font-mono);" oninput="drawSpec()"/>
+        <span>to</span>
+        <input id="spec-emax" type="number" value="1000" step="10" min="10" style="width:80px;padding:4px 6px;font-size:11px;background:var(--bg-inset);border:1px solid var(--border);color:var(--text);border-radius:4px;font-family:var(--font-mono);" oninput="drawSpec()"/>
+        <span>MeV/n</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-5" class="step-panel">
+<div class="sect" id="s-output">
+  <div class="sect-hd" onclick="toggleSection('s-output')">
+    <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128205;</div>
+    <div><div class="sect-title">Output Domain &#8212; Where to Compute Flux &amp; Cutoff Rigidity</div>
+    <div style="font-size:11px;color:var(--text-dim)">Mode A: individual points &middot; Mode B: spacecraft trajectory &middot; Mode C: spherical shells</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 7</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="opt-grid c3">
+      <div class="opt-card mode-card" id="mc-points" onclick="setMode('POINTS',this)"><div class="oc-icon">&#128204;</div>
+        <div class="oc-title">Mode A &#8212; Individual Points</div>
+        <div class="oc-sub">List of (lat, lon, alt) or GSM (X,Y,Z) locations. Up to 500 entries. Best for specific positions.</div>
+        <span class="oc-badge badge-green">POINTS</span></div>
+      <div class="opt-card sel mode-card" id="mc-traj" onclick="setMode('TRAJECTORY',this)"><div class="oc-icon">&#128760;</div>
+        <div class="oc-title">Mode B &#8212; Spacecraft Trajectory</div>
+        <div class="oc-sub">NAIRAS-format timestamped trajectory (Gregorian or MJD). Direct comparison with in situ data.</div>
+        <span class="oc-badge badge-green">TRAJECTORY</span></div>
+      <div class="opt-card mode-card" id="mc-shells" onclick="setMode('SHELLS',this)"><div class="oc-icon">&#127760;</div>
+        <div class="oc-title">Mode C &#8212; Spherical Shells</div>
+        <div class="oc-sub">Global 2D cutoff maps at 1&#8211;5 altitudes. World maps and SAA visualization.</div>
+        <span class="oc-badge badge-green">SHELLS</span></div>
+    </div>
+    <div id="panel-mode-b">
+      <div class="frow c2" style="margin-bottom:14px;">
+        <div class="field"><label>Coordinate System</label>
+          <select id="coord-sys">
+            <option value="GEO" selected>GEO (default &#8212; NAIRAS native)</option>
+            <option value="GSM">GSM</option><option value="SM">SM</option>
+          </select>
+        </div>
+        <div class="field"><label>Flux Output Interval <span class="unit">[min]</span></label>
+          <input id="flux-dt" type="number" value="1.0" step="0.5" min="0.1" max="60" oninput="liveUpdate()"/>
+          <div class="hint">1 min matches Van Allen Probe spin averaging. Maps to FLUX_DT.</div>
+        </div>
+      </div>
+      <div class="dropzone" id="traj-dropzone" onclick="loadTrajExample()">
+        <div class="dz-icon">&#128760;</div>
+        <div class="dz-primary">Drop trajectory file or click to load Sep 2017 Van Allen Probe A example</div>
+        <div class="dz-sub">NAIRAS Gregorian (9 cols) or MJD (4 cols) &middot; .txt / .csv / .dat</div>
+      </div>
+      <div id="traj-preview-panel" style="display:none;margin-top:12px;">
+        <div class="hlabel"><h4>Parsed Trajectory Preview</h4><span style="font-size:11px;color:var(--green);">&#10003; All validation checks passed</span></div>
+        <div style="overflow-x:auto;">
+        <table class="traj-table">
+          <tr><th>YYYY</th><th>MM DD</th><th>HH mm ss.s</th><th>Lat [&#176;]</th><th>Lon [&#176;]</th><th>Alt [km]</th><th>OK?</th></tr>
+          <tr><td class="c-year">2017</td><td class="c-date">09 07</td><td class="c-time">00 00 00.0</td><td class="c-lat">-12.75</td><td class="c-lon">140.33</td><td class="c-alt">21045.8</td><td class="c-ok">&#10003;</td></tr>
+          <tr><td class="c-year">2017</td><td class="c-date">09 07</td><td class="c-time">00 01 00.0</td><td class="c-lat">-12.48</td><td class="c-lon">141.92</td><td class="c-alt">21089.4</td><td class="c-ok">&#10003;</td></tr>
+          <tr><td style="font-family:var(--font-mono);color:var(--text-muted)" colspan="7" style="text-align:center">&#8230; 14,408 more rows &#8230;</td></tr>
+          <tr><td class="c-year">2017</td><td class="c-date">09 10</td><td class="c-time">19 59 00.0</td><td class="c-lat">+62.31</td><td class="c-lon">-94.20</td><td class="c-alt">36418.5</td><td class="c-ok">&#10003;</td></tr>
+        </table>
+        </div>
+        <table class="val-table" style="margin-top:8px;">
+          <tr><th>Check</th><th>Result</th></tr>
+          <tr><td>Row count (14,412)</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>Monotonic timestamps</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>Latitude range (&#8722;65.3&#176; to +65.3&#176;)</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>Altitude range (21,000&#8211;36,500 km)</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>Overlaps TS05 event window</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>No duplicate timestamps</td><td class="vt-pass">&#10003; PASS</td></tr>
+          <tr><td>Gregorian (9-col) format</td><td class="vt-pass">&#10003; PASS</td></tr>
+        </table>
+      </div>
+      <div class="fmt-diagram" style="margin-top:12px;">
+        <div class="fmt-title"><div class="fmt-title-left"><span class="fmt-title-icon">&#128196;</span>NAIRAS Trajectory Format &#8212; Gregorian</div><span class="fmt-sub">9 cols whitespace-delimited &middot; UTC &middot; comment: #</span></div>
+        <div class="fmt-sample">
+          <span class="f-comment"># YYYY MM DD HH mm ss.s   Lat[deg]  Lon[deg]  Alt[km]</span><br>
+          <span class="f-year">2017</span> <span class="f-mon">09</span> <span class="f-day">10</span> <span class="f-hr">16</span> <span class="f-min">00</span> <span class="f-sec">00.0</span>  <span class="f-lat">-12.75</span>  <span class="f-lon">140.33</span>  <span class="f-alt">21045.8</span>
+        </div>
+        <div class="fmt-legend">
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#38c0ff"></div><div><div class="fmt-leg-name">YYYY</div><div class="fmt-leg-desc">4-digit year</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#5aeacf"></div><div><div class="fmt-leg-name">MM DD</div><div class="fmt-leg-desc">Month, day</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#a8d8ff"></div><div><div class="fmt-leg-name">HH mm</div><div class="fmt-leg-desc">UTC hour, minute</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#c5e8ff"></div><div><div class="fmt-leg-name">ss.s</div><div class="fmt-leg-desc">Seconds (sub-second)</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff9a3c"></div><div><div class="fmt-leg-name">Lat [&#176;]</div><div class="fmt-leg-desc">Geocentric &#8722;90 to +90</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ffb866"></div><div><div class="fmt-leg-name">Lon [&#176;]</div><div class="fmt-leg-desc">East longitude &#8722;180 to +180</div></div></div>
+          <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ffd04b"></div><div><div class="fmt-leg-name">Alt [km]</div><div class="fmt-leg-desc">Altitude above WGS-84</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="panel-mode-a" style="display:none;" class="subsection">
+      <div class="subsection-title">Individual Points</div>
+      <div class="infobox info-blue">Enter up to 500 (lat, lon, alt) points. One per line: <code>lat lon alt_km</code>. Or use GSM mode: <code>X Y Z RE</code>.</div>
+      <div class="field"><label>Point List</label>
+        <textarea rows="5" placeholder="51.5  -0.12  450.0&#10;28.5  -81.4  400.0&#10;&#8230;"></textarea></div>
+    </div>
+    <div id="panel-mode-c" style="display:none;" class="subsection">
+      <div class="subsection-title">Spherical Shell Configuration</div>
+      <div class="frow c3">
+        <div class="field"><label>Number of Shells</label><select id="shell-count"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        <div class="field"><label>Shell 1 Altitude <span class="unit">[km]</span></label><input type="number" value="450" step="10"/><div class="hint">ISS orbit ~410 km, GPS ~20200 km</div></div>
+        <div class="field"><label>Grid Resolution</label><select><option value="1">1&#176; &#215; 1&#176;</option><option value="2">2&#176; &#215; 2&#176;</option><option value="5">5&#176; &#215; 5&#176;</option></select></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-6" class="step-panel">
+<div class="sect" id="s-out-opts">
+  <div class="sect-hd" onclick="toggleSection('s-out-opts')">
+    <div class="sect-icon" style="background:rgba(26,136,212,.15)">&#9881;</div>
+    <div><div class="sect-title">Output Options &#8212; Flux Type, Energy Bins, File Format</div>
+    <div style="font-size:11px;color:var(--text-dim)">Maps to #OUTPUT_OPTIONS and ENERGY_BINS in AMPS_PARAM.in.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 8</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="subsection">
+      <div class="subsection-title">Flux Type</div>
+      <div class="tog">
+        <button class="tog-btn on flux-type-btn" data-type="DIFFERENTIAL" onclick="setFluxType('DIFFERENTIAL',this)">Differential &#8201; dJ/dE</button>
+        <button class="tog-btn flux-type-btn" data-type="INTEGRAL" onclick="setFluxType('INTEGRAL',this)">Integral &#8201; J(&gt;E)</button>
+        <button class="tog-btn flux-type-btn" data-type="BOTH" onclick="setFluxType('BOTH',this)">Both</button>
+      </div>
+      <div class="frow c2" style="margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px;">
+          <input id="output-cutoff" type="checkbox" checked style="width:14px;height:14px;accent-color:var(--accent);"/>
+          <label for="output-cutoff" style="cursor:pointer;">Output cutoff rigidity maps <span class="tag tag-new">R<sub>c</sub></span></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px;">
+          <input id="output-pitch" type="checkbox" style="width:14px;height:14px;accent-color:var(--accent);"/>
+          <label for="output-pitch" style="cursor:pointer;">Output pitch angle distributions (PAD) <span class="tag tag-exp">large files</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="subsection">
+      <div class="hlabel"><h4>Energy Bins <span class="unit">[MeV/n]</span></h4>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="preset-bins" onchange="applyBinPreset(this.value)" style="font-size:11px;padding:4px 8px;background:var(--bg-inset);border:1px solid var(--border);color:var(--text);border-radius:4px;">
+            <option value="">Load preset&#8230;</option>
+            <option value="default">Default (7 bins)</option>
+            <option value="fine">Fine LEP (16 bins)</option>
+            <option value="goes">GOES-16 compatible (8 bins)</option>
+            <option value="broad">Broad survey (4 bins)</option>
+          </select>
+        </div>
+      </div>
+      <div id="ebin-list"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <input id="new-bin-val" type="number" step="any" min="0.01" placeholder="Add bin [MeV/n]" style="width:160px;padding:6px 10px;font-size:11px;background:var(--bg-inset);border:1px solid var(--border);color:var(--text);border-radius:4px;font-family:var(--font-mono);"/>
+        <button class="btn-secondary btn-sm" onclick="addBin()">+ Add Energy Bin</button>
+        <span id="total-output-size" style="font-size:10px;color:var(--text-muted);margin-left:auto;">~5.6 GB output</span>
+      </div>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">Output File Format &amp; Coordinates</div>
+      <div class="frow c3">
+        <div class="field"><label>Output Format</label>
+          <select id="output-format" onchange="liveUpdate()">
+            <option value="NETCDF4" selected>NetCDF4 (recommended)</option>
+            <option value="HDF5">HDF5</option>
+            <option value="ASCII">ASCII (large files)</option>
+          </select>
+          <div class="hint">NetCDF4 compatible with Python/xarray and IDL.</div>
+        </div>
+        <div class="field"><label>Output Coordinates</label>
+          <select id="output-coords" onchange="liveUpdate()">
+            <option value="GEO" selected>GEO (geographic)</option>
+            <option value="GSM">GSM</option>
+            <option value="SM">SM (solar magnetic)</option>
+          </select>
+        </div>
+        <div class="field"><label>Compression Level</label>
+          <select id="compress-level">
+            <option value="4" selected>4 (balanced)</option>
+            <option value="1">1 (fast, large)</option>
+            <option value="9">9 (slow, small)</option>
+            <option value="0">0 (none)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<div id="panel-7" class="step-panel">
+<div class="sect" id="s-review">
+  <div class="sect-hd" onclick="toggleSection('s-review')">
+    <div class="sect-icon" style="background:rgba(45,212,160,.15)">&#128203;</div>
+    <div><div class="sect-title">Review &amp; Submit</div>
+    <div style="font-size:11px;color:var(--text-dim)">Final validation, AMPS_PARAM.in preview, file manifest, submission</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 9</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+    <div class="hlabel"><h4>Validation Summary</h4><span id="review-summary" style="font-size:11px;"></span></div>
+    <div class="review-block" id="review-checks"></div>
+    <div class="hlabel" style="margin-top:16px;"><h4>File Manifest</h4></div>
+    <div style="overflow-x:auto;margin-bottom:16px;">
+    <table class="val-table">
+      <tr><th>Filename</th><th>Role</th><th>Required?</th><th>Source</th><th>Status</th></tr>
+      <tbody id="manifest-tbody"></tbody>
+    </table>
+    </div>
+    <div class="hlabel"><h4>AMPS_PARAM.in &#8212; Generated Configuration File</h4>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary btn-sm" id="copy-param" onclick="copyParam()">&#128203; Copy</button>
+        <button class="btn-secondary btn-sm" id="download-param" onclick="downloadParam()">&#8681; Download</button>
+      </div>
+    </div>
+    <pre class="review-param-file" id="review-param" style="max-height:460px;overflow:auto;"></pre>
+    <div style="margin-top:16px;padding:16px;background:rgba(45,212,160,.04);border:1px solid rgba(45,212,160,.2);border-radius:var(--radius-lg);text-align:center;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">Ready to submit your run to CCMC?</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:14px;">Estimated queue: <b style="color:var(--orange)">1&#8211;3 days</b> &middot; Compute cost: <b style="color:var(--orange)">~5,000 SBU</b> &middot; Notification will be sent to your PI email.</div>
+      <button class="btn-primary" id="submit-btn-final" onclick="finalSubmit()" style="font-size:14px;padding:11px 32px;">&#128640; Submit Run to CCMC</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="side-col">
+  <div class="sb-card">
+    <div class="sb-title">Configuration Summary</div>
+    <div class="progress"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div style="font-size:10px;color:var(--text-dim);text-align:right;margin-bottom:8px;"><span id="progress-pct">0%</span> complete</div>
+    <div class="sb-row"><div class="sb-k">Run name</div><div class="sb-v o" id="sb-run-name">(not set)</div></div>
+    <div class="sb-row"><div class="sb-k">Species</div><div class="sb-v g" id="sb-species">H+ proton</div></div>
+    <div class="sb-row"><div class="sb-k">Field model</div><div class="sb-v g" id="sb-field-model">TS05</div></div>
+    <div class="sb-row"><div class="sb-k">Boundary</div><div class="sb-v g" id="sb-boundary">Shue 1998</div></div>
+    <div class="sb-row"><div class="sb-k">Temporal mode</div><div class="sb-v" id="sb-temporal">TIME SERIES</div></div>
+    <div class="sb-row"><div class="sb-k">Spectrum</div><div class="sb-v" id="sb-spec-type">POWER LAW</div></div>
+    <div class="sb-row"><div class="sb-k">Output mode</div><div class="sb-v" id="sb-output-mode">TRAJECTORY</div></div>
+  </div>
+  <div class="sb-card">
+    <div class="sb-title">Compute Estimate</div>
+    <div class="sb-row"><div class="sb-k">Est. queue wait</div><div class="sb-v o" id="est-queue">4–8 hours</div></div>
+    <div class="sb-row"><div class="sb-k">Compute cost</div><div class="sb-v o" id="est-sbu">~5,000 SBU</div></div>
+    <div class="sb-row"><div class="sb-k">Output size</div><div class="sb-v" id="est-output">~5.6 GB</div></div>
+  </div>
+  <div class="sb-card">
+    <div class="sb-title">TS05 Storm Params</div>
+    <div class="sb-row"><div class="sb-k">Dst</div><div class="sb-v r">−142 nT</div></div>
+    <div class="sb-row"><div class="sb-k">Pdyn</div><div class="sb-v">3.5 nPa</div></div>
+    <div class="sb-row"><div class="sb-k">IMF Bz</div><div class="sb-v r">−18.5 nT</div></div>
+    <div class="sb-row"><div class="sb-k">Shue r₀</div><div class="sb-v g">8.56 RE</div></div>
+  </div>
+  <div class="sb-card">
+    <div class="sb-title">AMPS_PARAM.in Preview</div>
+    <pre id="sb-param-preview" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);overflow:hidden;max-height:140px;white-space:pre-wrap;line-height:1.6;">#BACKGROUND_FIELD
+FIELD_MODEL     TS05
+TS05_DST        -142.0
+TS05_PDYN       3.50
+BOUNDARY_TYPE   SHUE
+SHUE_R0         AUTO
+TEMPORAL_MODE   TIME_SERIES</pre>
+  </div>
+  <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="openHelpModal()">? Help &amp; Documentation</button>
+</div>
+
+</div>
+
+<div class="submit-bar">
+  <button class="btn-secondary" id="btn-prev" onclick="prevStep()" disabled>&#8592; Previous</button>
+  <button class="btn-primary" id="btn-next" onclick="nextStep()">Next Step &#8594;</button>
+  <button class="btn-primary" id="btn-submit" style="display:none;" onclick="goToReview()">&#128203; Review &amp; Submit</button>
+  <div class="run-est">
+    <span>Est. queue: <b id="est-queue">4&#8211;8 h</b></span>
+    <span>Compute: <b id="est-sbu">~5,000 SBU</b></span>
+    <span>Output: <b id="est-output">~5.6 GB</b></span>
+  </div>
+</div>
+
+
+<div id="help-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-xl);padding:28px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:15px;color:#fff;">AMPS Documentation &amp; Help</h3>
+      <button onclick="document.getElementById('help-modal').style.display='none'" style="background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;">&#10005;</button>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">
+      <div style="margin-bottom:12px;"><b style="color:var(--text);">AMPS v2025 Model</b><br>
+      Adaptive Magnetospheric Particle Simulator — traces SEPs and GCRs backward in time through a TS05-specified geomagnetic field to compute energy-dependent particle access and cutoff rigidity.</div>
+      <div style="margin-bottom:12px;"><b style="color:var(--text);">Key References</b><br>
+      &#8226; Tsyganenko &amp; Sitnov (2005) — TS05 field model<br>
+      &#8226; Shue et al. (1998) JGR 103, 17691 — magnetopause model<br>
+      &#8226; Smart &amp; Shea (1985) — cosmic ray cutoff rigidity method</div>
+      <div style="margin-bottom:12px;"><b style="color:var(--text);">CCMC Contact</b><br>
+      <a href="/cdn-cgi/l/email-protection#1073737d73507e7163713e777f66" style="color:var(--accent);"><span class="__cf_email__" data-cfemail="6f0c0c020c2f010e1c0e41080019">[email&#160;protected]</span></a> &nbsp;|&nbsp;
+      <a href="https://ccmc.gsfc.nasa.gov" style="color:var(--accent);" target="_blank">ccmc.gsfc.nasa.gov</a></div>
+    </div>
+  </div>
+</div>
+
+
+<div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-panel);border:1px solid var(--green);border-radius:var(--radius-xl);padding:36px;max-width:520px;width:92%;text-align:center;">
+    <div style="font-size:52px;margin-bottom:16px;">&#128640;</div>
+    <h2 style="color:var(--green);margin-bottom:8px;">Run Submitted!</h2>
+    <p style="color:var(--text-dim);margin-bottom:14px;font-size:13px;line-height:1.7;">Your run has been queued at CCMC.<br>
+    Estimated queue wait: <b style="color:var(--orange)">1&#8211;3 business days</b><br>
+    Compute cost: <b style="color:var(--orange)">~5,000 SBU</b></p>
+    <p style="font-size:11px;color:var(--text-muted);">Confirmation will be sent to your PI email. You can track status at <a href="https://ccmc.gsfc.nasa.gov" style="color:var(--accent);">ccmc.gsfc.nasa.gov</a>.</p>
+    <button class="btn-primary" style="margin-top:20px;" onclick="document.getElementById('submit-modal').style.display='none'">Close</button>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+
+/* ═══════════════════════════════════════════════════════════════════
+   AMPS CCMC — INLINE APPLICATION SCRIPT
+   All interactive logic for the 9-step submission wizard.
+   Separated into logical sections:
+     1. State & Constants
+     2. Wizard Navigation
+     3. Step-specific handlers
+     4. SVG diagram renderers (Box + Shue)
+     5. Spectrum canvas
+     6. Review & param file builder
+     7. Init
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. GLOBAL STATE ─────────────────────────────────────────────── */
+const S = {
+  step: 1, done: new Set(),
+  runName:'SEP_Sep2017_VanAllenProbeA', piName:'', piEmail:'', institution:'',
+  species:'proton', charge:1, mass:1.0073,
+  fieldModel:'TS05', dst:-142.0, pdyn:3.5, bz:-18.5, vx:-650.0, nsw:12.0, by:3.2, bx:0.0,
+  epoch:'2017-09-10T16:00',
+  boundaryType:'SHUE', shueMode:'auto',
+  boxXmax:15, boxXmin:-60, boxYmax:25, boxYmin:-25, boxZmax:20, boxZmin:-20, boxRinner:2.0,
+  shueR0:null, shueAlpha:null, xtail:-60, shueRinner:2.0,
+  tempMode:'TIME_SERIES', eventStart:'2017-09-07T00:00', eventEnd:'2017-09-10T20:00',
+  fieldDt:5, injectDt:30, tsSource:'omni',
+  specType:'POWER_LAW', specJ0:10000, specGamma:3.5, specE0:10, specEmin:1, specEmax:1000,
+  outputMode:'TRAJECTORY', fluxDt:1.0, trajLoaded:false,
+  fluxType:'DIFFERENTIAL', outputCutoff:true, outputPitch:false,
+  outputFormat:'NETCDF4', outputCoords:'GEO',
+  energyBins:[1,5,10,30,100,300,1000],
+};
+
+const $ = id => document.getElementById(id);
+const CX=200, CY=160, SC=5; // SVG canvas centre & scale
+
+/* ── 2. WIZARD NAVIGATION ────────────────────────────────────────── */
+function goStep(n) {
+  if(n < 1 || n > 9) return;
+  S.done.add(S.step);
+  S.step = n;
+  for(let i=1;i<=9;i++) {
+    const p=$(`panel-${i}`); if(p) p.classList.toggle('active', i===n);
+    const el=document.querySelectorAll('.wz-step')[i-1];
+    if(el){ el.classList.remove('done','active');
+      if(S.done.has(i)) el.classList.add('done');
+      else if(i===n) el.classList.add('active'); }
+  }
+  $('btn-prev').disabled = n===1;
+  $('btn-next').style.display = n<9?'inline-flex':'none';
+  $('btn-submit').style.display = n===9?'inline-flex':'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateSidebar();
+  if(n===9) buildReview();
+}
+function nextStep(){ goStep(S.step+1); }
+function prevStep(){ goStep(S.step-1); }
+function goToReview(){ goStep(9); }
+
+// Init wizard step indicators
+document.querySelectorAll('.wz-step').forEach((el,i)=>{
+  el.addEventListener('click',()=>goStep(i+1));
+});
+
+/* ── 3a. SECTION COLLAPSE ────────────────────────────────────────── */
+function toggleSection(id){
+  const el=$(id); if(el) el.classList.toggle('closed');
+}
+
+/* ── 3b. STEP 1 HANDLERS ─────────────────────────────────────────── */
+function liveUpdate(){
+  S.runName = $('run-name')?.value||S.runName;
+  updateSidebar();
+}
+function goalHint(v){
+  const hints = {
+    storm_validation: 'Compare AMPS-predicted cutoff rigidity with Van Allen Probe particle data during storm main phase.',
+    gcr_baseline:     'Compute galactic cosmic ray fluxes at LEO under quiet geomagnetic conditions (Dst ≈ 0 nT).',
+    sep_radiation:    'Quantify SEP fluence and dose at ISS altitude during a major solar particle event.',
+    parameter_study:  'Systematic sensitivity study: vary Dst, Pdyn, and spectral index to map uncertainty space.',
+    custom:           'Describe your science goal in the text area above.',
+  };
+  const el=$('goal-hint'); if(el) el.textContent = hints[v]||'';
+}
+function charCount(el,cid,max){
+  const n=el.value.length, c=$(cid);
+  if(c){ c.textContent=n+'/'+max;
+    c.className='char-count'+(n>max*0.9?' near':'')+(n>max?' over':''); }
+}
+
+/* ── 3c. STEP 2 PARTICLE ─────────────────────────────────────────── */
+const SPECIES={
+  proton:  {Z:1,  A:1.0073,  label:'H⁺ Proton'},
+  helium:  {Z:2,  A:4.0026,  label:'He²⁺ Alpha'},
+  oxygen:  {Z:8,  A:15.999,  label:'O⁸⁺'},
+  electron:{Z:-1, A:0.000549,label:'e⁻ Electron'},
+  iron:    {Z:26, A:55.845,  label:'Fe²⁶⁺'},
+  custom:  {Z:1,  A:1.0,     label:'Custom'},
+};
+function selectSpecies(key,card){
+  const sp=SPECIES[key]; if(!sp) return;
+  S.species=key; S.charge=sp.Z; S.mass=sp.A;
+  document.querySelectorAll('.opt-card[id^="sp-"]').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  $('custom-species-panel').style.display=key==='custom'?'block':'none';
+  if(key!=='custom'){
+    const ci=$('charge-input'), mi=$('mass-input');
+    if(ci) ci.value=sp.Z; if(mi) mi.value=sp.A;
+  }
+  updateRigidity();
+}
+function updateRigidity(){
+  const q=Math.abs(S.charge||1), A=S.mass||1;
+  const E=100, mp=938.272;
+  const Etot=E*A+A*mp, p=Math.sqrt(Etot**2-(A*mp)**2), R=p/(q*1000);
+  const el=$('rigidity-info'); if(el) el.textContent=`R = ${R.toFixed(3)} GV at 100 MeV/n`;
+}
+
+/* ── 3d. STEP 3 TS05 ─────────────────────────────────────────────── */
+function ts05Change(){
+  const v = k => parseFloat($(k)?.value)||0;
+  S.dst=v('ts05-dst'); S.pdyn=v('ts05-pdyn'); S.bz=v('ts05-bz');
+  S.vx=v('ts05-vx');   S.nsw=v('ts05-nsw');   S.by=v('ts05-by'); S.bx=v('ts05-bx');
+  S.epoch=$('ts05-epoch')?.value||S.epoch;
+  validateTs05();
+  updateKwPreview();
+  bndShueUpdate(); // Shue params depend on Bz, Pdyn
+  updateSidebar();
+}
+const TS05R={
+  dst:{lo:-600,hi:50,wl:-300,wh:50},pdyn:{lo:0.1,hi:30,wl:0.5,wh:20},
+  bz:{lo:-50,hi:20,wl:-30,wh:15},vx:{lo:-900,hi:-200,wl:-800,wh:-200},
+  nsw:{lo:0.5,hi:80,wl:1,wh:50},by:{lo:-40,hi:40},bx:{lo:-40,hi:40},
+};
+function validateTs05(){
+  Object.entries(TS05R).forEach(([key,r])=>{
+    const v=S[key]; if(v===undefined) return;
+    const el=$(`ts05-${key}`), st=$(`ts05-${key}-status`);
+    if(!el) return;
+    el.classList.remove('valid','warn','error');
+    if(v<r.lo||v>r.hi){ el.classList.add('error'); if(st){st.textContent='✗ Out of TS05 range';st.style.color='var(--red)';} }
+    else if((r.wl&&v<r.wl)||(r.wh&&v>r.wh)){ el.classList.add('warn'); if(st){st.textContent='⚠ Unusual — verify data source';st.style.color='var(--orange)';} }
+    else{ el.classList.add('valid'); if(st){st.textContent='✓ Within normal range';st.style.color='var(--green)';} }
+  });
+}
+function updateKwPreview(){
+  const f=(v,d)=>Number(v).toFixed(d);
+  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  set('kv-dst', f(S.dst,1)); set('kv-pdyn',f(S.pdyn,2)); set('kv-bz',f(S.bz,2));
+  set('kv-vx',  f(S.vx,1));  set('kv-nsw', f(S.nsw,2)); set('kv-by', f(S.by,2));
+  set('kv-bx',  f(S.bx,2));  set('kv-epoch', S.epoch);
+}
+
+/* ── 3e. STEP 4 BOUNDARY ─────────────────────────────────────────── */
+function bndSet(type){
+  S.boundaryType=type;
+  $('bc-box')?.classList.toggle('sel',type==='BOX');
+  $('bc-shue')?.classList.toggle('sel',type==='SHUE');
+  $('bnd-box-panel').style.display=type==='BOX'?'block':'none';
+  $('bnd-shue-panel').style.display=type==='SHUE'?'block':'none';
+  if(type==='SHUE') bndShueUpdate(); else bndBoxUpdate();
+  updateSidebar();
+}
+function shueMode(m){
+  S.shueMode=m;
+  $('shue-auto-btn')?.classList.toggle('on',m==='auto');
+  $('shue-manual-btn')?.classList.toggle('on',m==='manual');
+  $('shue-manual-fields').style.display=m==='manual'?'block':'none';
+  $('shue-auto-box').style.opacity=m==='manual'?'0.5':'1';
+  bndShueUpdate();
+}
+function shueCalc(){
+  const bz=S.bz, pd=Math.max(0.1,S.pdyn);
+  const r0=Math.max(4,Math.min(15,(11.4+0.013*bz)*Math.pow(pd,-1/6.6)));
+  const al=Math.max(0.3,Math.min(0.9,(0.58-0.007*bz)*(1+0.024*Math.log(pd))));
+  return {r0,alpha:al};
+}
+function getShue(){
+  if(S.shueMode==='manual'&&S.shueR0&&S.shueAlpha) return {r0:S.shueR0,alpha:S.shueAlpha};
+  return shueCalc();
+}
+function shueR(r0,al,deg){
+  const th=deg*Math.PI/180, d=1+Math.cos(th); return d<1e-9?Infinity:r0*Math.pow(2/d,al);
+}
+// Map GSM → SVG
+const gx=re=>CX+re*SC, gz=re=>CY-re*SC, cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+function bndBoxUpdate(){
+  const v=k=>parseFloat($(k)?.value)||0;
+  S.boxXmax=v('box-xmax'); S.boxXmin=v('box-xmin'); S.boxYmax=v('box-ymax');
+  S.boxYmin=v('box-ymin'); S.boxZmax=v('box-zmax'); S.boxZmin=v('box-zmin');
+  S.boxRinner=v('box-rinner');
+  // Draw rectangle
+  const rx=cl(gx(S.boxXmin),5,390), ry=cl(gz(S.boxZmax),5,310);
+  const rw=cl(gx(S.boxXmax),5,390)-rx, rh=cl(gz(S.boxZmin),5,310)-ry;
+  const rect=$('box-rect');
+  if(rect){ rect.setAttribute('x',rx); rect.setAttribute('y',ry);
+            rect.setAttribute('width',Math.max(0,rw)); rect.setAttribute('height',Math.max(0,rh)); }
+  const ib=$('inner-box'); if(ib) ib.setAttribute('r',S.boxRinner*SC);
+  const sl=(id,t,x,y)=>{ const e=$(id); if(e){e.setAttribute('x',x);e.setAttribute('y',y);e.textContent=t;} };
+  sl('box-lbl-xmax','Xmax='+S.boxXmax, cl(gx(S.boxXmax)+2,10,360), CY+14);
+  sl('box-lbl-xmin','Xmin='+S.boxXmin, cl(gx(S.boxXmin)-34,5,300), CY+14);
+  sl('box-lbl-zmax','Zmax='+S.boxZmax, CX+4, cl(gz(S.boxZmax)-3,14,306));
+  sl('box-lbl-zmin','Zmin='+S.boxZmin, CX+4, cl(gz(S.boxZmin)+11,14,306));
+  // Validation
+  const vi=(id,ok,okTxt,failTxt)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="v-ok">${okTxt}</span>`:`<span class="v-warn">${failTxt}</span>`; };
+  vi('bv-xrange', S.boxXmax>9,  '✓ Dayside OK',       '⚠ Xmax < 9 RE');
+  vi('bv-yrange', S.boxYmax>=15,'✓ Flanks OK',        '⚠ Y < 15 RE');
+  vi('bv-zrange', S.boxZmax>12&&Math.abs(S.boxZmin)>12,'✓ Z range OK','⚠ |Z| < 12 RE');
+  vi('bv-inner',  S.boxRinner>=1.5&&S.boxRinner<=3.5,  '✓ R_inner OK','⚠ Typical 1.5–3.5 RE');
+  // KW
+  ['xmax','xmin','ymax','ymin','zmax','zmin','rinner'].forEach(k=>{
+    const e=$('kw-'+k); if(e) e.textContent=Number(S['box'+k.charAt(0).toUpperCase()+k.slice(1)]).toFixed(1);
+  });
+}
+
+function bndShueUpdate(){
+  const v=k=>parseFloat($(k)?.value);
+  S.xtail=v('shue-xtail')||S.xtail;
+  S.shueRinner=v('shue-rinner')||S.shueRinner;
+  if(S.shueMode==='manual'){ S.shueR0=v('shue-r0-in')||null; S.shueAlpha=v('shue-alpha-in')||null; }
+  const {r0,alpha}=getShue();
+  // Update auto-compute display (r0, alpha, Xsub, Rflank)
+  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  set('shue-r0-val',    r0.toFixed(2));
+  set('shue-alpha-val', alpha.toFixed(3));
+  set('shue-xsub-val',  r0.toFixed(2));  // Xsub = r0 at θ=0°
+  const rFlank=shueR(r0,alpha,90);
+  set('shue-rflank-val', isFinite(rFlank)?rFlank.toFixed(1):'—');
+  // Build Shue path
+  const xtSvgX=cl(gx(S.xtail),8,390);
+  let upper=[],lower=[];
+  for(let d=0;d<=180;d+=1){
+    const r=shueR(r0,alpha,d); if(!isFinite(r)) continue;
+    const th=d*Math.PI/180, gx2=r*Math.cos(th), gz2=r*Math.sin(th);
+    if(gx2<S.xtail) continue;
+    upper.push([cl(gx(gx2),5,390), cl(gz(gz2),5,310)]);
+    lower.unshift([cl(gx(gx2),5,390), cl(gz(-gz2),5,310)]);
+  }
+  if(upper.length>1){
+    let path=`M ${upper[0][0]},${upper[0][1]}`;
+    upper.forEach(([x,y])=>path+=` L ${x},${y}`);
+    const tailZ=shueR(r0,alpha,179.9)*Math.sin(179.9*Math.PI/180);
+    path+=` L ${xtSvgX},${cl(gz(-tailZ),5,310)}`;
+    lower.forEach(([x,y])=>path+=` L ${x},${y}`);
+    path+=' Z';
+    $('shue-path')?.setAttribute('d',path);
+  }
+  // Tail cap
+  const tc=$('shue-tailcap');
+  if(tc){ tc.setAttribute('x1',xtSvgX); tc.setAttribute('x2',xtSvgX); tc.setAttribute('y1','20'); tc.setAttribute('y2','300'); }
+  const tl=$('shue-tailcap-lbl'); if(tl){ tl.setAttribute('x',xtSvgX+3); tl.textContent='Xtail='+S.xtail; }
+  // Inner boundary
+  const ish=$('inner-shue'); if(ish) ish.setAttribute('r',S.shueRinner*SC);
+  set('inner-shue-lbl', `R_in=${S.shueRinner} RE`);
+  // r₀ annotation arrow
+  const r0svgX=cl(gx(r0),10,385);
+  const r0line=$('shue-r0-line');
+  if(r0line){ r0line.setAttribute('x2',r0svgX); r0line.setAttribute('y2',CY); }
+  const r0lbl=$('shue-r0-lbl');
+  if(r0lbl){ r0lbl.setAttribute('x',cl(gx(r0/2),10,370)); r0lbl.textContent=`r₀=${r0.toFixed(1)}`; }
+  // Flank annotation arrow (Earth → terminator, X=0, Z=R_flank)
+  if(isFinite(rFlank)){
+    const flkSvgY=cl(gz(Math.min(rFlank,28)),10,300);
+    const flkLine=$('shue-flank-line');
+    if(flkLine){ flkLine.setAttribute('x1',CX); flkLine.setAttribute('y1',CY); flkLine.setAttribute('x2',CX); flkLine.setAttribute('y2',flkSvgY); }
+    const flkLbl=$('shue-flank-lbl');
+    if(flkLbl){ flkLbl.setAttribute('y',((flkSvgY+CY)/2).toFixed(1)); flkLbl.textContent=`Rflk=${rFlank.toFixed(1)}`; }
+  }
+  // Dynamic text readouts inside SVG
+  set('shue-svg-r0',    `r₀=${r0.toFixed(2)} RE`);
+  set('shue-svg-alpha', `α=${alpha.toFixed(3)}`);
+  set('shue-svg-dst',   `Dst=${S.dst<0?'−'+Math.abs(S.dst):S.dst} nT`);
+  set('shue-svg-pdyn',  `Pdyn=${S.pdyn} nPa`);
+  // Validation
+  const vi=(id,ok,okT,failT)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="bv-ok">${okT}</span>`:`<span class="bv-warn">${failT}</span>`; };
+  vi('sv-r0',    r0>5&&r0<13,          `✓ r₀=${r0.toFixed(2)} R<sub>E</sub> (storm-time)`, `⚠ r₀=${r0.toFixed(2)} — outside 5–13 R<sub>E</sub>`);
+  vi('sv-alpha', alpha>0.4&&alpha<0.8, `✓ α=${alpha.toFixed(3)} (normal range)`,            `⚠ α=${alpha.toFixed(3)} — outside 0.40–0.80`);
+  vi('sv-tail',  S.xtail<-20,          `✓ Tail cap at ${S.xtail} R<sub>E</sub>`,            `⚠ X_tail should be < −20 R<sub>E</sub>`);
+  // KW strip
+  const isM=S.shueMode==='manual';
+  set('kw-shue-r0',     isM?r0.toFixed(2):'AUTO');
+  set('kw-shue-alpha',  isM?alpha.toFixed(3):'AUTO');
+  set('kw-xtail',       S.xtail.toFixed(1));
+  set('kw-shue-rinner', S.shueRinner.toFixed(1));
+}
+
+/* ── 3f. STEP 5 TEMPORAL ─────────────────────────────────────────── */
+function setTempMode(m){
+  S.tempMode=m;
+  document.querySelectorAll('.temp-card').forEach(c=>c.classList.toggle('sel',c.dataset.mode===m));
+  $('ts-form').style.display=m!=='STEADY_STATE'?'block':'none';
+  updateSidebar();
+}
+function checkDtPair(){
+  const fd=parseFloat($('field-update-dt')?.value)||5;
+  const id=parseFloat($('inject-dt')?.value)||30;
+  S.fieldDt=fd; S.injectDt=id;
+  $('dt-warn').style.display = id<fd?'block':'none';
+  updateTimeline();
+}
+function updateTimeline(){
+  const tl=$('ts-timeline'); if(!tl) return;
+  tl.innerHTML='<div class="fu-axis"></div>';
+  const dur=120, fd=Math.max(1,S.fieldDt), id_=Math.max(1,S.injectDt);
+  for(let t=0;t<=dur;t+=fd){
+    const pct=(t/dur)*100;
+    const tick=document.createElement('div'); tick.className='fu-tick';
+    tick.style.left=pct+'%'; tl.appendChild(tick);
+    if(t%30===0){ const lbl=document.createElement('div'); lbl.className='fu-label'; lbl.style.left=pct+'%'; lbl.textContent=t+'m'; tl.appendChild(lbl); }
+  }
+  for(let t=id_;t<=dur;t+=id_){
+    const pct=(t/dur)*100;
+    const p=document.createElement('div'); p.className='fu-particle'; p.style.left=(pct-.5)+'%'; p.textContent='⚡'; tl.appendChild(p);
+  }
+}
+function setTsSource(btnOrSrc, src){
+  // Called as setTsSource(btn, 'omni') from new HTML or setTsSource('omni') from old refs
+  const mode = src || btnOrSrc;
+  S.tsSource=mode;
+  document.querySelectorAll('#ts-source-tog .tog-btn').forEach(b=>b.classList.remove('on'));
+  const btnId={'omni':'ts-omni-btn','file':'ts-file-btn','scalar':'ts-scalar-btn'}[mode];
+  if(btnId) $(btnId)?.classList.add('on');
+  $('omni-panel').style.display=mode==='omni'?'block':'none';
+  $('file-panel').style.display=mode==='file'?'block':'none';
+}
+function simulateOmniFetch(){
+  const cadSel=$('omni-cadence');
+  const cadMin=cadSel&&cadSel.value.startsWith('1 min')?1:cadSel&&cadSel.value.startsWith('1 hr')?60:5;
+  const startEl=$('event-start'), endEl=$('event-end');
+  const start=startEl?new Date(startEl.value):new Date('2017-09-07T00:00');
+  const end=endEl?new Date(endEl.value):new Date('2017-09-10T20:00');
+  const hrs=Math.max(0,(end-start)/(1000*3600));
+  const rowCount=Math.round(hrs*60/cadMin);
+  const msgs=[
+    `⏳ Querying omniweb.gsfc.nasa.gov for ${cadMin}-min OMNI…`,
+    '⏳ Querying wdc.kugi.kyoto-u.ac.jp for Dst / Sym-H…',
+    '⏳ Merging streams and gap-filling…',
+    '⏳ Generating preview and data quality report…'
+  ];
+  const steps=['os-1','os-2','os-3','os-4'];
+  steps.forEach(id=>{ const e=$(id); if(e){e.classList.remove('done');e.className='os-num pending';e.textContent=steps.indexOf(id)+1;} });
+  const st=$('omni-status'); if(st) st.innerHTML=`<span style="color:var(--orange)">${msgs[0]}</span>`;
+  let i=0;
+  const adv=()=>{
+    if(i>0){ const pe=$(steps[i-1]); if(pe){pe.className='os-num done';pe.textContent='✓';} }
+    if(i<steps.length){
+      const ce=$(steps[i]); if(ce){ce.className='os-num';ce.style.background='var(--orange)';ce.textContent='…';}
+      if(st&&msgs[i]) st.innerHTML=`<span style="color:var(--orange)">${msgs[i]}</span>`;
+      i++; setTimeout(adv,700);
+    } else {
+      const s=startEl?startEl.value.replace('T',' '):'-', e=endEl?endEl.value.replace('T',' '):'-';
+      if(st) st.innerHTML=`<span class="ok">✓ Fetch complete</span>&nbsp;&nbsp;Time range: <span style="color:#fff;">${s} → ${e} UTC</span><br/>`+
+        `${rowCount} rows @ ${cadMin} min cadence&nbsp;·&nbsp;<span class="warn">⚠ 1 gap 19:00–19:30 UTC — linear interpolation applied (6 rows)</span>`;
+    }
+  };
+  adv();
+}
+
+/* ── 3g. STEP 6 SPECTRUM ─────────────────────────────────────────── */
+function setSpec(type,card){
+  S.specType=type;
+  document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  ['pl-form','band-form','table-form'].forEach(id=>{
+    const m={'pl-form':'POWER_LAW','band-form':'BAND','table-form':'TABLE'};
+    const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
+  });
+  drawSpec();
+}
+function drawSpec(){
+  S.specJ0=parseFloat($('spec-j0')?.value)||S.specJ0;
+  S.specGamma=parseFloat($('spec-gamma')?.value)||S.specGamma;
+  S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
+  S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
+  S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
+  const canvas=$('spec-canvas'); if(!canvas) return;
+  const W=canvas.parentElement.clientWidth||400, H=160;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#060e1c'; ctx.fillRect(0,0,W,H);
+  const emin=Math.max(0.1,S.specEmin), emax=Math.min(1e5,S.specEmax);
+  const lemin=Math.log10(emin), lemax=Math.log10(emax);
+  const ljmin=-2, ljmax=8, pad=28;
+  ctx.strokeStyle='#0d2040'; ctx.lineWidth=0.5;
+  for(let le=Math.ceil(lemin);le<=Math.floor(lemax);le++){
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    ctx.beginPath(); ctx.moveTo(x,5); ctx.lineTo(x,H-18); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText('10^'+le,x-8,H-4);
+  }
+  for(let lj=ljmin;lj<=ljmax;lj+=2){
+    const y=H-18-((lj-ljmin)/(ljmax-ljmin))*(H-22);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-8,y); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='7px IBM Plex Mono'; ctx.fillText('10^'+lj,1,y+3);
+  }
+  ctx.strokeStyle='#38c0ff'; ctx.lineWidth=2; ctx.beginPath();
+  let started=false;
+  for(let i=0;i<=300;i++){
+    const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
+    let J;
+    if(S.specType==='POWER_LAW') J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+    else if(S.specType==='BAND'){
+      const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
+      const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
+      J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);
+    } else break;
+    const lJ=Math.log10(Math.max(1e-4,J));
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    const y=H-18-((lJ-ljmin)/(ljmax-ljmin))*(H-22);
+    if(!started){ ctx.moveTo(x,Math.max(5,Math.min(H-18,y))); started=true; }
+    else ctx.lineTo(x,Math.max(5,Math.min(H-18,y)));
+  }
+  ctx.stroke();
+}
+
+/* ── 3h. STEP 7 OUTPUT DOMAIN ────────────────────────────────────── */
+function setMode(m,card){
+  S.outputMode=m;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  ['panel-mode-a','panel-mode-b','panel-mode-c'].forEach(id=>{
+    const map={'panel-mode-a':'POINTS','panel-mode-b':'TRAJECTORY','panel-mode-c':'SHELLS'};
+    const el=$(id); if(el) el.style.display=map[id]===m?'block':'none';
+  });
+  updateSidebar();
+}
+function loadTrajExample(){
+  S.trajLoaded=true;
+  const dz=$('traj-dropzone');
+  if(dz){ dz.classList.add('loaded');
+    dz.innerHTML='<div class="dz-icon">✅</div><div class="dz-primary" style="color:var(--green)">VanAllenProbeA_sep2017.txt</div><div class="dz-sub">14,412 rows · Gregorian format · 2017-09-07 → 2017-09-10 UTC</div>'; }
+  $('traj-preview-panel').style.display='block';
+}
+
+/* ── 3i. STEP 8 OUTPUT OPTIONS ───────────────────────────────────── */
+function setFluxType(t,btn){
+  S.fluxType=t;
+  document.querySelectorAll('.flux-type-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+const PRESETS={
+  default:[1,5,10,30,100,300,1000],
+  fine:[1,2,3,5,7,10,15,20,30,50,70,100,200,300,500,1000],
+  goes:[5,10,30,50,60,100,300,500],
+  broad:[1,10,100,1000],
+};
+function applyBinPreset(k){ if(PRESETS[k]){ S.energyBins=[...PRESETS[k]]; renderBins(); } }
+function addBin(){
+  const inp=$('new-bin-val'); if(!inp) return;
+  const v=parseFloat(inp.value);
+  if(v>0&&!S.energyBins.includes(v)){ S.energyBins.push(v); renderBins(); inp.value=''; }
+}
+function removeBin(i){ S.energyBins.splice(i,1); renderBins(); }
+function renderBins(){
+  S.energyBins.sort((a,b)=>a-b);
+  const c=$('ebin-list'); if(!c) return; c.innerHTML='';
+  const jAtE=E=>S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+  const maxJ=Math.max(...S.energyBins.map(jAtE));
+  S.energyBins.forEach((e,i)=>{
+    const pct=Math.max(5,Math.min(100,(Math.log10(jAtE(e))-Math.log10(1e-3))/(Math.log10(maxJ+1)-Math.log10(1e-3))*100));
+    const row=document.createElement('div'); row.className='ebin-row';
+    row.innerHTML=`<span class="ebin-range" style="color:#38c0ff">${e} MeV/n</span>
+      <div class="ebin-bar-wrap"><div class="ebin-bar" style="width:${pct.toFixed(0)}%"></div></div>
+      <span style="font-size:10px;color:var(--text-dim)">${jAtE(e).toExponential(1)} p/cm²/s/sr/(MeV/n)</span>
+      <span class="ebin-del" onclick="removeBin(${i})" title="Remove">✕</span>`;
+    c.appendChild(row);
+  });
+  const ts=$('total-output-size'); if(ts) ts.textContent=`~${(S.energyBins.length*0.8).toFixed(1)} GB output`;
+}
+
+/* ── 4. SVG GRID INIT ────────────────────────────────────────────── */
+function drawSvgGrid(svgId){
+  const g=document.getElementById(svgId); if(!g) return;
+  let html='';
+  for(let x=-60;x<=20;x+=5){
+    const px=cl(gx(x),5,390);
+    html+=`<line x1="${px}" y1="4" x2="${px}" y2="316" stroke="${x===0?'#1e3a5a':'#0c1e38'}" stroke-width="${x===0?1:0.5}" ${x!==0?'stroke-dasharray="3,5"':''}/>`;
+    if(x%20===0&&x!==0) html+=`<text x="${px-8}" y="${CY+18}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${x}RE</text>`;
+  }
+  for(let z=-35;z<=35;z+=5){
+    const py=cl(gz(z),5,310);
+    html+=`<line x1="4" y1="${py}" x2="396" y2="${py}" stroke="${z===0?'#1e3a5a':'#0c1e38'}" stroke-width="${z===0?1:0.5}" ${z!==0?'stroke-dasharray="3,5"':''}/>`;
+    if(z%20===0&&z!==0) html+=`<text x="${CX+3}" y="${py+3}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${z}RE</text>`;
+  }
+  g.innerHTML=html;
+}
+
+/* ── 5. REVIEW & PARAM FILE ──────────────────────────────────────── */
+function buildReview(){
+  const {r0,alpha}=getShue();
+  const isM=S.shueMode==='manual';
+  const f=(v,d)=>Number(v).toFixed(d);
+  const txt=[
+`! ═══════════════════════════════════════════════════════════════
+! AMPS_PARAM.in — generated by CCMC Runs-on-Request interface
+! Run: ${S.runName||'unnamed'}
+! ═══════════════════════════════════════════════════════════════
+
+#RUN_INFO
+RUN_ID                 ${S.runName||'unnamed'}
+PI_NAME                ${S.piName||'Unknown'}
+PI_EMAIL               ${S.piEmail||'unknown@unknown.edu'}
+SCIENCE_GOAL           ${$('science-goal')?.value||'custom'}
+
+#PARTICLE_SPECIES
+SPECIES                ${S.species.toUpperCase()}
+CHARGE                 ${S.charge}               ! elementary charge
+MASS_AMU               ${S.mass}           ! atomic mass units
+
+#BACKGROUND_FIELD
+FIELD_MODEL            ${S.fieldModel}
+TS05_DST               ${f(S.dst,1)}         ! nT ring current index
+TS05_PDYN              ${f(S.pdyn,2)}          ! nPa dynamic pressure
+TS05_BZ                ${f(S.bz,2)}         ! nT IMF Bz GSM
+TS05_VX                ${f(S.vx,1)}       ! km/s solar wind Vx
+TS05_NSW               ${f(S.nsw,2)}         ! cm-3 proton density
+TS05_BY                ${f(S.by,2)}          ! nT IMF By
+TS05_BX                ${f(S.bx,2)}          ! nT IMF Bx
+EPOCH                  ${S.epoch}  ! UTC snapshot
+
+#DOMAIN_BOUNDARY
+BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
+S.boundaryType==='BOX'?`DOMAIN_X_MAX           ${f(S.boxXmax,1)}         ! RE dayside
+DOMAIN_X_MIN           ${f(S.boxXmin,1)}        ! RE nightside
+DOMAIN_Y_MAX           ${f(S.boxYmax,1)}         ! RE dusk
+DOMAIN_Y_MIN           ${f(S.boxYmin,1)}        ! RE dawn
+DOMAIN_Z_MAX           ${f(S.boxZmax,1)}         ! RE north
+DOMAIN_Z_MIN           ${f(S.boxZmin,1)}        ! RE south
+R_INNER                ${f(S.boxRinner,1)}           ! RE inner loss sphere`:
+`SHUE_R0                ${isM?f(r0,2):'AUTO'}            ! RE; AUTO = from TS05 Bz,Pdyn
+SHUE_ALPHA             ${isM?f(alpha,3):'AUTO'}         ! flaring; AUTO = from TS05
+DOMAIN_X_TAIL          ${f(S.xtail,1)}        ! RE nightside cap
+R_INNER                ${f(S.shueRinner,1)}           ! RE inner loss sphere`,
+`
+#TEMPORAL
+TEMPORAL_MODE          ${S.tempMode}`,
+S.tempMode!=='STEADY_STATE'?`EVENT_START            ${S.eventStart}   ! UTC
+EVENT_END              ${S.eventEnd}   ! UTC
+FIELD_UPDATE_DT        ${S.fieldDt}                ! min
+INJECT_DT              ${S.injectDt}               ! min
+TS_INPUT_MODE          ${S.tsSource==='omni'?'OMNIWEB':S.tsSource==='file'?'FILE':'SCALAR'}`:
+`EPOCH                  ${S.epoch}`,
+`
+#SPECTRUM
+SPECTRUM_TYPE          ${S.specType}
+SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
+SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot
+SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
+SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            ${S.outputMode}
+FLUX_DT                ${f(S.fluxDt,1)}           ! min output cadence
+
+#OUTPUT_OPTIONS
+FLUX_TYPE              ${S.fluxType}
+OUTPUT_CUTOFF          ${$('output-cutoff')?.checked?'T':'F'}                    ! cutoff rigidity maps
+OUTPUT_PITCH           ${$('output-pitch')?.checked?'T':'F'}                    ! pitch angle distributions
+OUTPUT_FORMAT          ${$('output-format')?.value||S.outputFormat}
+OUTPUT_COORDS          ${$('output-coords')?.value||S.outputCoords}
+ENERGY_BINS            ${S.energyBins.join(' ')}   ! MeV/n
+
+#NUMERICAL
+N_PARTICLES            10000              ! test particles per injection
+MAX_BOUNCE             500                ! max mirror reflections
+DT_TRACE               1.0               ! s integration step
+PITCH_ISOTROPIC        T                 ! isotropic injection
+
+#END`
+].join('\n');
+
+  const el=$('review-param'); if(!el) return;
+  el.innerHTML=txt
+    .replace(/^(#\w[\w_]*)/gm,'<span class="r-section">$1</span>')
+    .replace(/^(! .+)/gm,'<span class="r-comment">$1</span>')
+    .replace(/(AUTO)/g,'<span class="r-auto">AUTO</span>');
+
+  buildManifest(); buildValidation();
+  return txt;
+}
+
+function copyParam(){ navigator.clipboard.writeText(buildReview().replace(/<[^>]+>/g,'')).then(()=>{ const b=$('copy-param'); if(b){b.textContent='✓ Copied';setTimeout(()=>{b.textContent='📋 Copy';},2000);} }); }
+function downloadParam(){
+  const txt=(buildReview()||'').replace(/<[^>]+>/g,'');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download='AMPS_PARAM.in'; a.click();
+}
+
+function buildManifest(){
+  const tb=$('manifest-tbody'); if(!tb) return;
+  const files=[
+    {name:'AMPS_PARAM.in',      role:'Main configuration',            req:true, auto:true,  ok:true},
+    {name:'AMPS_MANIFEST.json', role:'Run metadata (auto-generated)', req:true, auto:true,  ok:true},
+    {name:'trajectory.txt',     role:'Spacecraft trajectory (Mode B)',req:S.outputMode==='TRAJECTORY', auto:false, ok:S.trajLoaded},
+    {name:'ts05_driving.txt',   role:'TS05 time-series drivers',      req:S.tempMode==='TIME_SERIES'&&S.tsSource==='file', auto:S.tsSource==='omni', ok:true},
+    {name:'sep_spectrum_H+.txt',role:'Spectrum table (if TABLE mode)',req:S.specType==='TABLE', auto:false, ok:S.specType!=='TABLE'},
+  ];
+  tb.innerHTML=files.filter(f=>f.req||f.auto).map(f=>`
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--text)">${f.name}</td>
+      <td style="color:var(--text-dim)">${f.role}</td>
+      <td style="color:${f.req?'var(--text)':'var(--text-muted)'}">${f.req?'Required':'Optional'}</td>
+      <td style="color:${f.auto?'var(--green)':'var(--text-dim)'}">${f.auto?'Auto-generated':'User upload'}</td>
+      <td class="${f.ok?'vt-pass':'vt-fail'}">${f.ok?'✓ READY':'✗ MISSING'}</td>
+    </tr>`).join('');
+}
+
+function buildValidation(){
+  const {r0,alpha}=getShue();
+  const chks=[
+    {l:'Run name set',           ok:!!(S.runName?.trim())},
+    {l:'PI email valid',         ok:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('pi-email')?.value||'')},
+    {l:'Dst in TS05 range',      ok:S.dst>=-600&&S.dst<=50},
+    {l:'Pdyn > 0.1 nPa',         ok:S.pdyn>0.1},
+    {l:'Domain boundary set',    ok:['BOX','SHUE'].includes(S.boundaryType)},
+    {l:'Shue r₀ plausible (5–13 RE)', ok:S.boundaryType!=='SHUE'||( r0>5&&r0<13)},
+    {l:'Inject Δt ≥ Field Update', ok:S.tempMode==='STEADY_STATE'||S.injectDt>=S.fieldDt},
+    {l:'Energy bins defined',    ok:S.energyBins.length>0},
+    {l:'Spectrum type selected', ok:['POWER_LAW','BAND','TABLE'].includes(S.specType)},
+    {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
+    {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
+  ];
+  const pass=chks.filter(c=>c.ok).length;
+  const fail=chks.filter(c=>!c.ok&&!c.warn).length;
+  const warn=chks.filter(c=>!c.ok&&c.warn).length;
+  const rs=$('review-summary');
+  if(rs) rs.innerHTML=`<span class="v-ok">✓ ${pass} passed</span> · <span class="v-warn">⚠ ${warn} warning</span> · <span class="v-err">✗ ${fail} fatal</span>`;
+  const rc=$('review-checks'); if(rc){ rc.innerHTML='';
+    chks.forEach(c=>{ const d=document.createElement('div');
+      d.className='review-item '+(c.ok?'ri-ok':c.warn?'ri-warn':'');
+      d.innerHTML=`<div class="ri-label">${c.l}</div><div class="ri-val">${c.ok?'✓ PASS':c.warn?'⚠ WARN':'✗ FAIL'}</div>`;
+      rc.appendChild(d); }); }
+  const sb=$('submit-btn-final'); if(sb) sb.disabled=fail>0;
+}
+
+function finalSubmit(){
+  const m=$('submit-modal'); if(m) m.style.display='flex';
+}
+
+/* ── 6. SIDEBAR ──────────────────────────────────────────────────── */
+function updateSidebar(){
+  const set=(id,v,cls)=>{ const e=$(id); if(e){e.textContent=v;if(cls)e.className='sb-v '+cls;} };
+  set('sb-run-name', S.runName||'(not set)', S.runName?'':'o');
+  set('sb-species',  S.species==='proton'?'H⁺ Proton':S.species==='helium'?'He²⁺':S.species==='electron'?'e⁻':S.species,'g');
+  set('sb-field-model','TS05','g');
+  set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
+  set('sb-temporal', S.tempMode.replace('_',' '),'');
+  set('sb-spec-type', S.specType.replace('_',' '),'');
+  set('sb-output-mode', S.outputMode.replace('_',' '),'g');
+  const pct=Math.round((S.done.size/9)*100);
+  const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';
+  const pp=$('progress-pct'); if(pp) pp.textContent=pct+'%';
+}
+
+/* ── 7. HELP MODAL ───────────────────────────────────────────────── */
+function openHelpModal(){ const m=$('help-modal'); if(m) m.style.display='flex'; }
+
+/* ── 8. INIT ─────────────────────────────────────────────────────── */
+function init(){
+  drawSvgGrid('shue-grid');
+  drawSvgGrid('box-grid');
+  bndShueUpdate();
+  updateTimeline();
+  renderBins();
+  drawSpec();
+  updateSidebar();
+  goStep(1);
+}
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+<script>
+
+/* ═══════════════════════════════════════════════════════════════════
+   AMPS CCMC — INLINE APPLICATION SCRIPT
+   All interactive logic for the 9-step submission wizard.
+   Separated into logical sections:
+     1. State & Constants
+     2. Wizard Navigation
+     3. Step-specific handlers
+     4. SVG diagram renderers (Box + Shue)
+     5. Spectrum canvas
+     6. Review & param file builder
+     7. Init
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. GLOBAL STATE ─────────────────────────────────────────────── */
+const S = {
+  step: 1, done: new Set(),
+  runName:'SEP_Sep2017_VanAllenProbeA', piName:'', piEmail:'', institution:'',
+  species:'proton', charge:1, mass:1.0073,
+  fieldModel:'TS05', dst:-142.0, pdyn:3.5, bz:-18.5, vx:-650.0, nsw:12.0, by:3.2, bx:0.0,
+  epoch:'2017-09-10T16:00',
+  boundaryType:'SHUE', shueMode:'auto',
+  boxXmax:15, boxXmin:-60, boxYmax:25, boxYmin:-25, boxZmax:20, boxZmin:-20, boxRinner:2.0,
+  shueR0:null, shueAlpha:null, xtail:-60, shueRinner:2.0,
+  tempMode:'TIME_SERIES', eventStart:'2017-09-07T00:00', eventEnd:'2017-09-10T20:00',
+  fieldDt:5, injectDt:30, tsSource:'omni',
+  specType:'POWER_LAW', specJ0:10000, specGamma:3.5, specE0:10, specEmin:1, specEmax:1000,
+  outputMode:'TRAJECTORY', fluxDt:1.0, trajLoaded:false,
+  fluxType:'DIFFERENTIAL', outputCutoff:true, outputPitch:false,
+  outputFormat:'NETCDF4', outputCoords:'GEO',
+  energyBins:[1,5,10,30,100,300,1000],
+};
+
+const $ = id => document.getElementById(id);
+const CX=200, CY=160, SC=5; // SVG canvas centre & scale
+
+/* ── 2. WIZARD NAVIGATION ────────────────────────────────────────── */
+function goStep(n) {
+  if(n < 1 || n > 9) return;
+  S.done.add(S.step);
+  S.step = n;
+  for(let i=1;i<=9;i++) {
+    const p=$(`panel-${i}`); if(p) p.classList.toggle('active', i===n);
+    const el=document.querySelectorAll('.wz-step')[i-1];
+    if(el){ el.classList.remove('done','active');
+      if(S.done.has(i)) el.classList.add('done');
+      else if(i===n) el.classList.add('active'); }
+  }
+  $('btn-prev').disabled = n===1;
+  $('btn-next').style.display = n<9?'inline-flex':'none';
+  $('btn-submit').style.display = n===9?'inline-flex':'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateSidebar();
+  if(n===9) buildReview();
+}
+function nextStep(){ goStep(S.step+1); }
+function prevStep(){ goStep(S.step-1); }
+function goToReview(){ goStep(9); }
+
+// Init wizard step indicators
+document.querySelectorAll('.wz-step').forEach((el,i)=>{
+  el.addEventListener('click',()=>goStep(i+1));
+});
+
+/* ── 3a. SECTION COLLAPSE ────────────────────────────────────────── */
+function toggleSection(id){
+  const el=$(id); if(el) el.classList.toggle('closed');
+}
+
+/* ── 3b. STEP 1 HANDLERS ─────────────────────────────────────────── */
+function liveUpdate(){
+  S.runName = $('run-name')?.value||S.runName;
+  updateSidebar();
+}
+function goalHint(v){
+  const hints = {
+    storm_validation: 'Compare AMPS-predicted cutoff rigidity with Van Allen Probe particle data during storm main phase.',
+    gcr_baseline:     'Compute galactic cosmic ray fluxes at LEO under quiet geomagnetic conditions (Dst ≈ 0 nT).',
+    sep_radiation:    'Quantify SEP fluence and dose at ISS altitude during a major solar particle event.',
+    parameter_study:  'Systematic sensitivity study: vary Dst, Pdyn, and spectral index to map uncertainty space.',
+    custom:           'Describe your science goal in the text area above.',
+  };
+  const el=$('goal-hint'); if(el) el.textContent = hints[v]||'';
+}
+function charCount(el,cid,max){
+  const n=el.value.length, c=$(cid);
+  if(c){ c.textContent=n+'/'+max;
+    c.className='char-count'+(n>max*0.9?' near':'')+(n>max?' over':''); }
+}
+
+/* ── 3c. STEP 2 PARTICLE ─────────────────────────────────────────── */
+const SPECIES={
+  proton:  {Z:1,  A:1.0073,  label:'H⁺ Proton'},
+  helium:  {Z:2,  A:4.0026,  label:'He²⁺ Alpha'},
+  oxygen:  {Z:8,  A:15.999,  label:'O⁸⁺'},
+  electron:{Z:-1, A:0.000549,label:'e⁻ Electron'},
+  iron:    {Z:26, A:55.845,  label:'Fe²⁶⁺'},
+  custom:  {Z:1,  A:1.0,     label:'Custom'},
+};
+function selectSpecies(key,card){
+  const sp=SPECIES[key]; if(!sp) return;
+  S.species=key; S.charge=sp.Z; S.mass=sp.A;
+  document.querySelectorAll('.opt-card[id^="sp-"]').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  $('custom-species-panel').style.display=key==='custom'?'block':'none';
+  if(key!=='custom'){
+    const ci=$('charge-input'), mi=$('mass-input');
+    if(ci) ci.value=sp.Z; if(mi) mi.value=sp.A;
+  }
+  updateRigidity();
+}
+function updateRigidity(){
+  const q=Math.abs(S.charge||1), A=S.mass||1;
+  const E=100, mp=938.272;
+  const Etot=E*A+A*mp, p=Math.sqrt(Etot**2-(A*mp)**2), R=p/(q*1000);
+  const el=$('rigidity-info'); if(el) el.textContent=`R = ${R.toFixed(3)} GV at 100 MeV/n`;
+}
+
+/* ── 3d. STEP 3 BACKGROUND FIELD MODEL ──────────────────────────── */
+// Selects which empirical magnetic field model drives the simulation.
+// Only TS05 is fully implemented in Year 1; T04s and T89 are stubs.
+function selectFieldModel(model, card) {
+  S.fieldModel = model;
+  document.querySelectorAll('.model-sel-card').forEach(c => c.classList.remove('sel'));
+  card.classList.add('sel');
+  // Update the FIELD_MODEL keyword in the live preview
+  const kv = $('kv-field-model');
+  if (kv) kv.textContent = model;
+  // Show/hide param fields based on model
+  const ts05Fields = document.getElementById('ts05-fields-wrap');
+  if (ts05Fields) ts05Fields.style.opacity = model === 'T89' ? '0.5' : '1';
+  // For T89, show a info box
+  const t89note = document.getElementById('t89-note');
+  if (t89note) t89note.style.display = model === 'T89' ? 'block' : 'none';
+  updateKwPreview();
+  updateSidebar();
+}
+
+function ts05Change(){
+  const v = k => parseFloat($(k)?.value)||0;
+  S.dst=v('ts05-dst'); S.pdyn=v('ts05-pdyn'); S.bz=v('ts05-bz');
+  S.vx=v('ts05-vx');   S.nsw=v('ts05-nsw');   S.by=v('ts05-by'); S.bx=v('ts05-bx');
+  S.epoch=$('ts05-epoch')?.value||S.epoch;
+  validateTs05();
+  updateKwPreview();
+  bndShueUpdate(); // Shue params depend on Bz, Pdyn
+  updateSidebar();
+}
+const TS05R={
+  dst:{lo:-600,hi:50,wl:-300,wh:50},pdyn:{lo:0.1,hi:30,wl:0.5,wh:20},
+  bz:{lo:-50,hi:20,wl:-30,wh:15},vx:{lo:-900,hi:-200,wl:-800,wh:-200},
+  nsw:{lo:0.5,hi:80,wl:1,wh:50},by:{lo:-40,hi:40},bx:{lo:-40,hi:40},
+};
+function validateTs05(){
+  Object.entries(TS05R).forEach(([key,r])=>{
+    const v=S[key]; if(v===undefined) return;
+    const el=$(`ts05-${key}`), st=$(`ts05-${key}-status`);
+    if(!el) return;
+    el.classList.remove('valid','warn','error');
+    if(v<r.lo||v>r.hi){ el.classList.add('error'); if(st){st.textContent='✗ Out of TS05 range';st.style.color='var(--red)';} }
+    else if((r.wl&&v<r.wl)||(r.wh&&v>r.wh)){ el.classList.add('warn'); if(st){st.textContent='⚠ Unusual — verify data source';st.style.color='var(--orange)';} }
+    else{ el.classList.add('valid'); if(st){st.textContent='✓ Within normal range';st.style.color='var(--green)';} }
+  });
+}
+function updateKwPreview(){
+  const f=(v,d)=>Number(v).toFixed(d);
+  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  set('kv-dst', f(S.dst,1)); set('kv-pdyn',f(S.pdyn,2)); set('kv-bz',f(S.bz,2));
+  set('kv-vx',  f(S.vx,1));  set('kv-nsw', f(S.nsw,2)); set('kv-by', f(S.by,2));
+  set('kv-bx',  f(S.bx,2));  set('kv-epoch', S.epoch);
+}
+
+/* ── 3e. STEP 4 BOUNDARY ─────────────────────────────────────────── */
+function bndSet(type){
+  S.boundaryType=type;
+  $('bc-box')?.classList.toggle('sel',type==='BOX');
+  $('bc-shue')?.classList.toggle('sel',type==='SHUE');
+  $('bnd-box-panel').style.display=type==='BOX'?'block':'none';
+  $('bnd-shue-panel').style.display=type==='SHUE'?'block':'none';
+  if(type==='SHUE') bndShueUpdate(); else bndBoxUpdate();
+  updateSidebar();
+}
+function shueMode(m){
+  S.shueMode=m;
+  $('shue-auto-btn')?.classList.toggle('on',m==='auto');
+  $('shue-manual-btn')?.classList.toggle('on',m==='manual');
+  $('shue-manual-fields').style.display=m==='manual'?'block':'none';
+  $('shue-auto-box').style.opacity=m==='manual'?'0.5':'1';
+  bndShueUpdate();
+}
+function shueCalc(){
+  const bz=S.bz, pd=Math.max(0.1,S.pdyn);
+  const r0=Math.max(4,Math.min(15,(11.4+0.013*bz)*Math.pow(pd,-1/6.6)));
+  const al=Math.max(0.3,Math.min(0.9,(0.58-0.007*bz)*(1+0.024*Math.log(pd))));
+  return {r0,alpha:al};
+}
+function getShue(){
+  if(S.shueMode==='manual'&&S.shueR0&&S.shueAlpha) return {r0:S.shueR0,alpha:S.shueAlpha};
+  return shueCalc();
+}
+function shueR(r0,al,deg){
+  const th=deg*Math.PI/180, d=1+Math.cos(th); return d<1e-9?Infinity:r0*Math.pow(2/d,al);
+}
+// Map GSM → SVG
+const gx=re=>CX+re*SC, gz=re=>CY-re*SC, cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+function bndBoxUpdate(){
+  const v=k=>parseFloat($(k)?.value)||0;
+  S.boxXmax=v('box-xmax'); S.boxXmin=v('box-xmin'); S.boxYmax=v('box-ymax');
+  S.boxYmin=v('box-ymin'); S.boxZmax=v('box-zmax'); S.boxZmin=v('box-zmin');
+  S.boxRinner=v('box-rinner');
+  // Draw rectangle
+  const rx=cl(gx(S.boxXmin),5,390), ry=cl(gz(S.boxZmax),5,310);
+  const rw=cl(gx(S.boxXmax),5,390)-rx, rh=cl(gz(S.boxZmin),5,310)-ry;
+  const rect=$('box-rect');
+  if(rect){ rect.setAttribute('x',rx); rect.setAttribute('y',ry);
+            rect.setAttribute('width',Math.max(0,rw)); rect.setAttribute('height',Math.max(0,rh)); }
+  const ib=$('inner-box'); if(ib) ib.setAttribute('r',S.boxRinner*SC);
+  const sl=(id,t,x,y)=>{ const e=$(id); if(e){e.setAttribute('x',x);e.setAttribute('y',y);e.textContent=t;} };
+  sl('box-lbl-xmax','Xmax='+S.boxXmax, cl(gx(S.boxXmax)+2,10,360), CY+14);
+  sl('box-lbl-xmin','Xmin='+S.boxXmin, cl(gx(S.boxXmin)-34,5,300), CY+14);
+  sl('box-lbl-zmax','Zmax='+S.boxZmax, CX+4, cl(gz(S.boxZmax)-3,14,306));
+  sl('box-lbl-zmin','Zmin='+S.boxZmin, CX+4, cl(gz(S.boxZmin)+11,14,306));
+  // Validation
+  const vi=(id,ok,okTxt,failTxt)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="v-ok">${okTxt}</span>`:`<span class="v-warn">${failTxt}</span>`; };
+  vi('bv-xrange', S.boxXmax>9,  '✓ Dayside OK',       '⚠ Xmax < 9 RE');
+  vi('bv-yrange', S.boxYmax>=15,'✓ Flanks OK',        '⚠ Y < 15 RE');
+  vi('bv-zrange', S.boxZmax>12&&Math.abs(S.boxZmin)>12,'✓ Z range OK','⚠ |Z| < 12 RE');
+  vi('bv-inner',  S.boxRinner>=1.5&&S.boxRinner<=3.5,  '✓ R_inner OK','⚠ Typical 1.5–3.5 RE');
+  // KW
+  ['xmax','xmin','ymax','ymin','zmax','zmin','rinner'].forEach(k=>{
+    const e=$('kw-'+k); if(e) e.textContent=Number(S['box'+k.charAt(0).toUpperCase()+k.slice(1)]).toFixed(1);
+  });
+}
+
+function bndShueUpdate(){
+  const v=k=>parseFloat($(k)?.value);
+  S.xtail=v('shue-xtail')||S.xtail;
+  S.shueRinner=v('shue-rinner')||S.shueRinner;
+  if(S.shueMode==='manual'){ S.shueR0=v('shue-r0-in')||null; S.shueAlpha=v('shue-alpha-in')||null; }
+  const {r0,alpha}=getShue();
+  // Update auto-compute display (r0, alpha, Xsub, Rflank)
+  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  set('shue-r0-val',    r0.toFixed(2));
+  set('shue-alpha-val', alpha.toFixed(3));
+  set('shue-xsub-val',  r0.toFixed(2));
+  const rFlank=shueR(r0,alpha,90);
+  set('shue-rflank-val', isFinite(rFlank)?rFlank.toFixed(1):'—');
+  // Build path
+  const xtSvgX=cl(gx(S.xtail),8,390);
+  let upper=[],lower=[];
+  for(let d=0;d<=180;d+=1){
+    const r=shueR(r0,alpha,d); if(!isFinite(r)) continue;
+    const th=d*Math.PI/180, gx2=r*Math.cos(th), gz2=r*Math.sin(th);
+    if(gx2<S.xtail) continue;
+    upper.push([cl(gx(gx2),5,390), cl(gz(gz2),5,310)]);
+    lower.unshift([cl(gx(gx2),5,390), cl(gz(-gz2),5,310)]);
+  }
+  if(upper.length>1){
+    let path=`M ${upper[0][0]},${upper[0][1]}`;
+    upper.forEach(([x,y])=>path+=` L ${x},${y}`);
+    const tailZ=shueR(r0,alpha,179.9)*Math.sin(179.9*Math.PI/180);
+    path+=` L ${xtSvgX},${cl(gz(-tailZ),5,310)}`;
+    lower.forEach(([x,y])=>path+=` L ${x},${y}`);
+    path+=' Z';
+    $('shue-path')?.setAttribute('d',path);
+  }
+  const tc=$('shue-tailcap');
+  if(tc){ tc.setAttribute('x1',xtSvgX); tc.setAttribute('x2',xtSvgX); tc.setAttribute('y1','20'); tc.setAttribute('y2','300'); }
+  const tl=$('shue-tailcap-lbl'); if(tl){ tl.setAttribute('x',xtSvgX+3); tl.textContent='Xtail='+S.xtail; }
+  const ish=$('inner-shue'); if(ish) ish.setAttribute('r',S.shueRinner*SC);
+  set('inner-shue-lbl', `R_in=${S.shueRinner} RE`);
+  const r0svgX=cl(gx(r0),10,385);
+  const r0line=$('shue-r0-line');
+  if(r0line){ r0line.setAttribute('x2',r0svgX); r0line.setAttribute('y2',CY); }
+  const r0lbl=$('shue-r0-lbl');
+  if(r0lbl){ r0lbl.setAttribute('x',cl(gx(r0/2),10,370)); r0lbl.textContent=`r₀=${r0.toFixed(1)}`; }
+  if(isFinite(rFlank)){
+    const flkSvgY=cl(gz(Math.min(rFlank,28)),10,300);
+    const flkLine=$('shue-flank-line');
+    if(flkLine){ flkLine.setAttribute('x1',CX); flkLine.setAttribute('y1',CY); flkLine.setAttribute('x2',CX); flkLine.setAttribute('y2',flkSvgY); }
+    const flkLbl=$('shue-flank-lbl');
+    if(flkLbl){ flkLbl.setAttribute('y',((flkSvgY+CY)/2).toFixed(1)); flkLbl.textContent=`Rflk=${rFlank.toFixed(1)}`; }
+  }
+  set('shue-svg-r0',    `r₀=${r0.toFixed(2)} RE`);
+  set('shue-svg-alpha', `α=${alpha.toFixed(3)}`);
+  set('shue-svg-dst',   `Dst=${S.dst<0?'−'+Math.abs(S.dst):S.dst} nT`);
+  set('shue-svg-pdyn',  `Pdyn=${S.pdyn} nPa`);
+  const vi=(id,ok,okT,failT)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="bv-ok">${okT}</span>`:`<span class="bv-warn">${failT}</span>`; };
+  vi('sv-r0',    r0>5&&r0<13,          `✓ r₀=${r0.toFixed(2)} R<sub>E</sub> (storm-time)`, `⚠ r₀=${r0.toFixed(2)} — outside 5–13 R<sub>E</sub>`);
+  vi('sv-alpha', alpha>0.4&&alpha<0.8, `✓ α=${alpha.toFixed(3)} (normal range)`,            `⚠ α=${alpha.toFixed(3)} — outside 0.40–0.80`);
+  vi('sv-tail',  S.xtail<-20,          `✓ Tail cap at ${S.xtail} R<sub>E</sub>`,            `⚠ X_tail should be < −20 R<sub>E</sub>`);
+  const isM=S.shueMode==='manual';
+  set('kw-shue-r0',     isM?r0.toFixed(2):'AUTO');
+  set('kw-shue-alpha',  isM?alpha.toFixed(3):'AUTO');
+  set('kw-xtail',       S.xtail.toFixed(1));
+  set('kw-shue-rinner', S.shueRinner.toFixed(1));
+}
+
+/* ── 3f. STEP 5 TEMPORAL ─────────────────────────────────────────── */
+function setTempMode(m){
+  S.tempMode=m;
+  document.querySelectorAll('.temp-card').forEach(c=>c.classList.toggle('sel',c.dataset.mode===m));
+  $('ts-form').style.display=m!=='STEADY_STATE'?'block':'none';
+  updateSidebar();
+}
+function checkDtPair(){
+  const fd=parseFloat($('field-update-dt')?.value)||5;
+  const id=parseFloat($('inject-dt')?.value)||30;
+  S.fieldDt=fd; S.injectDt=id;
+  $('dt-warn').style.display = id<fd?'block':'none';
+}
+function setTsSource(btnOrSrc, src){
+  const mode = src || btnOrSrc;
+  S.tsSource=mode;
+  document.querySelectorAll('#ts-source-tog .tog-btn').forEach(b=>b.classList.remove('on'));
+  const btnId={'omni':'ts-omni-btn','file':'ts-file-btn','scalar':'ts-scalar-btn'}[mode];
+  if(btnId) $(btnId)?.classList.add('on');
+  $('omni-panel').style.display=mode==='omni'?'block':'none';
+  $('file-panel').style.display=mode==='file'?'block':'none';
+}
+function simulateOmniFetch(){
+  const cadSel=$('omni-cadence');
+  const cadMin=cadSel&&cadSel.value.startsWith('1 min')?1:cadSel&&cadSel.value.startsWith('1 hr')?60:5;
+  const startEl=$('event-start'), endEl=$('event-end');
+  const start=startEl?new Date(startEl.value):new Date('2017-09-07T00:00');
+  const end=endEl?new Date(endEl.value):new Date('2017-09-10T20:00');
+  const hrs=Math.max(0,(end-start)/(1000*3600));
+  const rowCount=Math.round(hrs*60/cadMin);
+  const msgs=[
+    `⏳ Querying omniweb.gsfc.nasa.gov for ${cadMin}-min OMNI…`,
+    '⏳ Querying wdc.kugi.kyoto-u.ac.jp for Dst / Sym-H…',
+    '⏳ Merging streams and gap-filling…',
+    '⏳ Generating preview and data quality report…'
+  ];
+  const steps=['os-1','os-2','os-3','os-4'];
+  steps.forEach(id=>{ const e=$(id); if(e){e.classList.remove('done');e.className='os-num pending';e.textContent=steps.indexOf(id)+1;} });
+  const st=$('omni-status'); if(st) st.innerHTML=`<span style="color:var(--orange)">${msgs[0]}</span>`;
+  let i=0;
+  const adv=()=>{
+    if(i>0){ const pe=$(steps[i-1]); if(pe){pe.className='os-num done';pe.textContent='✓';} }
+    if(i<steps.length){
+      const ce=$(steps[i]); if(ce){ce.className='os-num';ce.style.background='var(--orange)';ce.textContent='…';}
+      if(st&&msgs[i]) st.innerHTML=`<span style="color:var(--orange)">${msgs[i]}</span>`;
+      i++; setTimeout(adv,700);
+    } else {
+      const s=startEl?startEl.value.replace('T',' '):'-', e=endEl?endEl.value.replace('T',' '):'-';
+      if(st) st.innerHTML=`<span class="ok">✓ Fetch complete</span>&nbsp;&nbsp;Time range: <span style="color:#fff;">${s} → ${e} UTC</span><br/>`+
+        `${rowCount} rows @ ${cadMin} min cadence&nbsp;·&nbsp;<span class="warn">⚠ 1 gap 19:00–19:30 UTC — linear interpolation applied (6 rows)</span>`;
+    }
+  };
+  adv();
+}
+
+/* ── 3g. STEP 6 SPECTRUM ─────────────────────────────────────────── */
+function setSpec(type,card){
+  S.specType=type;
+  document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  ['pl-form','band-form','table-form'].forEach(id=>{
+    const m={'pl-form':'POWER_LAW','band-form':'BAND','table-form':'TABLE'};
+    const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
+  });
+  drawSpec();
+}
+function drawSpec(){
+  S.specJ0=parseFloat($('spec-j0')?.value)||S.specJ0;
+  S.specGamma=parseFloat($('spec-gamma')?.value)||S.specGamma;
+  S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
+  S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
+  S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
+  const canvas=$('spec-canvas'); if(!canvas) return;
+  const W=canvas.parentElement.clientWidth||400, H=160;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#060e1c'; ctx.fillRect(0,0,W,H);
+  const emin=Math.max(0.1,S.specEmin), emax=Math.min(1e5,S.specEmax);
+  const lemin=Math.log10(emin), lemax=Math.log10(emax);
+  const ljmin=-2, ljmax=8, pad=28;
+  ctx.strokeStyle='#0d2040'; ctx.lineWidth=0.5;
+  for(let le=Math.ceil(lemin);le<=Math.floor(lemax);le++){
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    ctx.beginPath(); ctx.moveTo(x,5); ctx.lineTo(x,H-18); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText('10^'+le,x-8,H-4);
+  }
+  for(let lj=ljmin;lj<=ljmax;lj+=2){
+    const y=H-18-((lj-ljmin)/(ljmax-ljmin))*(H-22);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-8,y); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='7px IBM Plex Mono'; ctx.fillText('10^'+lj,1,y+3);
+  }
+  ctx.strokeStyle='#38c0ff'; ctx.lineWidth=2; ctx.beginPath();
+  let started=false;
+  for(let i=0;i<=300;i++){
+    const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
+    let J;
+    if(S.specType==='POWER_LAW') J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+    else if(S.specType==='BAND'){
+      const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
+      const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
+      J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);
+    } else break;
+    const lJ=Math.log10(Math.max(1e-4,J));
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    const y=H-18-((lJ-ljmin)/(ljmax-ljmin))*(H-22);
+    if(!started){ ctx.moveTo(x,Math.max(5,Math.min(H-18,y))); started=true; }
+    else ctx.lineTo(x,Math.max(5,Math.min(H-18,y)));
+  }
+  ctx.stroke();
+}
+
+/* ── 3h. STEP 7 OUTPUT DOMAIN ────────────────────────────────────── */
+function setMode(m,card){
+  S.outputMode=m;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  ['panel-mode-a','panel-mode-b','panel-mode-c'].forEach(id=>{
+    const map={'panel-mode-a':'POINTS','panel-mode-b':'TRAJECTORY','panel-mode-c':'SHELLS'};
+    const el=$(id); if(el) el.style.display=map[id]===m?'block':'none';
+  });
+  updateSidebar();
+}
+function loadTrajExample(){
+  S.trajLoaded=true;
+  const dz=$('traj-dropzone');
+  if(dz){ dz.classList.add('loaded');
+    dz.innerHTML='<div class="dz-icon">✅</div><div class="dz-primary" style="color:var(--green)">VanAllenProbeA_sep2017.txt</div><div class="dz-sub">14,412 rows · Gregorian format · 2017-09-07 → 2017-09-10 UTC</div>'; }
+  $('traj-preview-panel').style.display='block';
+}
+
+/* ── 3i. STEP 8 OUTPUT OPTIONS ───────────────────────────────────── */
+function setFluxType(t,btn){
+  S.fluxType=t;
+  document.querySelectorAll('.flux-type-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+const PRESETS={
+  default:[1,5,10,30,100,300,1000],
+  fine:[1,2,3,5,7,10,15,20,30,50,70,100,200,300,500,1000],
+  goes:[5,10,30,50,60,100,300,500],
+  broad:[1,10,100,1000],
+};
+function applyBinPreset(k){ if(PRESETS[k]){ S.energyBins=[...PRESETS[k]]; renderBins(); } }
+function addBin(){
+  const inp=$('new-bin-val'); if(!inp) return;
+  const v=parseFloat(inp.value);
+  if(v>0&&!S.energyBins.includes(v)){ S.energyBins.push(v); renderBins(); inp.value=''; }
+}
+function removeBin(i){ S.energyBins.splice(i,1); renderBins(); }
+function renderBins(){
+  S.energyBins.sort((a,b)=>a-b);
+  const c=$('ebin-list'); if(!c) return; c.innerHTML='';
+  const jAtE=E=>S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+  const maxJ=Math.max(...S.energyBins.map(jAtE));
+  S.energyBins.forEach((e,i)=>{
+    const pct=Math.max(5,Math.min(100,(Math.log10(jAtE(e))-Math.log10(1e-3))/(Math.log10(maxJ+1)-Math.log10(1e-3))*100));
+    const row=document.createElement('div'); row.className='ebin-row';
+    row.innerHTML=`<span class="ebin-range" style="color:#38c0ff">${e} MeV/n</span>
+      <div class="ebin-bar-wrap"><div class="ebin-bar" style="width:${pct.toFixed(0)}%"></div></div>
+      <span style="font-size:10px;color:var(--text-dim)">${jAtE(e).toExponential(1)} p/cm²/s/sr/(MeV/n)</span>
+      <span class="ebin-del" onclick="removeBin(${i})" title="Remove">✕</span>`;
+    c.appendChild(row);
+  });
+  const ts=$('total-output-size'); if(ts) ts.textContent=`~${(S.energyBins.length*0.8).toFixed(1)} GB output`;
+}
+
+/* ── 4. SVG GRID INIT ────────────────────────────────────────────── */
+function drawSvgGrid(svgId){
+  const g=document.getElementById(svgId); if(!g) return;
+  let html='';
+  for(let x=-60;x<=20;x+=5){
+    const px=cl(gx(x),5,390);
+    html+=`<line x1="${px}" y1="4" x2="${px}" y2="316" stroke="${x===0?'#1e3a5a':'#0c1e38'}" stroke-width="${x===0?1:0.5}" ${x!==0?'stroke-dasharray="3,5"':''}/>`;
+    if(x%20===0&&x!==0) html+=`<text x="${px-8}" y="${CY+18}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${x}RE</text>`;
+  }
+  for(let z=-35;z<=35;z+=5){
+    const py=cl(gz(z),5,310);
+    html+=`<line x1="4" y1="${py}" x2="396" y2="${py}" stroke="${z===0?'#1e3a5a':'#0c1e38'}" stroke-width="${z===0?1:0.5}" ${z!==0?'stroke-dasharray="3,5"':''}/>`;
+    if(z%20===0&&z!==0) html+=`<text x="${CX+3}" y="${py+3}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${z}RE</text>`;
+  }
+  g.innerHTML=html;
+}
+
+/* ── 5. REVIEW & PARAM FILE ──────────────────────────────────────── */
+function buildReview(){
+  const {r0,alpha}=getShue();
+  const isM=S.shueMode==='manual';
+  const f=(v,d)=>Number(v).toFixed(d);
+  const txt=[
+`! ═══════════════════════════════════════════════════════════════
+! AMPS_PARAM.in — generated by CCMC Runs-on-Request interface
+! Run: ${S.runName||'unnamed'}
+! ═══════════════════════════════════════════════════════════════
+
+#RUN_INFO
+RUN_ID                 ${S.runName||'unnamed'}
+PI_NAME                ${S.piName||'Unknown'}
+PI_EMAIL               ${S.piEmail||'unknown@unknown.edu'}
+SCIENCE_GOAL           ${$('science-goal')?.value||'custom'}
+
+#PARTICLE_SPECIES
+SPECIES                ${S.species.toUpperCase()}
+CHARGE                 ${S.charge}               ! elementary charge
+MASS_AMU               ${S.mass}           ! atomic mass units
+
+#BACKGROUND_FIELD
+FIELD_MODEL            ${S.fieldModel}
+TS05_DST               ${f(S.dst,1)}         ! nT ring current index
+TS05_PDYN              ${f(S.pdyn,2)}          ! nPa dynamic pressure
+TS05_BZ                ${f(S.bz,2)}         ! nT IMF Bz GSM
+TS05_VX                ${f(S.vx,1)}       ! km/s solar wind Vx
+TS05_NSW               ${f(S.nsw,2)}         ! cm-3 proton density
+TS05_BY                ${f(S.by,2)}          ! nT IMF By
+TS05_BX                ${f(S.bx,2)}          ! nT IMF Bx
+EPOCH                  ${S.epoch}  ! UTC snapshot
+
+#DOMAIN_BOUNDARY
+BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
+S.boundaryType==='BOX'?`DOMAIN_X_MAX           ${f(S.boxXmax,1)}         ! RE dayside
+DOMAIN_X_MIN           ${f(S.boxXmin,1)}        ! RE nightside
+DOMAIN_Y_MAX           ${f(S.boxYmax,1)}         ! RE dusk
+DOMAIN_Y_MIN           ${f(S.boxYmin,1)}        ! RE dawn
+DOMAIN_Z_MAX           ${f(S.boxZmax,1)}         ! RE north
+DOMAIN_Z_MIN           ${f(S.boxZmin,1)}        ! RE south
+R_INNER                ${f(S.boxRinner,1)}           ! RE inner loss sphere`:
+`SHUE_R0                ${isM?f(r0,2):'AUTO'}            ! RE; AUTO = from TS05 Bz,Pdyn
+SHUE_ALPHA             ${isM?f(alpha,3):'AUTO'}         ! flaring; AUTO = from TS05
+DOMAIN_X_TAIL          ${f(S.xtail,1)}        ! RE nightside cap
+R_INNER                ${f(S.shueRinner,1)}           ! RE inner loss sphere`,
+`
+#TEMPORAL
+TEMPORAL_MODE          ${S.tempMode}`,
+S.tempMode!=='STEADY_STATE'?`EVENT_START            ${S.eventStart}   ! UTC
+EVENT_END              ${S.eventEnd}   ! UTC
+FIELD_UPDATE_DT        ${S.fieldDt}                ! min
+INJECT_DT              ${S.injectDt}               ! min
+TS_INPUT_MODE          ${S.tsSource==='omni'?'OMNIWEB':S.tsSource==='file'?'FILE':'SCALAR'}`:
+`EPOCH                  ${S.epoch}`,
+`
+#SPECTRUM
+SPECTRUM_TYPE          ${S.specType}
+SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
+SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot
+SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
+SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            ${S.outputMode}
+FLUX_DT                ${f(S.fluxDt,1)}           ! min output cadence
+
+#OUTPUT_OPTIONS
+FLUX_TYPE              ${S.fluxType}
+OUTPUT_CUTOFF          ${$('output-cutoff')?.checked?'T':'F'}                    ! cutoff rigidity maps
+OUTPUT_PITCH           ${$('output-pitch')?.checked?'T':'F'}                    ! pitch angle distributions
+OUTPUT_FORMAT          ${$('output-format')?.value||S.outputFormat}
+OUTPUT_COORDS          ${$('output-coords')?.value||S.outputCoords}
+ENERGY_BINS            ${S.energyBins.join(' ')}   ! MeV/n
+
+#NUMERICAL
+N_PARTICLES            10000              ! test particles per injection
+MAX_BOUNCE             500                ! max mirror reflections
+DT_TRACE               1.0               ! s integration step
+PITCH_ISOTROPIC        T                 ! isotropic injection
+
+#END`
+].join('\n');
+
+  const el=$('review-param'); if(!el) return;
+  el.innerHTML=txt
+    .replace(/^(#\w[\w_]*)/gm,'<span class="r-section">$1</span>')
+    .replace(/^(! .+)/gm,'<span class="r-comment">$1</span>')
+    .replace(/(AUTO)/g,'<span class="r-auto">AUTO</span>');
+
+  buildManifest(); buildValidation();
+  return txt;
+}
+
+function copyParam(){ navigator.clipboard.writeText(buildReview().replace(/<[^>]+>/g,'')).then(()=>{ const b=$('copy-param'); if(b){b.textContent='✓ Copied';setTimeout(()=>{b.textContent='📋 Copy';},2000);} }); }
+function downloadParam(){
+  const txt=(buildReview()||'').replace(/<[^>]+>/g,'');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download='AMPS_PARAM.in'; a.click();
+}
+
+function buildManifest(){
+  const tb=$('manifest-tbody'); if(!tb) return;
+  const files=[
+    {name:'AMPS_PARAM.in',      role:'Main configuration',            req:true, auto:true,  ok:true},
+    {name:'AMPS_MANIFEST.json', role:'Run metadata (auto-generated)', req:true, auto:true,  ok:true},
+    {name:'trajectory.txt',     role:'Spacecraft trajectory (Mode B)',req:S.outputMode==='TRAJECTORY', auto:false, ok:S.trajLoaded},
+    {name:'ts05_driving.txt',   role:'TS05 time-series drivers',      req:S.tempMode==='TIME_SERIES'&&S.tsSource==='file', auto:S.tsSource==='omni', ok:true},
+    {name:'sep_spectrum_H+.txt',role:'Spectrum table (if TABLE mode)',req:S.specType==='TABLE', auto:false, ok:S.specType!=='TABLE'},
+  ];
+  tb.innerHTML=files.filter(f=>f.req||f.auto).map(f=>`
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--text)">${f.name}</td>
+      <td style="color:var(--text-dim)">${f.role}</td>
+      <td style="color:${f.req?'var(--text)':'var(--text-muted)'}">${f.req?'Required':'Optional'}</td>
+      <td style="color:${f.auto?'var(--green)':'var(--text-dim)'}">${f.auto?'Auto-generated':'User upload'}</td>
+      <td class="${f.ok?'vt-pass':'vt-fail'}">${f.ok?'✓ READY':'✗ MISSING'}</td>
+    </tr>`).join('');
+}
+
+function buildValidation(){
+  const {r0,alpha}=getShue();
+  const chks=[
+    {l:'Run name set',           ok:!!(S.runName?.trim())},
+    {l:'PI email valid',         ok:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('pi-email')?.value||'')},
+    {l:'Dst in TS05 range',      ok:S.dst>=-600&&S.dst<=50},
+    {l:'Pdyn > 0.1 nPa',         ok:S.pdyn>0.1},
+    {l:'Domain boundary set',    ok:['BOX','SHUE'].includes(S.boundaryType)},
+    {l:'Shue r₀ plausible (5–13 RE)', ok:S.boundaryType!=='SHUE'||( r0>5&&r0<13)},
+    {l:'Inject Δt ≥ Field Update', ok:S.tempMode==='STEADY_STATE'||S.injectDt>=S.fieldDt},
+    {l:'Energy bins defined',    ok:S.energyBins.length>0},
+    {l:'Spectrum type selected', ok:['POWER_LAW','BAND','TABLE'].includes(S.specType)},
+    {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
+    {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
+  ];
+  const pass=chks.filter(c=>c.ok).length;
+  const fail=chks.filter(c=>!c.ok&&!c.warn).length;
+  const warn=chks.filter(c=>!c.ok&&c.warn).length;
+  const rs=$('review-summary');
+  if(rs) rs.innerHTML=`<span class="v-ok">✓ ${pass} passed</span> · <span class="v-warn">⚠ ${warn} warning</span> · <span class="v-err">✗ ${fail} fatal</span>`;
+  const rc=$('review-checks'); if(rc){ rc.innerHTML='';
+    chks.forEach(c=>{ const d=document.createElement('div');
+      d.className='review-item '+(c.ok?'ri-ok':c.warn?'ri-warn':'');
+      d.innerHTML=`<div class="ri-label">${c.l}</div><div class="ri-val">${c.ok?'✓ PASS':c.warn?'⚠ WARN':'✗ FAIL'}</div>`;
+      rc.appendChild(d); }); }
+  const sb=$('submit-btn-final'); if(sb) sb.disabled=fail>0;
+}
+
+function finalSubmit(){
+  const m=$('submit-modal'); if(m) m.style.display='flex';
+}
+
+/* ── 6. SIDEBAR ──────────────────────────────────────────────────── */
+function updateSidebar(){
+  const set=(id,v,cls)=>{ const e=$(id); if(e){e.textContent=v;if(cls)e.className='sb-v '+cls;} };
+  set('sb-run-name', S.runName||'(not set)', S.runName?'':'o');
+  set('sb-species',  S.species==='proton'?'H⁺ Proton':S.species==='helium'?'He²⁺':S.species==='electron'?'e⁻':S.species,'g');
+  set('sb-field-model','TS05','g');
+  set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
+  set('sb-temporal', S.tempMode.replace('_',' '),'');
+  set('sb-spec-type', S.specType.replace('_',' '),'');
+  set('sb-output-mode', S.outputMode.replace('_',' '),'g');
+  const pct=Math.round((S.done.size/9)*100);
+  const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';
+  const pp=$('progress-pct'); if(pp) pp.textContent=pct+'%';
+}
+
+/* ── 7. HELP MODAL ───────────────────────────────────────────────── */
+function openHelpModal(){ const m=$('help-modal'); if(m) m.style.display='flex'; }
+
+/* ── 8. INIT ─────────────────────────────────────────────────────── */
+function init(){
+  draw

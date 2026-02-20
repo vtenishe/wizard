@@ -1,0 +1,304 @@
+<!-- ══════════════════════════════════════════════════
+     PANEL 4 — SIMULATION DOMAIN BOUNDARY
+     Ported from AMPS_Format_Interface2.html (Step 3b)
+════════════════════════════════════════════════════ -->
+<div id="panel-4" class="step-panel">
+<div class="sect" id="s-boundary">
+  <div class="sect-hd" onclick="toggle('s-boundary')">
+    <div class="sect-icon" style="background:rgba(139,111,247,.15)">🔲</div>
+    <div>
+      <div class="sect-title">Simulation Domain Boundary</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:1px;">
+        Outer boundary where SEPs are injected and escaping particles are terminated —
+        rectangular box (GSM) or Shue (1998) magnetopause surface
+      </div>
+    </div>
+    <span class="sect-sub"><span class="tag tag-new">NEW · Step 4</span></span>
+    <span class="chevron">▼</span>
+  </div>
+  <div class="sect-body">
+
+    <div class="infobox info-blue">
+      <b>Physical role:</b> AMPS traces SEP and GCR particles backward in time from the output location to the outer boundary.
+      Particles that reach the outer boundary are assigned the source spectrum (Panel 6).
+      Particles that mirror and return inward without reaching the boundary are classified as trapped or forbidden.
+      A tighter, physics-based boundary (Shue) reduces wasted computation beyond the real magnetopause,
+      while a simple box is easier to reason about and reproduces the legacy AMPS behaviour.
+      Maps to <code style="font-size:10px;font-family:var(--font-mono);">DOMAIN_BOUNDARY</code> block in <code style="font-size:10px;font-family:var(--font-mono);">AMPS_PARAM.in</code>.
+    </div>
+
+    <!-- BOUNDARY TYPE SELECTOR -->
+    <div class="bnd-cards">
+      <div class="bnd-card" id="bc-box" onclick="setBoundary('box')">
+        <div class="bc-icon">📦</div>
+        <div class="bc-title">Rectangular Box (GSM)</div>
+        <div class="bc-desc">
+          Axis-aligned cuboid defined by six faces in GSM coordinates (Earth radii R<sub>E</sub>).
+          Simple geometry; identical in all solar wind conditions; reproduces legacy AMPS 2016 default domain.
+          Recommended for GCR runs and parameter sweeps.
+        </div>
+        <div class="bc-formula">BOUNDARY_TYPE = BOX</div>
+      </div>
+      <div class="bnd-card sel" id="bc-shue" onclick="setBoundary('shue')">
+        <div class="bc-icon">🌐</div>
+        <div class="bc-title">Shue Magnetopause Surface (1998)</div>
+        <div class="bc-desc">
+          Empirical magnetopause model of Shue et al. (1998):
+          subsolar standoff r<sub>0</sub> and flaring α both respond to solar wind Pdyn and IMF Bz.
+          Physically motivated; ~20–30% fewer wasted particle traces vs. a fixed box during storm conditions.
+        </div>
+        <div class="bc-formula">BOUNDARY_TYPE = SHUE<br/>r(θ) = r₀ · (2 / (1 + cos θ))^α</div>
+      </div>
+    </div>
+
+    <!-- ═══ BOX BOUNDARY PANEL ═══ -->
+    <div id="bnd-box-panel" style="display:none;">
+      <div class="bnd-layout">
+        <div>
+          <div class="hlabel">
+            <h4>Box Dimensions — GSM Coordinates</h4>
+            <span style="font-size:10px;color:var(--text-dim);">1 R<sub>E</sub> = 6,371 km</span>
+          </div>
+          <div class="infobox info-blue" style="margin-bottom:10px;">
+            <b>Convention:</b> All values in Earth radii (R<sub>E</sub>), GSM frame.
+            X<sub>GSM</sub> points sunward; Z<sub>GSM</sub> is northward; Y<sub>GSM</sub> = Z<sub>GSM</sub> × X<sub>GSM</sub> (dawnward).
+            Particles leaving this box are terminated and recorded as "escaped to solar wind".
+          </div>
+          <div class="dim-grid box6">
+            <div class="dim-pair">
+              <label>X<sub>max</sub> <span class="unit">[R<sub>E</sub>, dayside]</span></label>
+              <input id="box-xmax" type="number" value="15" step="0.5" oninput="updateBoxDiagram()" title="Must exceed magnetopause standoff (~10–12 RE quiet, ~8 RE storm)."/>
+              <div class="hint-val">Typical: 12–20 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>X<sub>min</sub> <span class="unit">[R<sub>E</sub>, nightside]</span></label>
+              <input id="box-xmin" type="number" value="-60" step="1" oninput="updateBoxDiagram()" title="Magnetotail extends to -60 to -100 RE."/>
+              <div class="hint-val">Typical: −40 to −100 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Y<sub>max</sub> <span class="unit">[R<sub>E</sub>, dusk]</span></label>
+              <input id="box-ymax" type="number" value="25" step="0.5" oninput="updateBoxDiagram()"/>
+              <div class="hint-val">Typical: 20–30 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Y<sub>min</sub> <span class="unit">[R<sub>E</sub>, dawn]</span></label>
+              <input id="box-ymin" type="number" value="-25" step="0.5" oninput="updateBoxDiagram()"/>
+              <div class="hint-val">Typical: −20 to −30 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Z<sub>max</sub> <span class="unit">[R<sub>E</sub>, north]</span></label>
+              <input id="box-zmax" type="number" value="20" step="0.5" oninput="updateBoxDiagram()"/>
+              <div class="hint-val">Typical: 15–25 R<sub>E</sub></div>
+            </div>
+            <div class="dim-pair">
+              <label>Z<sub>min</sub> <span class="unit">[R<sub>E</sub>, south]</span></label>
+              <input id="box-zmin" type="number" value="-20" step="0.5" oninput="updateBoxDiagram()"/>
+              <div class="hint-val">Typical: −15 to −25 R<sub>E</sub></div>
+            </div>
+          </div>
+          <div style="margin-top:6px;">
+            <div class="dim-pair" style="max-width:200px;">
+              <label>Inner boundary R<sub>inner</sub> <span class="unit">[R<sub>E</sub>]</span></label>
+              <input id="box-rinner" type="number" value="2.0" step="0.1" min="1.0" max="4.0" oninput="updateBoxDiagram()"/>
+              <div class="hint-val">Loss cone / precipitation sphere. Default: 2 R<sub>E</sub>. Maps to <code style="font-family:var(--font-mono);font-size:10px;">R_INNER</code>.</div>
+            </div>
+          </div>
+          <div class="bnd-val-row" id="box-val-row">
+            <div class="bv-item bv-ok" id="bv-xrange">✓ X range OK</div>
+            <div class="bv-item bv-ok" id="bv-yrange">✓ Y symmetric</div>
+            <div class="bv-item bv-ok" id="bv-zrange">✓ Z range OK</div>
+            <div class="bv-item bv-ok" id="bv-innerok">✓ Inner boundary OK</div>
+          </div>
+          <div class="keyword-strip" id="box-kw-strip">
+            <span class="kw-comment">#DOMAIN_BOUNDARY</span><br/>
+            <span class="kw-key">BOUNDARY_TYPE</span>&nbsp;&nbsp;<span class="kw-val">BOX</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! rectangular cuboid in GSM</span><br/>
+            <span class="kw-key">DOMAIN_X_MAX</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-xmax">15.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E dayside</span><br/>
+            <span class="kw-key">DOMAIN_X_MIN</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-xmin">-60.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E nightside tail</span><br/>
+            <span class="kw-key">DOMAIN_Y_MAX</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-ymax">25.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E dusk flank</span><br/>
+            <span class="kw-key">DOMAIN_Y_MIN</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-ymin">-25.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E dawn flank</span><br/>
+            <span class="kw-key">DOMAIN_Z_MAX</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-zmax">20.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E north</span><br/>
+            <span class="kw-key">DOMAIN_Z_MIN</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-zmin">-20.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E south</span><br/>
+            <span class="kw-key">R_INNER</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-rinner">2.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E inner loss sphere</span>
+          </div>
+        </div>
+
+        <!-- Right column: BOX SVG -->
+        <div class="bnd-diagram">
+          <div class="bnd-diag-title">
+            GSM X–Z Cross-section (Y=0 plane)
+            <span class="bnd-diag-sub">Updates live · 1 tick = 5 R<sub>E</sub></span>
+          </div>
+          <div class="bnd-svg-wrap">
+            <svg id="box-svg" viewBox="0 0 400 320" style="width:100%;height:300px;display:block;background:#060e1c;border-radius:4px;">
+              <defs>
+                <marker id="arr-box" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#38c0ff"/>
+                </marker>
+              </defs>
+              <g id="box-grid"></g>
+              <line x1="20" y1="160" x2="390" y2="160" stroke="#1a3358" stroke-width="1"/>
+              <line x1="200" y1="10" x2="200" y2="310" stroke="#1a3358" stroke-width="1"/>
+              <text x="385" y="155" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">+X</text>
+              <text x="182" y="22" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">+Z</text>
+              <text x="22"  y="155" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">-X</text>
+              <text x="182" y="308" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">-Z</text>
+              <text x="355" y="175" fill="#6a88b0" font-family="IBM Plex Mono" font-size="9">Sun →</text>
+              <text x="205" y="157" fill="#3a5070" font-family="IBM Plex Mono" font-size="9">0</text>
+              <circle id="earth-box" cx="200" cy="160" r="5" fill="#1a88d4"/>
+              <circle id="inner-box" cx="200" cy="160" r="13" fill="rgba(255,90,90,.07)" stroke="#ff5a5a" stroke-width="1" stroke-dasharray="3,3"/>
+              <text id="inner-box-lbl" x="215" y="145" fill="#ff5a5a" font-family="IBM Plex Mono" font-size="9">R_inner=2RE</text>
+              <rect id="box-rect" x="40" y="53" width="284" height="214" fill="rgba(56,192,255,.06)" stroke="#38c0ff" stroke-width="1.5" stroke-dasharray="7,4"/>
+              <text id="box-lbl-xmax" x="310" y="174" fill="#38c0ff" font-family="IBM Plex Mono" font-size="9">Xmax</text>
+              <text id="box-lbl-xmin" x="25"  y="174" fill="#38c0ff" font-family="IBM Plex Mono" font-size="9">Xmin</text>
+              <text id="box-lbl-zmax" x="204" y="46"  fill="#38c0ff" font-family="IBM Plex Mono" font-size="9">Zmax</text>
+              <text id="box-lbl-zmin" x="204" y="275" fill="#38c0ff" font-family="IBM Plex Mono" font-size="9">Zmin</text>
+            </svg>
+          </div>
+        </div>
+      </div><!-- /bnd-layout box -->
+    </div><!-- /bnd-box-panel -->
+
+    <!-- ═══ SHUE MAGNETOPAUSE PANEL ═══ -->
+    <div id="bnd-shue-panel">
+      <div class="bnd-layout">
+        <div>
+          <!-- Auto-compute display -->
+          <div class="shue-auto" id="shue-auto-box">
+            <div class="shue-auto-title">🔁 Auto-computed from TS05 driving parameters (Panel 3)</div>
+            <div class="shue-params">
+              <div class="shue-param">
+                <div class="shue-param-label">r₀ <span style="font-size:9px;">[R<sub>E</sub>]</span></div>
+                <div class="shue-param-val" id="shue-r0-val">8.56</div>
+                <div class="shue-param-eq">= (11.4+0.013Bz)·Pdyn^(−1/6.6)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">α</div>
+                <div class="shue-param-val" id="shue-alpha-val">0.617</div>
+                <div class="shue-param-eq">= (0.58−0.007Bz)·(1+0.024 ln Pdyn)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">X<sub>sub</sub> [R<sub>E</sub>]</div>
+                <div class="shue-param-val" id="shue-xsub-val">8.56</div>
+                <div class="shue-param-eq">= r₀ (θ=0°)</div>
+              </div>
+              <div class="shue-param">
+                <div class="shue-param-label">R<sub>flank</sub> [R<sub>E</sub>]</div>
+                <div class="shue-param-val" id="shue-rflank-val">13.4</div>
+                <div class="shue-param-eq">= r(θ=90°)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auto vs Manual toggle -->
+          <div class="tog" id="shue-mode-tog" style="margin-bottom:12px;">
+            <button class="tog-btn on" id="shue-auto-btn" onclick="setShueMode(this,'auto')">🔁 Auto from TS05 inputs</button>
+            <button class="tog-btn"    id="shue-man-btn"  onclick="setShueMode(this,'manual')">✏️ Manual override</button>
+          </div>
+
+          <!-- Manual override fields (hidden by default) -->
+          <div id="shue-manual-fields" style="display:none;margin-bottom:12px;">
+            <div class="dim-grid shue2">
+              <div class="dim-pair">
+                <label>r₀ — Subsolar standoff <span class="unit">[R<sub>E</sub>]</span></label>
+                <input id="shue-r0-in" type="number" value="8.56" step="0.1" min="4" max="14" oninput="updateShueDiagram()"/>
+                <div class="hint-val">Quiet: ~11 R<sub>E</sub> · Storm peak: ~7–9 R<sub>E</sub></div>
+              </div>
+              <div class="dim-pair">
+                <label>α — Flaring parameter</label>
+                <input id="shue-alpha-in" type="number" value="0.617" step="0.01" min="0.3" max="0.9" oninput="updateShueDiagram()"/>
+                <div class="hint-val">Typical: 0.50–0.65 · Southward Bz → larger α</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="infobox info-blue" style="margin-bottom:10px;">
+            <b>Shue et al. (1998) magnetopause model:</b><br/>
+            r(θ) = r₀ · (2 / (1 + cos θ))^α<br/><br/>
+            <b>r₀ from solar wind:</b> r₀ = (11.4 + 0.013·B<sub>z</sub>) · P<sub>dyn</sub><sup>−1/6.6</sup><br/>
+            <b>α from solar wind:</b> α = (0.58 − 0.007·B<sub>z</sub>) · (1 + 0.024·ln P<sub>dyn</sub>)<br/><br/>
+            θ is the angle from the Sun–Earth line (GSM X-axis). Bz in nT (negative = southward), P<sub>dyn</sub> in nPa.<br/>
+            Reference: Shue et al., J. Geophys. Res., 103, 17,691–17,700, 1998.
+          </div>
+
+          <div class="dim-pair" style="max-width:200px;margin-bottom:10px;">
+            <label>Inner boundary R<sub>inner</sub> <span class="unit">[R<sub>E</sub>]</span></label>
+            <input id="shue-rinner" type="number" value="2.0" step="0.1" min="1.0" max="4.0" oninput="updateShueDiagram()"/>
+            <div class="hint-val">Loss cone. Default 2 R<sub>E</sub>. Maps to <code style="font-family:var(--font-mono);font-size:10px;">R_INNER</code>.</div>
+          </div>
+
+          <div class="dim-pair" style="max-width:200px;margin-bottom:12px;">
+            <label>Nightside tail cap X<sub>tail</sub> <span class="unit">[R<sub>E</sub>]</span></label>
+            <input id="shue-xtail" type="number" value="-60" step="5" max="-20" oninput="updateShueDiagram()"/>
+            <div class="hint-val">Flat cap closing the open nightside. Typical −40 to −100 R<sub>E</sub>. Maps to <code style="font-family:var(--font-mono);font-size:10px;">DOMAIN_X_TAIL</code>.</div>
+          </div>
+
+          <div class="bnd-val-row" id="shue-val-row">
+            <div class="bv-item" id="sv-r0"><span class="bv-ok">✓</span>&nbsp;r₀ = 8.56 R<sub>E</sub> (storm-time)</div>
+            <div class="bv-item" id="sv-alpha"><span class="bv-ok">✓</span>&nbsp;α = 0.617 (normal range)</div>
+            <div class="bv-item" id="sv-tail"><span class="bv-ok">✓</span>&nbsp;Tail cap OK</div>
+          </div>
+
+          <div class="keyword-strip" id="shue-kw-strip">
+            <span class="kw-comment">#DOMAIN_BOUNDARY</span><br/>
+            <span class="kw-key">BOUNDARY_TYPE</span>&nbsp;&nbsp;<span class="kw-val">SHUE</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! Shue et al. 1998 magnetopause</span><br/>
+            <span class="kw-key">SHUE_R0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-shue-r0">AUTO</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E; AUTO = compute from TS05 Bz,Pdyn</span><br/>
+            <span class="kw-key">SHUE_ALPHA</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-shue-alpha">AUTO</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! AUTO = compute from TS05 Bz,Pdyn</span><br/>
+            <span class="kw-key">DOMAIN_X_TAIL</span>&nbsp;&nbsp;<span class="kw-val" id="kw-xtail">-60.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E flat nightside cap</span><br/>
+            <span class="kw-key">R_INNER</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-shue-rinner">2.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! R_E inner loss sphere</span>
+          </div>
+        </div>
+
+        <!-- Right column: SHUE SVG (exact from reference) -->
+        <div class="bnd-diagram">
+          <div class="bnd-diag-title">
+            GSM X–Z Cross-section · Shue Magnetopause
+            <span class="bnd-diag-sub">Updates live · 1 tick = 5 R<sub>E</sub></span>
+          </div>
+          <div class="bnd-svg-wrap">
+            <svg id="shue-svg" viewBox="0 0 400 320" style="width:100%;height:300px;display:block;background:#060e1c;border-radius:4px;">
+              <defs>
+                <marker id="arr-shue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#2dd4a0"/>
+                </marker>
+                <clipPath id="shue-clip">
+                  <rect x="0" y="0" width="400" height="320"/>
+                </clipPath>
+              </defs>
+              <g id="shue-grid"></g>
+              <line x1="10" y1="160" x2="390" y2="160" stroke="#1a3358" stroke-width="1"/>
+              <line x1="200" y1="10" x2="200" y2="310" stroke="#1a3358" stroke-width="1"/>
+              <text x="374" y="155" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">+X</text>
+              <text x="182" y="22"  fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">+Z</text>
+              <text x="15"  y="155" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">−X</text>
+              <text x="182" y="308" fill="#6a88b0" font-family="IBM Plex Mono" font-size="10">−Z</text>
+              <text x="340" y="174" fill="#6a88b0" font-family="IBM Plex Mono" font-size="9">☀ Sun</text>
+              <text x="204" y="157" fill="#3a5070" font-family="IBM Plex Mono" font-size="9">0</text>
+              <circle id="earth-shue" cx="200" cy="160" r="5" fill="#1a88d4"/>
+              <path id="shue-path" d="" fill="rgba(45,212,160,.07)" stroke="#2dd4a0" stroke-width="2" clip-path="url(#shue-clip)"/>
+              <line id="shue-tailcap" x1="80" y1="80" x2="80" y2="240" stroke="#38c0ff" stroke-width="1.5" stroke-dasharray="5,4"/>
+              <text id="shue-tailcap-lbl" x="84" y="100" fill="#38c0ff" font-family="IBM Plex Mono" font-size="9">X_tail</text>
+              <circle id="inner-shue" cx="200" cy="160" r="13" fill="rgba(255,90,90,.07)" stroke="#ff5a5a" stroke-width="1" stroke-dasharray="3,3"/>
+              <text id="inner-shue-lbl" x="215" y="145" fill="#ff5a5a" font-family="IBM Plex Mono" font-size="9">R_in=2RE</text>
+              <line id="shue-r0-line" x1="200" y1="160" x2="284" y2="160" stroke="#ffd04b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-shue)"/>
+              <text id="shue-r0-lbl" x="230" y="152" fill="#ffd04b" font-family="IBM Plex Mono" font-size="9">r₀</text>
+              <line id="shue-flank-line" x1="200" y1="160" x2="200" y2="90" stroke="#8b6ff7" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr-shue)"/>
+              <text id="shue-flank-lbl" x="204" y="115" fill="#8b6ff7" font-family="IBM Plex Mono" font-size="9">R_flk</text>
+              <text id="shue-svg-r0"    x="12" y="290" fill="#2dd4a0" font-family="IBM Plex Mono" font-size="9">r₀=8.56 RE</text>
+              <text id="shue-svg-alpha" x="12" y="302" fill="#2dd4a0" font-family="IBM Plex Mono" font-size="9">α=0.617</text>
+              <text id="shue-svg-dst"   x="120" y="290" fill="#ff9a3c" font-family="IBM Plex Mono" font-size="9">Dst=−142nT</text>
+              <text id="shue-svg-pdyn"  x="120" y="302" fill="#ff9a3c" font-family="IBM Plex Mono" font-size="9">Pdyn=3.5nPa</text>
+            </svg>
+          </div>
+          <!-- Live comparison: quiet-time vs storm-time r0 context -->
+          <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:10px;flex-wrap:wrap;">
+            <div style="color:var(--text-dim);">Quiet (Dst=0, Pdyn=2): <span style="color:#fff;font-family:var(--font-mono);">r₀ ≈ 11.2 R<sub>E</sub></span></div>
+            <div style="color:var(--text-dim);">Sep 2017 storm peak: <span style="color:var(--orange);font-family:var(--font-mono);">r₀ ≈ 8.6 R<sub>E</sub></span></div>
+            <div style="color:var(--text-dim);">Extreme (Dst=−300): <span style="color:var(--red);font-family:var(--font-mono);">r₀ ≈ 6.5 R<sub>E</sub></span></div>
+          </div>
+        </div>
+      </div><!-- /bnd-layout shue -->
+    </div><!-- /bnd-shue-panel -->
+
+  </div><!-- /sect-body -->
+</div><!-- /s-boundary -->
+</div><!-- /panel-4 -->

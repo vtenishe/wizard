@@ -1,0 +1,256 @@
+<!-- ══════════════════════════════════════════════════
+     PANEL 5 — TEMPORAL VARIABILITY OF GEOMAGNETIC FIELD
+     Ported from AMPS_Format_Interface2.html (Step 4a)
+════════════════════════════════════════════════════ -->
+<div id="panel-5" class="step-panel">
+<div class="sect" id="s-temporal">
+  <div class="sect-hd" onclick="toggle('s-temporal')">
+    <div class="sect-icon" style="background:rgba(255,208,75,.12)">⏱️</div>
+    <div>
+      <div class="sect-title">Temporal Variability of the Geomagnetic Field</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:1px;">How should the magnetic field change during the simulation? Sets <code style="font-size:10px;font-family:var(--font-mono);">TEMPORAL_MODE</code> in AMPS_PARAM.in</div>
+    </div>
+    <span class="sect-sub"><span class="tag tag-new">Step 5</span></span>
+    <span class="chevron">▼</span>
+  </div>
+  <div class="sect-body">
+
+    <div class="infobox info-blue">
+      <b>Why this matters:</b> The geomagnetic cutoff rigidity at mid-latitudes can drop 30–50% during a storm main phase (e.g., Dst −142 nT on Sep 7, 2017), allowing lower-energy SEPs to penetrate to LEO that would be shielded during quiet time.
+      Steady-state captures a snapshot; <em>Time-Series</em> tracks the storm evolution needed for Van Allen Probe validation.
+    </div>
+
+    <!-- THREE TEMPORAL MODE CARDS -->
+    <div class="temp-cards">
+      <div class="temp-card" id="tc-steady" onclick="setTemporal('steady')">
+        <div class="tc-icon">⚡</div>
+        <div class="tc-title">Steady-State</div>
+        <div class="tc-desc">Field fixed at one epoch. Fastest run. Use for global cutoff rigidity maps, parameter sweeps, and quiet-time SEP transmission studies.</div>
+        <div class="tc-badge"><span class="oc-badge badge-def">TEMPORAL_MODE = STEADY_STATE</span></div>
+      </div>
+      <div class="temp-card sel" id="tc-series" onclick="setTemporal('series')">
+        <div class="tc-icon">📈</div>
+        <div class="tc-title">Time-Series (Event-Driven)</div>
+        <div class="tc-desc">Field updated every FIELD_UPDATE_DT minutes from ts05_driving.txt or OMNIWeb. Required for Van Allen Probe validation and storm-phase studies.</div>
+        <div class="tc-badge"><span class="oc-badge badge-y1">TEMPORAL_MODE = TIME_SERIES</span></div>
+      </div>
+      <div class="temp-card disabled" id="tc-coupled">
+        <div class="tc-icon">🔄</div>
+        <div class="tc-title">Coupled MHD <span class="tag tag-exp">Year 2</span></div>
+        <div class="tc-desc">BATS-R-US or GAMERA runs concurrently. Self-consistent magnetosphere. 10× more expensive. Plans for Year 2 of the project.</div>
+        <div class="tc-badge"><span class="oc-badge badge-y2">TEMPORAL_MODE = COUPLED_MHD</span></div>
+      </div>
+    </div>
+
+    <!-- TIME-SERIES SUB-FORM -->
+    <div id="ts-form" style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--bg-mid);">
+      <div class="hlabel">
+        <h4>Time-Series Event Window &amp; Cadence</h4>
+        <span class="tag tag-new">Active</span>
+      </div>
+
+      <div class="frow c4">
+        <div class="field">
+          <label>Event Start <span class="req">*</span></label>
+          <input id="event-start" type="datetime-local" value="2017-09-10T12:00" oninput="updateParamPreview()"/>
+          <div class="hint">UTC. Maps to <code>EVENT_START</code> in AMPS_PARAM.in</div>
+        </div>
+        <div class="field">
+          <label>Event End <span class="req">*</span></label>
+          <input id="event-end" type="datetime-local" value="2017-09-14T00:00" oninput="updateParamPreview()"/>
+          <div class="hint">UTC. Maps to <code>EVENT_END</code></div>
+        </div>
+        <div class="field">
+          <label>Field Update Δt <span class="unit">[min]</span></label>
+          <input id="field-dt" type="number" value="5" min="1" max="60" oninput="updateTimeline()"/>
+          <div class="hint">TS05 refresh cadence. <code>FIELD_UPDATE_DT</code>. Recommend ≤5 min during storms.</div>
+        </div>
+        <div class="field">
+          <label>Particle Inject Δt <span class="unit">[min]</span></label>
+          <input id="inject-dt" type="number" value="30" min="5" max="240" oninput="updateTimeline()"/>
+          <div class="hint">New particle batch frequency. <code>INJECT_DT</code>. Must be ≥ Field Update Δt.</div>
+        </div>
+      </div>
+
+      <!-- FIELD UPDATE VISUALIZATION -->
+      <div class="field-update-viz">
+        <div style="font-size:11px;font-weight:700;color:var(--accent-bright);margin-bottom:8px;">
+          🗂️ How time-series field updating works in AMPS
+        </div>
+        <div class="fu-timeline" id="fu-timeline-wrap">
+          <div class="fu-axis"></div>
+          <!-- ticks and particles injected by updateTimeline() -->
+        </div>
+        <div class="fu-legend">
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--accent)"></div>TS05 field refresh every 5 min (FIELD_UPDATE_DT)</div>
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--orange)"></div>New particle batch injected at magnetopause every 30 min (INJECT_DT)</div>
+          <div class="fu-leg"><div class="fu-dot" style="background:var(--text-dim)"></div>Particles propagated in quasi-static field snapshot between refreshes</div>
+        </div>
+      </div>
+
+      <!-- TS05 DRIVING DATA SOURCE SELECTOR -->
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">TS05 Driving Data Source</div>
+      <div class="tog" id="ts-source-tog">
+        <button class="tog-btn on" id="src-omni"   onclick="setSrc(this,'omni')">🌐 Auto-fetch (OMNIWeb)</button>
+        <button class="tog-btn"    id="src-file"   onclick="setSrc(this,'file')">📁 Upload ts05_driving.txt</button>
+        <button class="tog-btn"    id="src-scalar" onclick="setSrc(this,'scalar')">📌 Scalar (all steps)</button>
+      </div>
+
+      <!-- OMNIWEB AUTO-FETCH PANEL -->
+      <div id="omni-panel" class="omni-widget">
+        <div class="omni-title">🌐 OMNIWeb + WDC Kyoto Auto-Fetch Pipeline</div>
+        <div class="omni-steps">
+          <div class="omni-step">
+            <div class="os-num done" id="os-1">1</div>
+            <span>Query <code style="font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,.3);padding:0 3px;">omniweb.gsfc.nasa.gov</code> for 1-min OMNI SW: Bz, By, Bx (GSM), Pdyn, Vx, Nsw</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num done" id="os-2">2</div>
+            <span>Query <code style="font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,.3);padding:0 3px;">wdc.kugi.kyoto-u.ac.jp</code> for hourly Dst or 1-min Sym-H</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num" id="os-3">3</div>
+            <span style="color:var(--text-dim);">Merge streams → fill gaps → write ts05_driving.txt to run staging directory</span>
+          </div>
+          <div class="omni-step">
+            <div class="os-num pending" id="os-4">4</div>
+            <span style="color:var(--text-dim);">Display data summary for user confirmation before HPC dispatch</span>
+          </div>
+        </div>
+
+        <div class="frow c3">
+          <div class="field">
+            <label>Data cadence</label>
+            <select id="omni-cadence">
+              <option>1 min (OMNI 1-min)</option>
+              <option selected>5 min (OMNI 5-min, recommended)</option>
+              <option>1 hr (hourly, not recommended for storms)</option>
+            </select>
+            <div class="hint">Sets ts05_driving.txt row spacing. Recommended: ≤5 min for Dst gradients &gt;20 nT/hr.</div>
+          </div>
+          <div class="field">
+            <label>Gap fill method</label>
+            <select id="omni-gapfill">
+              <option selected>Linear interpolation (gaps &lt; 30 min)</option>
+              <option>Fill with FILL_VALUE (−9999)</option>
+              <option>Previous valid value (hold)</option>
+            </select>
+            <div class="hint">AMPS stops at <code>FILL_VALUE</code> rows; linear interpolation is safer.</div>
+          </div>
+          <div class="field">
+            <label>Fallback for &lt;24h events</label>
+            <select id="omni-fallback">
+              <option selected>DSCOVR L1 / ACE L2 (~15 min latency)</option>
+              <option>OMNI real-time (1–4 hr latency)</option>
+            </select>
+            <div class="hint">OMNI has ~1–24 hr latency. Recent events need DSCOVR/ACE.</div>
+          </div>
+        </div>
+
+        <div class="omni-status" id="omni-status">
+          <span class="ok">✓ Ready to fetch</span>&nbsp;&nbsp; Time range: <span style="color:#fff;">2017-09-10 12:00 → 2017-09-14 00:00 UTC</span><br/>
+          Estimated rows: <span style="color:#fff;">~1,056 rows @ 5 min cadence</span> &nbsp;•&nbsp;
+          <span class="warn">⚠ Note: OMNI data gap 2017-09-10 19:00–19:30 UTC (solar wind shock passage — gap-fill will apply)</span>
+        </div>
+
+        <!-- TS05 preview table -->
+        <div style="overflow-x:auto;margin-bottom:10px;">
+          <table class="ts05-table">
+            <tr>
+              <th>YYYY MM DD HH mm</th>
+              <th class="c-dst">Dst [nT]</th><th class="c-pdyn">Pdyn [nPa]</th>
+              <th class="c-bz">Bz [nT]</th><th class="c-vx">Vx [km/s]</th>
+              <th class="c-nsw">Nsw [cm⁻³]</th><th class="c-by">By [nT]</th>
+            </tr>
+            <tr>
+              <td style="font-family:var(--font-mono)">2017 09 07 00 00</td>
+              <td class="c-dst">−15.0</td><td class="c-pdyn">2.10</td>
+              <td class="c-bz">−2.5</td><td class="c-vx">−420</td>
+              <td class="c-nsw">6.8</td><td class="c-by">1.2</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--font-mono)">2017 09 07 23 30</td>
+              <td class="c-dst">−142.0</td><td class="c-pdyn">3.50</td>
+              <td class="c-bz">−18.5</td><td class="c-vx">−650</td>
+              <td class="c-nsw">12.0</td><td class="c-by">3.2</td>
+            </tr>
+            <tr style="opacity:.4">
+              <td colspan="7" style="text-align:center;font-size:10px;color:var(--text-dim);padding:4px;">⋯ 1,052 more rows ⋯</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--font-mono)">2017 09 13 23 55</td>
+              <td class="c-dst">−45.0</td><td class="c-pdyn">1.80</td>
+              <td class="c-bz">+3.2</td><td class="c-vx">−380</td>
+              <td class="c-nsw">4.5</td><td class="c-by">2.1</td>
+            </tr>
+          </table>
+        </div>
+
+        <button onclick="simulateOmniFetch()" class="btn-secondary btn-sm" style="font-size:12px;">🔄 Fetch Now &amp; Preview Data</button>
+      </div><!-- /omni-panel -->
+
+      <!-- FILE UPLOAD PANEL -->
+      <div id="file-panel" style="display:none;margin-top:12px;">
+        <div class="infobox info-blue">
+          <b>ts05_driving.txt column specification:</b><br/>
+          <code style="font-family:var(--font-mono);font-size:10px;">YYYY MM DD HH mm&nbsp;&nbsp;Dst[nT]&nbsp;&nbsp;Pdyn[nPa]&nbsp;&nbsp;Bz[nT]&nbsp;&nbsp;Vx[km/s]&nbsp;&nbsp;Nsw[cm⁻³]&nbsp;&nbsp;By[nT](opt)&nbsp;&nbsp;Bx[nT](opt)</code><br/>
+          Comment lines start with <code>#</code>. Whitespace-delimited. One row per time step. Times must be monotonically increasing UTC.
+        </div>
+        <div class="dropzone" id="ts-dz" onclick="this.classList.add('loaded')">
+          <div class="dz-icon">📄</div>
+          <div class="dz-primary">Drop ts05_driving.txt here or click to browse</div>
+          <div class="dz-sub">.txt · .csv · .dat · max 50 MB</div>
+        </div>
+
+        <!-- ts05_driving.txt format diagram -->
+        <div class="fmt-diagram" style="margin-top:12px;">
+          <div class="fmt-title">
+            <span class="fmt-title-icon">🧲</span>
+            ts05_driving.txt — TS05 Temporal Driving Parameters
+            <span style="margin-left:auto;font-size:10px;color:var(--text-dim);font-weight:400;">whitespace-delimited · comment: #</span>
+          </div>
+          <div class="fmt-sample">
+            <span class="f-comment"># AMPS TS05 Driving Parameters · Source: OMNI 1-min + WDC Kyoto</span><br/>
+            <span class="f-comment"># Columns: YYYY MM DD HH mm &nbsp; Dst[nT] &nbsp; Pdyn[nPa] &nbsp; Bz[nT] &nbsp; Vx[km/s] &nbsp; Nsw[cm-3] &nbsp; By[nT] &nbsp; Bx[nT]</span><br/>
+            <br/>
+            <span class="f-year">2017</span>&nbsp;<span class="f-mon">09</span>&nbsp;<span class="f-day">07</span>&nbsp;<span class="f-hr">23</span>&nbsp;<span class="f-min">30</span>&nbsp;&nbsp;<span class="f-dst">-142.0</span>&nbsp;&nbsp;<span class="f-pdyn">3.5</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bz">-18.5</span>&nbsp;&nbsp;<span class="f-vx">-650.0</span>&nbsp;&nbsp;&nbsp;<span class="f-nsw">12.0</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-by">3.2</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bx">0.0</span>&nbsp;&nbsp;<span class="f-comment"># Dst peak epoch</span><br/>
+            <span class="f-year">2017</span>&nbsp;<span class="f-mon">09</span>&nbsp;<span class="f-day">07</span>&nbsp;<span class="f-hr">23</span>&nbsp;<span class="f-min">35</span>&nbsp;&nbsp;<span class="f-dst">-138.0</span>&nbsp;&nbsp;<span class="f-pdyn">3.3</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bz">-17.2</span>&nbsp;&nbsp;<span class="f-vx">-640.0</span>&nbsp;&nbsp;&nbsp;<span class="f-nsw">11.8</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-by">3.0</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bx">0.0</span><br/>
+            <br/>
+            <span class="f-comment"># ── Recovery phase ──</span><br/>
+            <span class="f-year">2017</span>&nbsp;<span class="f-mon">09</span>&nbsp;<span class="f-day">08</span>&nbsp;<span class="f-hr">06</span>&nbsp;<span class="f-min">00</span>&nbsp;&nbsp;<span class="f-dst">&nbsp;-98.0</span>&nbsp;&nbsp;<span class="f-pdyn">2.8</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bz">&nbsp;-8.5</span>&nbsp;&nbsp;<span class="f-vx">-550.0</span>&nbsp;&nbsp;&nbsp;<span class="f-nsw">&nbsp;9.2</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-by">1.8</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f-bx">0.0</span>
+          </div>
+          <div class="fmt-legend">
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#38c0ff"></div><span class="fmt-leg-name">YYYY MM DD HH mm</span><span class="fmt-leg-desc">UTC timestamp (no seconds)</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff5a5a"></div><span class="fmt-leg-name">Dst [nT]</span><span class="fmt-leg-desc">Ring current; PRIMARY cutoff driver</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff9a3c"></div><span class="fmt-leg-name">Pdyn [nPa]</span><span class="fmt-leg-desc">SW pressure; magnetopause standoff</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#ff6b6b"></div><span class="fmt-leg-name">Bz [nT]</span><span class="fmt-leg-desc">IMF z (GSM); southward &lt;0 = storm</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#c5a0ff"></div><span class="fmt-leg-name">Vx [km/s]</span><span class="fmt-leg-desc">SW bulk velocity (negative)</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#8bb4ff"></div><span class="fmt-leg-name">Nsw [cm⁻³]</span><span class="fmt-leg-desc">Proton number density</span></div>
+            <div class="fmt-leg-item"><div class="fmt-leg-swatch" style="background:#78d4ff"></div><span class="fmt-leg-name">By, Bx [nT]</span><span class="fmt-leg-desc">IMF Y, X — optional columns</span></div>
+          </div>
+        </div>
+      </div><!-- /file-panel -->
+
+      <!-- SCALAR NOTE (shown when scalar mode selected) -->
+      <div id="scalar-panel" style="display:none;margin-top:12px;">
+        <div class="infobox info-blue">
+          <b>Scalar mode:</b> All time steps use the TS05 values set in Panel 3 (Background Field). This is equivalent to STEADY_STATE but still steps through time — the field parameters do not evolve. Useful only for verifying temporal output format without driving-data overhead.
+        </div>
+      </div>
+
+    </div><!-- /ts-form -->
+
+    <!-- AMPS_PARAM.in keyword preview -->
+    <div class="keyword-strip" style="margin-top:12px;">
+      <span class="kw-comment">#TEMPORAL</span><br/>
+      <span class="kw-key">TEMPORAL_MODE</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-temporal-mode">TIME_SERIES</span><br/>
+      <span class="kw-key">EVENT_START</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-event-start">2017-09-10T12:00:00Z</span><br/>
+      <span class="kw-key">EVENT_END</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-event-end">2017-09-14T00:00:00Z</span><br/>
+      <span class="kw-key">FIELD_UPDATE_DT</span>&nbsp;<span class="kw-val" id="kw-field-dt">5.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! min</span><br/>
+      <span class="kw-key">INJECT_DT</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-inject-dt">30.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw-comment">! min; must be ≥ FIELD_UPDATE_DT</span><br/>
+      <span class="kw-key">TS_INPUT_MODE</span>&nbsp;&nbsp;&nbsp;<span class="kw-val" id="kw-ts-src">OMNIWEB</span>&nbsp;&nbsp;<span class="kw-comment">! OMNIWEB | FILE | SCALAR</span>
+    </div>
+
+  </div><!-- /sect-body -->
+</div><!-- /s-temporal -->
+</div><!-- /panel-5 -->

@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   AMPS CCMC — animations.css
+   Keyframe animations, loading states, skeleton screens,
+   and SVG diagram container styles.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ── PAGE LOAD STAGGER ──────────────────────────────────────────────── */
+#topbar        { animation: slide-down .35s ease both; animation-delay: 0s; }
+#page-header   { animation: slide-down .35s ease both; animation-delay: .06s; }
+#wizard-nav    { animation: slide-down .35s ease both; animation-delay: .10s; }
+#app-layout    { animation: fade-up .4s ease both;    animation-delay: .14s; }
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── SKELETON LOADER ────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--r-sm);
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── SPINNER ────────────────────────────────────────────────────────── */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+.spinner-lg { width: 28px; height: 28px; border-width: 3px; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── PULSING RING (active computation indicator) ────────────────────── */
+.ring-pulse {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ring-pulse::before, .ring-pulse::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: ring-expand 2s ease-out infinite;
+}
+.ring-pulse::after { animation-delay: 1s; }
+@keyframes ring-expand {
+  0%   { width: 100%; height: 100%; opacity: .6; }
+  100% { width: 250%; height: 250%; opacity: 0; }
+}
+
+/* ── STEP TRANSITION ────────────────────────────────────────────────── */
+.step-panel {
+  transition: opacity var(--t-slow), transform var(--t-slow);
+}
+.step-panel.leaving {
+  opacity: 0;
+  transform: translateX(-16px);
+  pointer-events: none;
+}
+.step-panel.entering {
+  animation: step-enter .3s ease forwards;
+}
+@keyframes step-enter {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── FIELD HIGHLIGHT ON VALIDATION ──────────────────────────────────── */
+@keyframes field-flash-ok {
+  0%, 100% { box-shadow: 0 0 0 3px transparent; }
+  50%       { box-shadow: 0 0 0 3px var(--green-glow); }
+}
+@keyframes field-flash-err {
+  0%, 100% { box-shadow: 0 0 0 3px transparent; }
+  20%, 60%  { box-shadow: 0 0 0 3px var(--red-dim); }
+}
+.field-input.field-ok  { animation: field-flash-ok .5s ease; }
+.field-input.field-err { animation: field-flash-err .5s ease; }
+
+/* ── CARD HOVER GLOW ────────────────────────────────────────────────── */
+.opt-card {
+  transition: border-color var(--t), background var(--t), box-shadow var(--t), transform var(--t-fast);
+}
+.opt-card:hover { transform: translateY(-1px); }
+.opt-card:active { transform: translateY(0); }
+.opt-card.sel { transform: translateY(-1px); }
+
+/* ── SVG DIAGRAM CONTAINERS ──────────────────────────────────────────── */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.diagram-header {
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--border-dim);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--accent-hi);
+  letter-spacing: .3px;
+}
+.diagram-header span { font-size: 10px; color: var(--text-dim); font-weight: 400; }
+.diagram-svg-wrap { padding: 8px; }
+.diagram-svg-wrap svg {
+  width: 100%;
+  display: block;
+  background: #050e1a;
+  border-radius: var(--r-sm);
+}
+.diagram-footer {
+  border-top: 1px solid var(--border-dim);
+  padding: 7px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 10px;
+}
+
+/* SVG element styles (referenced from diagrams.js) */
+.svg-path-shue { fill: rgba(30,232,160,.07); stroke: #1ee8a0; stroke-width: 2; }
+.svg-path-box  { fill: rgba(58,184,255,.06); stroke: #3ab8ff; stroke-width: 1.5; stroke-dasharray: 7,4; }
+.svg-inner-bnd { fill: rgba(255,77,106,.06); stroke: #ff4d6a; stroke-width: 1; stroke-dasharray: 3,3; }
+.svg-earth     { fill: var(--accent); }
+.svg-sun-arrow { fill: #6a88b0; font-family: 'IBM Plex Mono',monospace; font-size: 9px; }
+.svg-dim-lbl   { fill: #3ab8ff; font-family: 'IBM Plex Mono',monospace; font-size: 9px; }
+.svg-shue-lbl  { fill: #1ee8a0; font-family: 'IBM Plex Mono',monospace; font-size: 9px; }
+.svg-tail-cap  { stroke: #3ab8ff; stroke-width: 1.5; stroke-dasharray: 5,4; }
+.svg-r0-arrow  { stroke: #ffd050; stroke-width: 1; stroke-dasharray: 3,3; }
+.svg-flk-arrow { stroke: #9b7fff; stroke-width: 1; stroke-dasharray: 3,3; }
+
+/* Spectrum SVG */
+#spectrum-svg  { background: #050e1a; border-radius: var(--r-sm); }
+
+/* ── SUBMISSION ANIMATION ────────────────────────────────────────────── */
+.submit-progress-ring {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.submit-progress-ring circle {
+  transition: stroke-dashoffset .5s ease;
+}
+
+/* ── HPC ESTIMATE COUNTER (animated number roll) ─────────────────────── */
+.est-val {
+  transition: color .4s ease;
+}
+.est-val.updating {
+  animation: count-pulse .3s ease;
+}
+@keyframes count-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
+
+/* ── PROGRESS STEPS (step 7 submission) ─────────────────────────────── */
+.submit-steps { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.submit-step  {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  transition: all .3s ease;
+}
+.submit-step.done   { border-color: rgba(30,232,160,.3); background: rgba(30,232,160,.05); }
+.submit-step.active { border-color: var(--accent); background: var(--accent-pulse); }
+.submit-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); color: var(--text-dim); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .3s ease; }
+.submit-step.done .submit-step-num   { background: var(--green); color: #000; }
+.submit-step.active .submit-step-num { background: var(--accent); color: #fff; }
+.submit-step-text { flex: 1; color: var(--text-mid); }
+.submit-step-status { font-size: 10px; font-family: var(--mono); color: var(--text-dim); }
+.submit-step.done   .submit-step-status { color: var(--green); }
+.submit-step.active .submit-step-status { color: var(--accent-hi); }
+
+/* ── CONFETTI (post-submit) ──────────────────────────────────────────── */
+.confetti-particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1000;
+  animation: confetti-fall var(--duration, 2s) ease-in var(--delay, 0s) forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translate(var(--x0), var(--y0)) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--x1), var(--y1)) rotate(720deg); opacity: 0; }
+}
