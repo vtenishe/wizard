@@ -758,15 +758,26 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
   All inputs generate <code style="background:rgba(26,136,212,.15);padding:1px 5px;border-radius:3px;color:#38c0ff;font-family:monospace;">AMPS_PARAM.in</code> keywords &mdash; preview updates live in the sidebar.</p>
 </div></div>
 <div class="wizard">
+  <!-- Step 1: Run identification and science goal -->
   <div class="wz-step active"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
+  <!-- Step 2: Particle species and charge state -->
   <div class="wz-step"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
-  <div class="wz-step"><div class="wz-num">3</div><span class="wz-label">Bkg Field</span></div>
+  <!-- Step 3: Background magnetic field model (TS05/T04s/T95/T15/MHD) -->
+  <div class="wz-step"><div class="wz-num">3</div><span class="wz-label">Bkg B-Field</span></div>
+  <!-- Step 4: Simulation domain outer boundary (BOX or Shue) -->
   <div class="wz-step"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
-  <div class="wz-step"><div class="wz-num">5</div><span class="wz-label">Temporal</span></div>
-  <div class="wz-step"><div class="wz-num">6</div><span class="wz-label">Spectrum</span></div>
-  <div class="wz-step"><div class="wz-num">7</div><span class="wz-label">Output Domain</span></div>
-  <div class="wz-step"><div class="wz-num">8</div><span class="wz-label">Output Options</span></div>
-  <div class="wz-step"><div class="wz-num">9</div><span class="wz-label">Review &amp; Submit</span></div>
+  <!-- Step 5: Electric field model (NEW — corotation + convection) -->
+  <div class="wz-step"><div class="wz-num">5</div><span class="wz-label">E-Field</span></div>
+  <!-- Step 6: Temporal variability of the geomagnetic field -->
+  <div class="wz-step"><div class="wz-num">6</div><span class="wz-label">Temporal</span></div>
+  <!-- Step 7: Source particle spectrum at the outer boundary -->
+  <div class="wz-step"><div class="wz-num">7</div><span class="wz-label">Spectrum</span></div>
+  <!-- Step 8: Output domain — trajectory or grid mode -->
+  <div class="wz-step"><div class="wz-num">8</div><span class="wz-label">Output Domain</span></div>
+  <!-- Step 9: Flux type, energy bins, file format -->
+  <div class="wz-step"><div class="wz-num">9</div><span class="wz-label">Output Options</span></div>
+  <!-- Step 10: Final review, validation, and CCMC submission -->
+  <div class="wz-step"><div class="wz-num">10</div><span class="wz-label">Review &amp; Submit</span></div>
 </div>
 <div class="layout">
 <div class="main-col">
@@ -892,34 +903,92 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
   </div>
   <div class="sect-body">
 
-    <!-- MAGNETIC FIELD MODEL SELECTOR ─────────────────────────────────── -->
-    <!-- Maps to: FIELD_MODEL keyword in AMPS_PARAM.in.
-         TS05 (Tsyganenko & Sitnov 2005) is the recommended model for SEP runs.
-         T04s is faster but less accurate for storm-time; IGRF+T89 is Year-2 only. -->
-    <div class="model-sel-grid">
-      <!-- TS05: full storm-time model, default -->
-      <div class="model-sel-card sel" id="msc-ts05" onclick="selectFieldModel('TS05', this)">
+    <!-- ══════════════════════════════════════════════════════
+         MAGNETIC FIELD MODEL SELECTOR
+         Maps to: FIELD_MODEL keyword in AMPS_PARAM.in.
+
+         Empirical models — driven by scalar solar-wind / geomag indices:
+           TS05   Tsyganenko & Sitnov 2005  — 8 params  RECOMMENDED
+           T04s   Tsyganenko & Sitnov 2004  — 5 params  fast / quiet-time
+           T95m   Tsyganenko 1995 (mod.)    — Dst + Kp  simple / surveys
+           T15    Tsyganenko & Andreeva 2015 — most complete, needs GOES B
+
+         MHD simulation output — interpolated onto particle grid:
+           BATSRUS  CCMC runs (upload .cdf/.h5)
+           GAMERA   Lemos et al. 2023 (upload .h5)
+    ══════════════════════════════════════════════════════ -->
+
+    <!-- Row 1: TS05 | T04s -->
+    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
+
+      <!-- TS05: full 8-parameter storm-time model — RECOMMENDED DEFAULT -->
+      <div class="model-sel-card sel" id="msc-ts05" onclick="selectFieldModel('TS05')">
         <div class="msc-icon">🧲</div>
-        <div class="msc-title">TS05 — Recommended</div>
-        <div class="msc-sub">Tsyganenko &amp; Sitnov (2005). Eight driving parameters (Dst, Pdyn, Bz, Vx, Nsw, By, Bx, epoch). Best for storm-time SEP access studies.</div>
-        <div class="msc-badge"><span class="oc-badge badge-green">FIELD_MODEL = TS05</span></div>
+        <div class="msc-title">TS05 <span style="font-size:9px;background:rgba(45,212,160,.2);color:var(--green);padding:1px 5px;border-radius:3px;">Recommended</span></div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2005). 8 drivers: Dst, Pdyn, Bz, Vx, Nsw, By, Bx, epoch. Best accuracy for storm-time SEP runs. Directly couples to Shue boundary auto-compute and Weimer E-field.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--green);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS05</code></div>
       </div>
-      <!-- T04s: simpler, fewer parameters -->
-      <div class="model-sel-card" id="msc-t04s" onclick="selectFieldModel('T04s', this)">
+
+      <!-- T04s: 6 W-function version — faster, fewer parameters -->
+      <div class="model-sel-card" id="msc-t04s" onclick="selectFieldModel('T04s')">
         <div class="msc-icon">⚡</div>
-        <div class="msc-title">T04s — Fast Alternative</div>
-        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004) with 6 W-functions. Fewer driving parameters; suitable for quiet-time studies and parameter sweeps.</div>
-        <div class="msc-badge"><span class="oc-badge badge-blue">FIELD_MODEL = T04s</span></div>
-      </div>
-      <!-- IGRF+T89: legacy/simple -->
-      <div class="model-sel-card disabled" id="msc-t89" onclick="selectFieldModel('T89', this)">
-        <div class="msc-icon">🌍</div>
-        <div class="msc-title">IGRF + T89 <span class="msc-years">Year 2</span></div>
-        <div class="msc-sub">Internal IGRF13 dipole + Tsyganenko (1989) external field. Simple Kp-driven model. Planned for Year 2 extension.</div>
-        <div class="msc-badge"><span class="oc-badge badge-y2">FIELD_MODEL = T89 — 2026</span></div>
+        <div class="msc-title">T04s — Fast Empirical</div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004). 6 W-functions, 5 drivers (no By, Bx). ~15% faster than TS05. Suitable for quiet-time studies, GCR surveys, and systematic parameter sweeps.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T04s</code></div>
       </div>
     </div>
 
+    <!-- Row 2: T95m | T15 -->
+    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
+
+      <!-- T95m: Tsyganenko 1995 modified — only Dst + Kp required -->
+      <div class="model-sel-card" id="msc-t95m" onclick="selectFieldModel('T95m')">
+        <div class="msc-icon">🌀</div>
+        <div class="msc-title">T95m — Dst &amp; Kp Only</div>
+        <div class="msc-sub">Tsyganenko (1995, modified). Two drivers: Dst (ring current) and Kp (geomagnetic activity). Simplest empirical model; recommended for rapid surveys, climatological studies, or when only Dst/Kp are available.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T95m</code></div>
+      </div>
+
+      <!-- T15: Tsyganenko & Andreeva 2015 — most complete empirical model -->
+      <div class="model-sel-card" id="msc-t15" onclick="selectFieldModel('T15')">
+        <div class="msc-icon">🔬</div>
+        <div class="msc-title">T15 — Most Complete <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
+        <div class="msc-sub">Tsyganenko &amp; Andreeva (2015). Uses GOES geostationary-orbit B, solar wind Pdyn &amp; Bz, Dst, and Sym-H. Highest physical accuracy of the empirical suite; requires GOES B data (upload or scalar).</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T15</code></div>
+      </div>
+    </div>
+
+    <!-- Row 3: MHD models — require file upload -->
+    <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 7px;border-top:1px solid var(--border);padding-top:10px;">
+      MHD Simulation Output — upload CCMC run file; AMPS interpolates B onto particle grid
+    </div>
+    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+
+      <!-- BATSRUS: Block-Adaptive Tree Solar-wind Roe Upwind Scheme -->
+      <div class="model-sel-card" id="msc-batsrus" onclick="selectFieldModel('BATSRUS')">
+        <div class="msc-icon">🌊</div>
+        <div class="msc-title">BATSRUS MHD Output</div>
+        <div class="msc-sub">Block-Adaptive Tree Solar-wind Roe-Upwind Scheme (Powell et al. 1999). Upload 3-D BATSRUS output file (.cdf or .h5 from a CCMC run). AMPS tri-linearly interpolates B. Most accurate for extreme storm events.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--orange);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = BATSRUS</code></div>
+      </div>
+
+      <!-- GAMERA: Grid Agnostic MHD for Extended Research Applications -->
+      <div class="model-sel-card" id="msc-gamera" onclick="selectFieldModel('GAMERA')">
+        <div class="msc-icon">🎮</div>
+        <div class="msc-title">GAMERA MHD Output</div>
+        <div class="msc-sub">Grid Agnostic MHD for Extended Research Applications (Sorathia et al. 2020). High-resolution curvilinear-mesh global MHD. Upload GAMERA .h5 output. Beta support — contact CCMC if issues arise.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--orange);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = GAMERA</code></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         FIELD-MODEL-SPECIFIC INPUT FORMS
+         Only one form is shown at a time; selectFieldModel() toggles visibility.
+    ══════════════════════════════════════════════════════ -->
+
+    <!-- ── TS05 / T04s form (shared inputs — 8-param set) ── -->
+    <div id="ts05-form">
+      <div id="ts05-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TS05 Driving Parameters</div>
     <div class="infobox info-orange">
       <b>Sep 2017 storm main phase loaded as default</b> — Dst=&#8722;142&#160;nT, Pdyn=3.5&#160;nPa, Bz=&#8722;18.5&#160;nT (Sep&#160;7, 23:30&#160;UTC). Subsolar magnetopause compressed to ~8.6&#160;R<sub>E</sub>. Mid-latitude cutoff rigidity reduced ~40% from quiet-time values.
     </div>
@@ -964,23 +1033,140 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
         <div class="hint">Usually 0.</div>
       </div>
     </div>
+    </div><!-- /ts05-form -->
+
+    <!-- ── T95m form: Dst + Kp only ── -->
+    <!-- Tsyganenko (1995, modified) uses only two driving parameters.
+         Kp is the globally-averaged geomagnetic activity index (0–9).
+         Dst is the ring-current proxy (nT). -->
+    <div id="t95m-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T95m Driving Parameters</div>
+      <div class="infobox info-blue" style="margin-bottom:10px;">
+        T95m only requires <b>Dst</b> and <b>Kp</b>. Simpler than TS05; suitable for surveys where
+        per-event accuracy is secondary. Kp range: 0 (very quiet) → 9 (extreme storm).
+      </div>
+      <div class="frow c4">
+        <div class="field">
+          <label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t95m-dst" type="number" value="-142" step="1" min="-400" max="50" oninput="t95mChange()"/>
+          <div class="hint">Ring current index. T95m valid: −400 to +50 nT.</div>
+        </div>
+        <div class="field">
+          <label>Kp <span class="unit">[0–9]</span> <span class="req">*</span></label>
+          <input id="t95m-kp" type="number" value="5" step="0.1" min="0" max="9" oninput="t95mChange()"/>
+          <div class="hint">Planetary geomagnetic activity. Auto-estimated from Dst if unknown:
+            Kp ≈ −Dst/28 + 0.8</div>
+        </div>
+        <div class="field">
+          <label>Epoch <span class="unit">[UTC]</span></label>
+          <input id="t95m-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="liveUpdate()"/>
+          <div class="hint">Snapshot time (STEADY_STATE) or start time (TIME_SERIES).</div>
+        </div>
+      </div>
+    </div><!-- /t95m-form -->
+
+    <!-- ── T15 form: GOES B + solar wind + Dst ── -->
+    <!-- Tsyganenko & Andreeva (2015) is the most physically complete
+         empirical model. It requires the geostationary-orbit total
+         magnetic field magnitude from GOES-East or GOES-West. -->
+    <div id="t15-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T15 Driving Parameters</div>
+      <div class="infobox info-blue" style="margin-bottom:10px;">
+        T15 requires the <b>GOES geostationary total B</b> in addition to the standard solar wind inputs.
+        Obtain GOES B from <a href="https://www.ngdc.noaa.gov/stp/satellite/goes/" target="_blank"
+        style="color:var(--accent-bright);">NGDC GOES data archive</a> or CCMC iSWA.
+        Typical geostationary B: 100–200 nT quiet, 80–140 nT storm.
+      </div>
+      <div class="frow c4">
+        <div class="field">
+          <label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t15-dst" type="number" value="-142" step="1" min="-600" max="50" oninput="t15Change()"/>
+        </div>
+        <div class="field">
+          <label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="t15-pdyn" type="number" value="3.5" step="0.1" min="0.1" max="30" oninput="t15Change()"/>
+        </div>
+        <div class="field">
+          <label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t15-bz" type="number" value="-18.5" step="0.1" min="-50" max="20" oninput="t15Change()"/>
+        </div>
+        <div class="field">
+          <label>GOES B <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t15-goes" type="number" value="150" step="1" min="50" max="300" oninput="t15Change()"/>
+          <div class="hint">Geostationary total |B| from GOES-East or GOES-West. Typical: 100–200 nT.</div>
+        </div>
+      </div>
+    </div><!-- /t15-form -->
+
+    <!-- ── MHD file upload form (BATSRUS or GAMERA) ── -->
+    <!-- AMPS reads the 3-D magnetic field directly from a global MHD
+         simulation output file and tri-linearly interpolates B onto
+         the particle trajectory. This avoids any empirical parameterization
+         but requires a complete BATSRUS or GAMERA run to be available. -->
+    <div id="mhd-form" style="display:none;">
+      <div id="mhd-model-label" style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">BATSRUS MHD Output</div>
+      <div class="infobox info-orange" style="margin-bottom:10px;">
+        <b>MHD file required:</b> Run BATSRUS or GAMERA via the
+        <a href="https://ccmc.gsfc.nasa.gov/requests/requests_main.php" target="_blank"
+        style="color:var(--accent-bright);">CCMC Runs-on-Request</a> portal first,
+        then upload the 3-D output file below. AMPS will tri-linearly interpolate
+        B(x,y,z) onto each particle position at runtime.
+      </div>
+      <div class="dropzone" id="mhd-dropzone" onclick="this.classList.toggle('loaded')" style="margin-bottom:12px;">
+        <div class="dz-icon">📂</div>
+        <div class="dz-primary">Drop BATSRUS/GAMERA output file here or click to browse</div>
+        <div class="dz-sub">.cdf · .h5 · .hdf5 · max 2 GB</div>
+      </div>
+      <div class="frow c4">
+        <div class="field">
+          <label>Interpolation method</label>
+          <select id="mhd-interp" oninput="mhdChange()">
+            <option value="LINEAR" selected>Tri-linear (fast, default)</option>
+            <option value="CUBIC">Tri-cubic (smoother, 3× slower)</option>
+          </select>
+          <div class="hint">Tri-linear is recommended for most runs. Use tri-cubic only if
+            the MHD grid is coarser than ~0.5 RE near LEO.</div>
+        </div>
+        <div class="field">
+          <label>Coordinate system</label>
+          <select id="mhd-coords">
+            <option value="GSM" selected>GSM (default)</option>
+            <option value="GSE">GSE (auto-rotate to GSM)</option>
+          </select>
+        </div>
+      </div>
+    </div><!-- /mhd-form -->
+
+    <!-- ── AMPS_PARAM.in keyword preview (all models) ── -->
     <div class="kw-strip" id="ts05-kw-preview">
 <span class="kw-section">#BACKGROUND_FIELD</span>
 <span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment">! Tsyganenko &amp; Sitnov (2005)</span>
-<span class="kw-key">TS05_DST</span>        <span class="kw-val" id="kv-dst">-142.0</span>     <span class="kw-comment">! nT ring current</span>
-<span class="kw-key">TS05_PDYN</span>       <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa</span>
-<span class="kw-key">TS05_BZ</span>         <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM</span>
-<span class="kw-key">TS05_VX</span>         <span class="kw-val" id="kv-vx">-650.0</span>    <span class="kw-comment">! km/s</span>
-<span class="kw-key">TS05_NSW</span>        <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm&#8315;&#179;</span>
-<span class="kw-key">TS05_BY</span>         <span class="kw-val" id="kv-by">3.20</span>      <span class="kw-comment">! nT</span>
-<span class="kw-key">TS05_BX</span>         <span class="kw-val" id="kv-bx">0.00</span>
-<span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span></div>
+<!-- TS05/T04s rows — hidden when other model selected -->
+<span class="ts05-kw-row"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-dst">-142.0</span>    <span class="kw-comment">! nT ring current index</span>
+</span><span class="ts05-kw-row"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa dynamic pressure</span>
+</span><span class="ts05-kw-row"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM southward component</span>
+</span><span class="ts05-kw-row"><span class="kw-key">SW_VX</span>           <span class="kw-val" id="kv-vx">-650.0</span>    <span class="kw-comment">! km/s solar wind velocity</span>
+</span><span class="ts05-kw-row"><span class="kw-key">SW_NSW</span>          <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm⁻³ proton density</span>
+</span><span class="ts05-kw-row"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-by">3.20</span>      <span class="kw-comment">! nT dawn-dusk component</span>
+</span><span class="ts05-kw-row"><span class="kw-key">IMF_BX</span>          <span class="kw-val" id="kv-bx">0.00</span>      <span class="kw-comment">! nT (optional)</span>
+</span><!-- T95m rows — hidden unless T95m selected -->
+<span class="t95m-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t95m-dst">-142.0</span>   <span class="kw-comment">! nT</span>
+</span><span class="t95m-kw-row" style="display:none;"><span class="kw-key">KP</span>              <span class="kw-val" id="kv-t95m-kp">5.0</span>      <span class="kw-comment">! 0–9 geomagnetic activity index</span>
+</span><!-- T15 rows — hidden unless T15 selected -->
+<span class="t15-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t15-dst">-142.0</span>   <span class="kw-comment">! nT</span>
+</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t15-pdyn">3.5</span>      <span class="kw-comment">! nPa</span>
+</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t15-bz">-18.5</span>    <span class="kw-comment">! nT</span>
+</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">GOES_B</span>          <span class="kw-val" id="kv-t15-goes">150.0</span>    <span class="kw-comment">! nT geostationary total B</span>
+</span><!-- MHD rows — hidden unless BATSRUS/GAMERA selected -->
+<span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_FILE</span>        <span class="kw-val" id="kv-mhd-file">(upload required)</span>
+</span><span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_INTERP</span>      <span class="kw-val" id="kv-mhd-interp">LINEAR</span>   <span class="kw-comment">! LINEAR | CUBIC</span>
+</span><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span></div>
   </div>
 </div>
 </div>
 
 
-<div id="panel-3b" class="step-panel">
+<div id="panel-4" class="step-panel">
 <div class="sect" id="s-boundary">
   <div class="sect-hd" onclick="toggleSection('s-boundary')">
     <div class="sect-icon" style="background:rgba(139,111,247,.15)">&#128754;</div>
@@ -1239,13 +1425,310 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
 </div>
 
 
-<div id="panel-4a" class="step-panel">
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PANEL 5 — ELECTRIC FIELD MODEL
+     Step 5 of 10 wizard.
+     Handles: corotation E (always available), convection E models
+     (Volland-Stern or Weimer), live SVG schematic, KW preview.
+══════════════════════════════════════════════════════════════════ -->
+<div id="panel-5" class="step-panel">
+<div class="sect" id="s-efield">
+  <div class="sect-hd" onclick="toggleSection('s-efield')">
+    <div class="sect-icon" style="background:rgba(255,208,75,.12)">⚡</div>
+    <div>
+      <div class="sect-title">Electric Field Model</div>
+      <div style="font-size:11px;color:var(--text-dim)">
+        Magnetospheric electric fields that guide particle drift orbits.
+        Maps to <code style="font-size:10px;">#ELECTRIC_FIELD</code> in AMPS_PARAM.in.
+      </div>
+    </div>
+    <span class="sect-sub"><span class="tag tag-new">NEW · Step 5</span></span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="sect-body">
+
+    <div class="infobox info-blue">
+      <b>Why electric fields matter:</b> During storms the dawn-dusk convection
+      electric field penetrates deep into the inner magnetosphere, disrupting
+      radiation belt access and modifying particle drift paths. Including a
+      realistic E-field is essential for storm-time cutoff rigidity calculations.
+      The Volland–Stern model is the robust default; Weimer adds IMF/solar-wind
+      sensitivity for event-specific realism.
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECTION A: COROTATION ELECTRIC FIELD
+         E_coro = -(ω×r)×B — Earth's corotation field.
+         Nearly always included; computational cost is negligible.
+         Maps to: COROTATION_E = YES | NO
+    ══════════════════════════════════════════════════════ -->
+    <div class="subsection" style="margin-bottom:14px;">
+      <div class="subsection-title">A — Corotation Electric Field</div>
+      <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px;">
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;line-height:1.6;">
+            The corotation electric field <b>E = −(ω×r)×B</b> maintains particles
+            co-rotating with Earth inside the plasmasphere (L&nbsp;&lt;&nbsp;4–5).
+            Disabling it is physically incorrect for trapped radiation-belt particles.
+            <i>Strongly recommended: leave ON.</i>
+          </p>
+          <div class="tog" style="width:fit-content;">
+            <button class="tog-btn on" id="ecoro-yes-btn" onclick="setCorotation(true)">
+              ✓ Include (recommended)
+            </button>
+            <button class="tog-btn" id="ecoro-no-btn" onclick="setCorotation(false)">
+              Exclude
+            </button>
+          </div>
+          <!-- Shown only when corotation is disabled — physics warning -->
+          <div id="ecoro-off-warn" class="infobox info-orange" style="display:none;margin-top:10px;font-size:11px;">
+            ⚠ <b>Warning:</b> Excluding corotation E is physically incorrect for inner
+            magnetosphere / radiation belt particles. Use only for specialized tests
+            (e.g. outer magnetosphere trajectories where corotation is negligible).
+          </div>
+        </div>
+        <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;min-width:200px;">
+          <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+          <span class="kw-key">COROTATION_E</span>
+          <span class="kw-val" id="kw-efield-coro">YES</span>
+          <span class="kw-comment">  ! corotation E</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECTION B: CONVECTION ELECTRIC FIELD — model selector
+         Options: VOLLAND_STERN | WEIMER | NONE
+         Maps to: CONV_E_MODEL = ...
+    ══════════════════════════════════════════════════════ -->
+    <div class="subsection">
+      <div class="subsection-title">B — Convection Electric Field</div>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+        The large-scale dawn-dusk convection field drives inward particle transport.
+        Choose a model based on your data availability and accuracy needs.
+      </p>
+
+      <!-- Convection model selector cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+
+        <!-- Volland-Stern: simple Kp-driven, robust, recommended for most runs -->
+        <div class="bnd-card sel" id="econv-volland-stern" onclick="setConvModel('VOLLAND_STERN')">
+          <div style="font-size:22px;margin-bottom:5px;">🌀</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;">
+            Volland–Stern <span style="font-size:9px;background:rgba(45,212,160,.2);color:var(--green);padding:1px 5px;border-radius:3px;">Recommended</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+            Potential Ψ = A·r^γ·sin(φ). Driven by a single Kp index.
+            Robust and well-tested. Kp can be auto-estimated from Dst.
+          </div>
+          <div style="margin-top:7px;font-family:var(--font-mono);font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:4px 7px;border-radius:3px;">
+            CONV_E_MODEL = VOLLAND_STERN
+          </div>
+        </div>
+
+        <!-- Weimer 2005: IMF/solar-wind driven, event realism -->
+        <div class="bnd-card" id="econv-weimer" onclick="setConvModel('WEIMER')">
+          <div style="font-size:22px;margin-bottom:5px;">🌐</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;">
+            Weimer (2005) <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+            Empirical potential pattern driven by IMF Bz, By, Pdyn, Vx —
+            same inputs as TS05. Better event-specific accuracy; auto-reads
+            from Panel 3 drivers.
+          </div>
+          <div style="margin-top:7px;font-family:var(--font-mono);font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:4px 7px;border-radius:3px;">
+            CONV_E_MODEL = WEIMER
+          </div>
+        </div>
+
+        <!-- None: no convection field -->
+        <div class="bnd-card" id="econv-none" onclick="setConvModel('NONE')">
+          <div style="font-size:22px;margin-bottom:5px;">⊘</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;">None</div>
+          <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+            No convection field. Use only for outer-magnetosphere / GCR
+            runs where the convection E is negligible
+            (L &gt; ~8 R<sub>E</sub>).
+          </div>
+          <div style="margin-top:7px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);background:rgba(0,0,0,.3);padding:4px 7px;border-radius:3px;">
+            CONV_E_MODEL = NONE
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Volland-Stern parameter sub-panel ── -->
+      <!-- Shown only when VOLLAND_STERN is selected.
+           Key parameters:
+             Kp    — geomagnetic activity index (0–9), auto from Dst or manual
+             γ     — shielding / flaring exponent (default 2.0)
+             A(Kp) — intensity coefficient (Maynard & Chen 1975 formula) -->
+      <div id="vs-panel">
+        <div style="font-size:11px;font-weight:700;color:var(--accent-bright);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">
+          Volland–Stern Parameters
+        </div>
+        <div class="infobox info-blue" style="margin-bottom:10px;font-size:11px;">
+          <b>Kp source:</b> Auto mode derives Kp from Dst using the
+          empirical fit Kp ≈ −Dst/28 + 0.8 (Burton et al. 1975 inverse).
+          Override with manual entry if you have a measured Kp value.
+          <br/><br/>
+          <b>γ (shielding exponent):</b> Controls how sharply the potential
+          drops at the plasmapause. Default γ = 2.0 (Stern 1975).
+          Values 1.5–3.0 are physically reasonable.
+        </div>
+
+        <!-- Kp mode toggle: auto (from Dst) or manual -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-dim);">Kp source:</span>
+          <div class="tog" style="width:fit-content;">
+            <button class="tog-btn on" id="vs-kp-auto-btn" onclick="setVsKpMode('auto')">
+              🔄 Auto from Dst
+            </button>
+            <button class="tog-btn" id="vs-kp-man-btn" onclick="setVsKpMode('manual')">
+              ✏ Manual entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Auto Kp display row -->
+        <div id="vs-kp-auto-row" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-dim);">
+            Kp auto-derived from Dst (Panel 3):
+          </span>
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--green);" id="vs-kp-auto-display">5.0</span>
+          <span id="vs-kp-status" style="font-size:10px;color:var(--orange);">🟡 Moderate activity</span>
+        </div>
+
+        <!-- Manual Kp entry row (hidden in auto mode) -->
+        <div id="vs-kp-manual-row" style="display:none;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <div class="field" style="max-width:200px;">
+            <label>Kp <span class="unit">[0–9]</span> <span class="req">*</span></label>
+            <input id="vs-kp-input" type="number" value="5" step="0.1" min="0" max="9"
+              oninput="vsParamChange()" style="font-family:var(--font-mono);font-size:13px;"/>
+            <div class="hint">0 = very quiet · 3 = moderate · 5 = active · 7+ = storm</div>
+          </div>
+          <span id="vs-kp-status" style="font-size:10px;margin-top:18px;"></span>
+        </div>
+
+        <div class="frow c4" style="margin-bottom:10px;">
+          <div class="field">
+            <label>γ — shielding exponent</label>
+            <input id="vs-gamma" type="number" value="2.0" step="0.1" min="1.5" max="3.0"
+              oninput="vsParamChange()"/>
+            <div class="hint">Default 2.0 (Stern 1975). Range: 1.5–3.0.</div>
+          </div>
+          <div class="field">
+            <label>A(Kp) <span class="unit">[kV/R<sub>E</sub><sup>γ</sup>]</span></label>
+            <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--yellow);
+              padding:6px 8px;background:var(--bg-inset);border:1px solid var(--border);
+              border-radius:var(--radius);">
+              <span id="vs-a-display">0.0450</span>
+            </div>
+            <div class="hint">Auto-computed via Maynard &amp; Chen (1975):<br/>
+              A = 0.045 / (1 − 0.159Kp + 0.0093Kp²)³</div>
+          </div>
+        </div>
+      </div><!-- /vs-panel -->
+
+      <!-- ── Weimer 2005 parameter sub-panel ── -->
+      <!-- Shown only when WEIMER is selected.
+           Auto mode: reads IMF Bz, By, Pdyn, Vx from Panel 3 (TS05 drivers).
+           File mode: upload a pre-computed weimer_input.txt (time-series). -->
+      <div id="weimer-panel" style="display:none;">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">
+          Weimer (2005) Configuration
+        </div>
+
+        <div class="tog" style="width:fit-content;margin-bottom:12px;">
+          <button class="tog-btn on" id="weimer-auto-btn" onclick="setWeimerMode('auto')">
+            🔄 Auto from TS05 drivers (Panel 3)
+          </button>
+          <button class="tog-btn" id="weimer-file-btn" onclick="setWeimerMode('file')">
+            📁 Upload weimer_input.txt
+          </button>
+        </div>
+
+        <!-- Auto panel: shows current TS05 driver values being used -->
+        <div id="weimer-auto-panel">
+          <div class="infobox info-blue" style="font-size:11px;margin-bottom:10px;">
+            Weimer auto mode reads <b>IMF Bz, By, Pdyn, and Vx</b> from the
+            TS05 drivers you entered in Panel 3. For time-series runs, these
+            update at every FIELD_UPDATE_DT interval.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;">
+              <div style="font-size:9px;color:var(--text-dim);">IMF Bz [nT]</div>
+              <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--red);" id="weimer-bz-disp">-18.5</div>
+            </div>
+            <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;">
+              <div style="font-size:9px;color:var(--text-dim);">IMF By [nT]</div>
+              <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--accent-bright);" id="weimer-by-disp">3.2</div>
+            </div>
+            <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;">
+              <div style="font-size:9px;color:var(--text-dim);">|Vx| [km/s]</div>
+              <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--purple);" id="weimer-vx-disp">650</div>
+            </div>
+            <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;">
+              <div style="font-size:9px;color:var(--text-dim);">Pdyn [nPa]</div>
+              <div style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--orange);" id="weimer-pd-disp">3.50</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File upload panel -->
+        <div id="weimer-file-panel" style="display:none;">
+          <div class="dropzone" onclick="this.classList.toggle('loaded')">
+            <div class="dz-icon">📄</div>
+            <div class="dz-primary">Drop weimer_input.txt here or click to browse</div>
+            <div class="dz-sub">Format: YYYY MM DD HH mm  Bz  By  Vx  Pdyn (same cadence as ts05_driving.txt)</div>
+          </div>
+        </div>
+      </div><!-- /weimer-panel -->
+    </div><!-- /convection subsection -->
+
+    <!-- ══════════════════════════════════════════════════════
+         LIVE SCHEMATIC — equipotential pattern sketch
+         Redrawn by drawEfieldSchematic() whenever model or
+         Kp changes. Shows corotation circles + convection pattern.
+    ══════════════════════════════════════════════════════ -->
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:start;margin-top:14px;">
+      <div>
+        <!-- Keyword preview strip for AMPS_PARAM.in -->
+        <div class="kw-strip">
+<span class="kw-section">#ELECTRIC_FIELD</span>
+<span class="kw-key">COROTATION_E</span>    <span class="kw-val" id="kw-efield-coro">YES</span>      <span class="kw-comment">  ! corotation = −(ω×r)×B</span>
+<span class="kw-key">CONV_E_MODEL</span>    <span class="kw-val" id="kw-efield-conv">VOLLAND_STERN</span><span class="kw-comment">  ! VOLLAND_STERN | WEIMER | NONE</span>
+<span class="vs-kw-row"><span class="kw-key">VS_KP</span>           <span class="kw-val kw-auto" id="kw-vs-kp">AUTO</span>     <span class="kw-comment">  ! AUTO = derived from Dst</span>
+</span><span class="vs-kw-row"><span class="kw-key">VS_GAMMA</span>        <span class="kw-val" id="kw-vs-gamma">2.0</span>      <span class="kw-comment">  ! shielding exponent</span>
+</span><span class="vs-kw-row"><span class="kw-key">VS_A</span>            <span class="kw-val" id="kw-vs-a">0.0450</span>   <span class="kw-comment">  ! kV/RE^γ  (Maynard &amp; Chen 1975)</span>
+</span><span class="weimer-kw-row" style="display:none;"><span class="kw-key">WEIMER_DRIVE</span>    <span class="kw-val">AUTO</span>     <span class="kw-comment">  ! from TS05 drivers</span>
+</span></div>
+      </div>
+
+      <!-- SVG equipotential schematic (200×200 canvas) -->
+      <div style="background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+        <div style="background:rgba(255,208,75,.08);border-bottom:1px solid var(--border);padding:6px 10px;font-size:10px;font-weight:700;color:var(--yellow);letter-spacing:.3px;">
+          E-field equipotentials <span style="font-weight:400;color:var(--text-dim);">schematic</span>
+        </div>
+        <svg id="efield-svg" viewBox="0 0 200 200"
+          style="width:100%;height:200px;background:#060e1c;display:block;">
+          <!-- dynamically populated by drawEfieldSchematic() -->
+        </svg>
+      </div>
+    </div>
+
+  </div><!-- /sect-body -->
+</div><!-- /sect -->
+</div><!-- /panel-5 -->
+
+<div id="panel-6" class="step-panel">
 <div class="sect" id="s-temporal">
   <div class="sect-hd" onclick="toggleSection('s-temporal')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#8987;</div>
     <div><div class="sect-title">Temporal Variability of the Background Field</div>
     <div style="font-size:11px;color:var(--text-dim)">How TS05 parameters evolve during the simulation. Maps to TEMPORAL_MODE in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 5</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 6</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1449,13 +1932,13 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
 </div>
 
 
-<div id="panel-4b" class="step-panel">
+<div id="panel-7" class="step-panel">
 <div class="sect" id="s-spectrum">
   <div class="sect-hd" onclick="toggleSection('s-spectrum')">
     <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128202;</div>
     <div><div class="sect-title">Particle Source Spectrum / Boundary Condition</div>
     <div style="font-size:11px;color:var(--text-dim)">SEP energy spectrum injected at the outer boundary. Maps to #SPECTRUM in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 6</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 7</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1519,13 +2002,13 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
 </div>
 
 
-<div id="panel-5" class="step-panel">
+<div id="panel-8" class="step-panel">
 <div class="sect" id="s-output">
   <div class="sect-hd" onclick="toggleSection('s-output')">
     <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128205;</div>
     <div><div class="sect-title">Output Domain &#8212; Where to Compute Flux &amp; Cutoff Rigidity</div>
     <div style="font-size:11px;color:var(--text-dim)">Mode A: individual points &middot; Mode B: spacecraft trajectory &middot; Mode C: spherical shells</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 7</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 8</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1619,13 +2102,13 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
 </div>
 
 
-<div id="panel-6" class="step-panel">
+<div id="panel-9" class="step-panel">
 <div class="sect" id="s-out-opts">
   <div class="sect-hd" onclick="toggleSection('s-out-opts')">
     <div class="sect-icon" style="background:rgba(26,136,212,.15)">&#9881;</div>
     <div><div class="sect-title">Output Options &#8212; Flux Type, Energy Bins, File Format</div>
     <div style="font-size:11px;color:var(--text-dim)">Maps to #OUTPUT_OPTIONS and ENERGY_BINS in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 8</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 9</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1699,13 +2182,13 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
 </div>
 
 
-<div id="panel-7" class="step-panel">
+<div id="panel-10" class="step-panel">
 <div class="sect" id="s-review">
   <div class="sect-hd" onclick="toggleSection('s-review')">
     <div class="sect-icon" style="background:rgba(45,212,160,.15)">&#128203;</div>
     <div><div class="sect-title">Review &amp; Submit</div>
     <div style="font-size:11px;color:var(--text-dim)">Final validation, AMPS_PARAM.in preview, file manifest, submission</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 9</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 10</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1745,6 +2228,7 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
     <div class="sb-row"><div class="sb-k">Species</div><div class="sb-v g" id="sb-species">H+ proton</div></div>
     <div class="sb-row"><div class="sb-k">Field model</div><div class="sb-v g" id="sb-field-model">TS05</div></div>
     <div class="sb-row"><div class="sb-k">Boundary</div><div class="sb-v g" id="sb-boundary">Shue 1998</div></div>
+    <div class="sb-row"><div class="sb-k">E-field</div><div class="sb-v g" id="sb-efield">Coro+VS(Kp)</div></div>
     <div class="sb-row"><div class="sb-k">Temporal mode</div><div class="sb-v" id="sb-temporal">TIME SERIES</div></div>
     <div class="sb-row"><div class="sb-k">Spectrum</div><div class="sb-v" id="sb-spec-type">POWER LAW</div></div>
     <div class="sb-row"><div class="sb-k">Output mode</div><div class="sb-v" id="sb-output-mode">TRAJECTORY</div></div>
@@ -1822,7 +2306,32 @@ TEMPORAL_MODE   TIME_SERIES</pre>
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   AMPS CCMC — INTERACTIVE APPLICATION SCRIPT  (v3 — Part 1 Fix)
+   Single consolidated script — no duplicates.
+   Functions are grouped by wizard step. All major sections are
+   labelled with §-prefixed banners for quick navigation.
+
+   §1  Global state & shared constants
+   §2  Wizard navigation
+   §3a Section collapse/expand
+   §3b Step 1 – Run info
+   §3c Step 2 – Particle species
+   §3d Step 3 – Background field (TS05 shared) + model selector
+   §3e Step 4 – Domain boundary (BOX / Shue 1998)
+   §3f Step 5 – Electric field (corotation + Volland-Stern / Weimer)
+   §3g Step 6 – Temporal variability
+   §3h Step 7 – Particle source spectrum
+   §3i Step 8 – Output domain
+   §3j Step 9 – Output options & energy bins
+   §4  SVG grid initialiser
+   §5  Review & AMPS_PARAM.in file builder
+   §6  Sidebar progress
+   §7  Help modal
+   §8  Init
+═══════════════════════════════════════════════════════════════════ */
+
 
 /* ═══════════════════════════════════════════════════════════════════
    AMPS CCMC — INLINE APPLICATION SCRIPT
@@ -1854,6 +2363,17 @@ const S = {
   fluxType:'DIFFERENTIAL', outputCutoff:true, outputPitch:false,
   outputFormat:'NETCDF4', outputCoords:'GEO',
   energyBins:[1,5,10,30,100,300,1000],
+  // Electric field model state (Step 5)
+  eFieldCoro:true,            // Corotation E included by default (physically correct)
+  eFieldConvModel:'VOLLAND_STERN', // Convection E: Volland-Stern (robust default) or WEIMER or NONE
+  vsKpMode:'auto',            // Kp source for VS model: 'auto' (derived from Dst) or 'manual'
+  vsKp:5.0,                   // Kp index (updated from Dst on init)
+  vsGamma:2.0,                // Volland-Stern shielding exponent (typical 2.0)
+  vsA:null,                   // VS intensity coefficient (computed from Kp by vsIntensityA)
+  weimerMode:'auto',          // Weimer input: 'auto' (from TS05 drivers) or 'file'
+  // T95m / T15 extra drivers
+  t95mDst:-142.0, t95mKp:5.0,
+  t15Goes:100.0, t15Dst:-142.0, t15Pdyn:3.5, t15Bz:-18.5, t15Vx:-650.0, t15Nsw:12.0,
 };
 
 const $ = id => document.getElementById(id);
@@ -1864,7 +2384,7 @@ function goStep(n) {
   if(n < 1 || n > 9) return;
   S.done.add(S.step);
   S.step = n;
-  for(let i=1;i<=9;i++) {
+  for(let i=1;i<=10;i++) {
     const p=$(`panel-${i}`); if(p) p.classList.toggle('active', i===n);
     const el=document.querySelectorAll('.wz-step')[i-1];
     if(el){ el.classList.remove('done','active');
@@ -1872,11 +2392,11 @@ function goStep(n) {
       else if(i===n) el.classList.add('active'); }
   }
   $('btn-prev').disabled = n===1;
-  $('btn-next').style.display = n<9?'inline-flex':'none';
-  $('btn-submit').style.display = n===9?'inline-flex':'none';
+  $('btn-next').style.display = n<10?'inline-flex':'none';
+  $('btn-submit').style.display = n===10?'inline-flex':'none';
   window.scrollTo({top:0,behavior:'smooth'});
   updateSidebar();
-  if(n===9) buildReview();
+  if(n===10) buildReview();
 }
 function nextStep(){ goStep(S.step+1); }
 function prevStep(){ goStep(S.step-1); }
@@ -2482,675 +3002,206 @@ function updateSidebar(){
 /* ── 7. HELP MODAL ───────────────────────────────────────────────── */
 function openHelpModal(){ const m=$('help-modal'); if(m) m.style.display='flex'; }
 
-/* ── 8. INIT ─────────────────────────────────────────────────────── */
+
+/* ── §3d-extra  BACKGROUND FIELD MODEL SELECTOR ─────────────────── */
+/*    selectFieldModel(model) : activates model card, shows parameter
+      form, updates KW preview.  t95mChange/t15Change/mhdChange: live
+      state sync for model-specific driving parameters.              */
+
+function selectFieldModel(model) {
+  S.fieldModel = model;
+
+  // ── Deselect all cards, mark chosen one ──
+  document.querySelectorAll('.model-sel-card').forEach(c => c.classList.remove('sel'));
+  const card = $(`msc-${model.toLowerCase()}`);
+  if (card) card.classList.add('sel');
+
+  // ── Show/hide model-specific driving-parameter forms ──
+  const forms = { ts05: 'ts05-form', t95m: 't95m-form', t15: 't15-form', mhd: 'mhd-form' };
+  Object.values(forms).forEach(id => {
+    const el = $(id);
+    if (el) el.style.display = 'none';
+  });
+  const isMhd  = (model === 'BATSRUS' || model === 'GAMERA');
+  const isTs05 = (model === 'TS05' || model === 'T04s');
+
+  if (isTs05) {
+    $('ts05-form').style.display = 'block';
+    const lbl = $('ts05-label');
+    if (lbl) lbl.textContent = model === 'TS05'
+      ? 'TS05 Driving Parameters'
+      : 'T04s Driving Parameters (Dst, Pdyn, Bz, Vx, Nsw required)';
+  } else if (model === 'T95m') {
+    $('t95m-form').style.display = 'block';
+  } else if (model === 'T15') {
+    $('t15-form').style.display = 'block';
+  } else if (isMhd) {
+    $('mhd-form').style.display = 'block';
+    const lbl = $('mhd-model-label');
+    if (lbl) lbl.textContent = `${model} MHD Output`;
+  }
+
+  // ── Show/hide KW rows for each model ──
+  document.querySelectorAll('.ts05-kw-row').forEach(r => r.style.display = isTs05 ? '' : 'none');
+  document.querySelectorAll('.t95m-kw-row').forEach(r => r.style.display = model==='T95m' ? '' : 'none');
+  document.querySelectorAll('.t15-kw-row').forEach(r  => r.style.display = model==='T15'  ? '' : 'none');
+  document.querySelectorAll('.mhd-kw-row').forEach(r  => r.style.display = isMhd ? '' : 'none');
+
+  // ── Update field-model value in KW strip ──
+  const kv = $('kv-field-model');
+  if (kv) kv.textContent = model;
+
+  // Shue boundary auto-compute depends on TS05 Bz/Pdyn — recompute
+  bndShueUpdate();
+
+  updateSidebar();
+}
+
+/* t95mChange — called on T95m input change */
+function t95mChange() {
+  S.dst   = parseFloat($('t95m-dst')?.value)  || S.dst;
+  S.t95Kp = parseFloat($('t95m-kp')?.value)   || S.t95Kp;
+  const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+  set('kv-t95m-dst', Number(S.dst).toFixed(1));
+  set('kv-t95m-kp',  Number(S.t95Kp).toFixed(1));
+  updateSidebar();
+}
+
+/* t15Change — called on T15 input change */
+function t15Change() {
+  S.dst      = parseFloat($('t15-dst')?.value)   || S.dst;
+  S.pdyn     = parseFloat($('t15-pdyn')?.value)  || S.pdyn;
+  S.bz       = parseFloat($('t15-bz')?.value)    || S.bz;
+  S.t15GoesB = parseFloat($('t15-goes')?.value)  || S.t15GoesB;
+  const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+  set('kv-t15-dst',  Number(S.dst).toFixed(1));
+  set('kv-t15-pdyn', Number(S.pdyn).toFixed(2));
+  set('kv-t15-bz',   Number(S.bz).toFixed(1));
+  set('kv-t15-goes', Number(S.t15GoesB).toFixed(1));
+  bndShueUpdate();
+  updateSidebar();
+}
+
+/* mhdChange — called on MHD interpolation setting change */
+function mhdChange() {
+  S.mhdInterp = $('mhd-interp')?.value || S.mhdInterp;
+  const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+  set('kv-mhd-interp', S.mhdInterp);
+  updateSidebar();
+}
+
+
+function dstToKp(dst) {
+  return Math.max(0, Math.min(9, Math.round((-dst / 28 + 0.8) * 10) / 10));
+}
+function vsIntensityA(kp) {
+  const d = Math.pow(1 - 0.159*kp + 0.0093*kp*kp, 3);
+  return d > 0 ? 0.045/d : 0.045;
+}
+function setCorotation(include) {
+  S.eFieldCoro = include;
+  $('ecoro-yes-btn')?.classList.toggle('on', include);
+  $('ecoro-no-btn')?.classList.toggle('on', !include);
+  const warn = $('ecoro-off-warn'); if (warn) warn.style.display = !include ? 'block' : 'none';
+  const kw = $('kw-efield-coro'); if (kw) kw.textContent = include ? 'YES' : 'NO';
+  updateSidebar();
+}
+function setConvModel(model) {
+  S.eFieldConvModel = model;
+  document.querySelectorAll('.bnd-card[id^="econv-"]').forEach(c => c.classList.remove('sel'));
+  $(`econv-${model.toLowerCase().replace('_','-')}`)?.classList.add('sel');
+  $('vs-panel').style.display     = model === 'VOLLAND_STERN' ? 'block' : 'none';
+  $('weimer-panel').style.display = model === 'WEIMER'        ? 'block' : 'none';
+  document.querySelectorAll('.vs-kw-row').forEach(r =>
+    r.style.display = model === 'VOLLAND_STERN' ? '' : 'none');
+  document.querySelectorAll('.weimer-kw-row').forEach(r =>
+    r.style.display = model === 'WEIMER' ? '' : 'none');
+  const kw = $('kw-efield-conv'); if (kw) kw.textContent = model;
+  drawEfieldSchematic();
+  updateSidebar();
+}
+function setVsKpMode(mode) {
+  S.vsKpMode = mode;
+  $('vs-kp-auto-btn')?.classList.toggle('on', mode === 'auto');
+  $('vs-kp-man-btn')?.classList.toggle('on',  mode === 'manual');
+  $('vs-kp-auto-row').style.display   = mode === 'auto'   ? 'flex' : 'none';
+  $('vs-kp-manual-row').style.display = mode === 'manual' ? 'flex' : 'none';
+  vsParamChange();
+}
+function vsParamChange() {
+  if (S.vsKpMode === 'manual') S.vsKp = parseFloat($('vs-kp-input')?.value) ?? S.vsKp;
+  else { S.vsKp = dstToKp(S.dst); const d=$('vs-kp-auto-display'); if(d) d.textContent=S.vsKp.toFixed(1); }
+  S.vsGamma = parseFloat($('vs-gamma')?.value) || S.vsGamma;
+  S.vsA = vsIntensityA(S.vsKp);
+  const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
+  set('vs-a-display', S.vsA.toFixed(4));
+  set('kw-vs-kp',     S.vsKpMode==='auto' ? 'AUTO' : S.vsKp.toFixed(1));
+  set('kw-vs-gamma',  S.vsGamma.toFixed(1));
+  set('kw-vs-a',      S.vsA.toFixed(4));
+  const st=$('vs-kp-status');
+  if(st){
+    if(S.vsKp<2){st.textContent='🟢 Quiet';st.style.color='var(--green)';}
+    else if(S.vsKp<5){st.textContent='🟡 Moderate';st.style.color='var(--orange)';}
+    else{st.textContent='🔴 Storm';st.style.color='var(--red)';}
+  }
+  drawEfieldSchematic();
+}
+function setWeimerMode(mode) {
+  S.weimerMode = mode;
+  $('weimer-auto-btn')?.classList.toggle('on', mode==='auto');
+  $('weimer-file-btn')?.classList.toggle('on', mode==='file');
+  $('weimer-auto-panel').style.display = mode==='auto' ? 'block' : 'none';
+  $('weimer-file-panel').style.display = mode==='file' ? 'block' : 'none';
+}
+function drawEfieldSchematic() {
+  const svg=$('efield-svg'); if(!svg) return;
+  const CX=100,CY=100; let h='';
+  if(S.eFieldCoro){
+    for(let r=20;r<=85;r+=22)
+      h+=`<circle cx="${CX}" cy="${CY}" r="${r}" fill="none" stroke="rgba(45,212,160,.2)" stroke-width="1" stroke-dasharray="4,4"/>`;
+    h+=`<text x="128" y="38" font-size="9" fill="rgba(45,212,160,.55)" font-family="IBM Plex Mono">corot.</text>`;
+  }
+  if(S.eFieldConvModel==='VOLLAND_STERN'){
+    const kp=S.vsKp||5, sc=0.55+kp*0.06;
+    [18,36,58].forEach(d=>{
+      const off=d*sc*0.35;
+      h+=`<ellipse cx="${CX-off}" cy="${CY}" rx="${d}" ry="${d*.75}" fill="none" stroke="rgba(56,192,255,.28)" stroke-width="1.2" transform="rotate(-12,${CX},${CY})"/>`;
+      h+=`<ellipse cx="${CX+off}" cy="${CY}" rx="${d}" ry="${d*.75}" fill="none" stroke="rgba(255,154,60,.28)" stroke-width="1.2" transform="rotate(12,${CX},${CY})"/>`;
+    });
+    h+=`<text x="8" y="105" font-size="9" fill="rgba(56,192,255,.65)" font-family="IBM Plex Mono">Dawn+</text>`;
+    h+=`<text x="148" y="105" font-size="9" fill="rgba(255,154,60,.65)" font-family="IBM Plex Mono">Dusk−</text>`;
+    h+=`<text x="46" y="192" font-size="8" fill="rgba(255,208,75,.6)" font-family="IBM Plex Mono">Kp=${kp.toFixed(1)} γ=${S.vsGamma.toFixed(1)}</text>`;
+  } else if(S.eFieldConvModel==='WEIMER'){
+    const r1=38+Math.min(3,Math.abs(S.bz||0)/8)*12;
+    h+=`<path d="M${CX},${CY-r1} A${r1},${r1*.85} -20 0,1 ${CX+r1*.65},${CY}" fill="none" stroke="rgba(139,111,247,.45)" stroke-width="1.5"/>`;
+    h+=`<path d="M${CX},${CY-r1} A${r1},${r1*.85} 20 0,0 ${CX-r1*.65},${CY}" fill="none" stroke="rgba(139,111,247,.45)" stroke-width="1.5"/>`;
+    h+=`<text x="30" y="192" font-size="8" fill="rgba(139,111,247,.65)" font-family="IBM Plex Mono">Weimer Bz=${(S.bz||0).toFixed(1)} nT</text>`;
+  }
+  h+=`<circle cx="${CX}" cy="${CY}" r="6" fill="#1a88d4"/>`;
+  h+=`<line x1="${CX}" y1="${CY}" x2="168" y2="${CY}" stroke="rgba(255,208,75,.18)" stroke-width="1" stroke-dasharray="3,4"/>`;
+  h+=`<text x="164" y="107" font-size="9" fill="rgba(255,208,75,.45)" font-family="IBM Plex Mono">☀</text>`;
+  svg.innerHTML=h;
+}
+
+/* ── §8  INIT ─────────────────────────────────────────────────────── */
+/* Called once on DOMContentLoaded. Renders all default diagram states
+   then navigates the wizard to step 1. */
 function init(){
   drawSvgGrid('shue-grid');
   drawSvgGrid('box-grid');
   bndShueUpdate();
-  updateTimeline();
+  S.vsKp = dstToKp(S.dst);
+  S.vsA  = vsIntensityA(S.vsKp);
+  const kpAuto = $('vs-kp-auto-display');
+  if (kpAuto) kpAuto.textContent = S.vsKp.toFixed(1);
   renderBins();
   drawSpec();
+  drawEfieldSchematic();
   updateSidebar();
   goStep(1);
 }
 document.addEventListener('DOMContentLoaded', init);
 
 </script>
-<script>
-
-/* ═══════════════════════════════════════════════════════════════════
-   AMPS CCMC — INLINE APPLICATION SCRIPT
-   All interactive logic for the 9-step submission wizard.
-   Separated into logical sections:
-     1. State & Constants
-     2. Wizard Navigation
-     3. Step-specific handlers
-     4. SVG diagram renderers (Box + Shue)
-     5. Spectrum canvas
-     6. Review & param file builder
-     7. Init
-═══════════════════════════════════════════════════════════════════ */
-
-/* ── 1. GLOBAL STATE ─────────────────────────────────────────────── */
-const S = {
-  step: 1, done: new Set(),
-  runName:'SEP_Sep2017_VanAllenProbeA', piName:'', piEmail:'', institution:'',
-  species:'proton', charge:1, mass:1.0073,
-  fieldModel:'TS05', dst:-142.0, pdyn:3.5, bz:-18.5, vx:-650.0, nsw:12.0, by:3.2, bx:0.0,
-  epoch:'2017-09-10T16:00',
-  boundaryType:'SHUE', shueMode:'auto',
-  boxXmax:15, boxXmin:-60, boxYmax:25, boxYmin:-25, boxZmax:20, boxZmin:-20, boxRinner:2.0,
-  shueR0:null, shueAlpha:null, xtail:-60, shueRinner:2.0,
-  tempMode:'TIME_SERIES', eventStart:'2017-09-07T00:00', eventEnd:'2017-09-10T20:00',
-  fieldDt:5, injectDt:30, tsSource:'omni',
-  specType:'POWER_LAW', specJ0:10000, specGamma:3.5, specE0:10, specEmin:1, specEmax:1000,
-  outputMode:'TRAJECTORY', fluxDt:1.0, trajLoaded:false,
-  fluxType:'DIFFERENTIAL', outputCutoff:true, outputPitch:false,
-  outputFormat:'NETCDF4', outputCoords:'GEO',
-  energyBins:[1,5,10,30,100,300,1000],
-};
-
-const $ = id => document.getElementById(id);
-const CX=200, CY=160, SC=5; // SVG canvas centre & scale
-
-/* ── 2. WIZARD NAVIGATION ────────────────────────────────────────── */
-function goStep(n) {
-  if(n < 1 || n > 9) return;
-  S.done.add(S.step);
-  S.step = n;
-  for(let i=1;i<=9;i++) {
-    const p=$(`panel-${i}`); if(p) p.classList.toggle('active', i===n);
-    const el=document.querySelectorAll('.wz-step')[i-1];
-    if(el){ el.classList.remove('done','active');
-      if(S.done.has(i)) el.classList.add('done');
-      else if(i===n) el.classList.add('active'); }
-  }
-  $('btn-prev').disabled = n===1;
-  $('btn-next').style.display = n<9?'inline-flex':'none';
-  $('btn-submit').style.display = n===9?'inline-flex':'none';
-  window.scrollTo({top:0,behavior:'smooth'});
-  updateSidebar();
-  if(n===9) buildReview();
-}
-function nextStep(){ goStep(S.step+1); }
-function prevStep(){ goStep(S.step-1); }
-function goToReview(){ goStep(9); }
-
-// Init wizard step indicators
-document.querySelectorAll('.wz-step').forEach((el,i)=>{
-  el.addEventListener('click',()=>goStep(i+1));
-});
-
-/* ── 3a. SECTION COLLAPSE ────────────────────────────────────────── */
-function toggleSection(id){
-  const el=$(id); if(el) el.classList.toggle('closed');
-}
-
-/* ── 3b. STEP 1 HANDLERS ─────────────────────────────────────────── */
-function liveUpdate(){
-  S.runName = $('run-name')?.value||S.runName;
-  updateSidebar();
-}
-function goalHint(v){
-  const hints = {
-    storm_validation: 'Compare AMPS-predicted cutoff rigidity with Van Allen Probe particle data during storm main phase.',
-    gcr_baseline:     'Compute galactic cosmic ray fluxes at LEO under quiet geomagnetic conditions (Dst ≈ 0 nT).',
-    sep_radiation:    'Quantify SEP fluence and dose at ISS altitude during a major solar particle event.',
-    parameter_study:  'Systematic sensitivity study: vary Dst, Pdyn, and spectral index to map uncertainty space.',
-    custom:           'Describe your science goal in the text area above.',
-  };
-  const el=$('goal-hint'); if(el) el.textContent = hints[v]||'';
-}
-function charCount(el,cid,max){
-  const n=el.value.length, c=$(cid);
-  if(c){ c.textContent=n+'/'+max;
-    c.className='char-count'+(n>max*0.9?' near':'')+(n>max?' over':''); }
-}
-
-/* ── 3c. STEP 2 PARTICLE ─────────────────────────────────────────── */
-const SPECIES={
-  proton:  {Z:1,  A:1.0073,  label:'H⁺ Proton'},
-  helium:  {Z:2,  A:4.0026,  label:'He²⁺ Alpha'},
-  oxygen:  {Z:8,  A:15.999,  label:'O⁸⁺'},
-  electron:{Z:-1, A:0.000549,label:'e⁻ Electron'},
-  iron:    {Z:26, A:55.845,  label:'Fe²⁶⁺'},
-  custom:  {Z:1,  A:1.0,     label:'Custom'},
-};
-function selectSpecies(key,card){
-  const sp=SPECIES[key]; if(!sp) return;
-  S.species=key; S.charge=sp.Z; S.mass=sp.A;
-  document.querySelectorAll('.opt-card[id^="sp-"]').forEach(c=>c.classList.remove('sel'));
-  if(card) card.classList.add('sel');
-  $('custom-species-panel').style.display=key==='custom'?'block':'none';
-  if(key!=='custom'){
-    const ci=$('charge-input'), mi=$('mass-input');
-    if(ci) ci.value=sp.Z; if(mi) mi.value=sp.A;
-  }
-  updateRigidity();
-}
-function updateRigidity(){
-  const q=Math.abs(S.charge||1), A=S.mass||1;
-  const E=100, mp=938.272;
-  const Etot=E*A+A*mp, p=Math.sqrt(Etot**2-(A*mp)**2), R=p/(q*1000);
-  const el=$('rigidity-info'); if(el) el.textContent=`R = ${R.toFixed(3)} GV at 100 MeV/n`;
-}
-
-/* ── 3d. STEP 3 BACKGROUND FIELD MODEL ──────────────────────────── */
-// Selects which empirical magnetic field model drives the simulation.
-// Only TS05 is fully implemented in Year 1; T04s and T89 are stubs.
-function selectFieldModel(model, card) {
-  S.fieldModel = model;
-  document.querySelectorAll('.model-sel-card').forEach(c => c.classList.remove('sel'));
-  card.classList.add('sel');
-  // Update the FIELD_MODEL keyword in the live preview
-  const kv = $('kv-field-model');
-  if (kv) kv.textContent = model;
-  // Show/hide param fields based on model
-  const ts05Fields = document.getElementById('ts05-fields-wrap');
-  if (ts05Fields) ts05Fields.style.opacity = model === 'T89' ? '0.5' : '1';
-  // For T89, show a info box
-  const t89note = document.getElementById('t89-note');
-  if (t89note) t89note.style.display = model === 'T89' ? 'block' : 'none';
-  updateKwPreview();
-  updateSidebar();
-}
-
-function ts05Change(){
-  const v = k => parseFloat($(k)?.value)||0;
-  S.dst=v('ts05-dst'); S.pdyn=v('ts05-pdyn'); S.bz=v('ts05-bz');
-  S.vx=v('ts05-vx');   S.nsw=v('ts05-nsw');   S.by=v('ts05-by'); S.bx=v('ts05-bx');
-  S.epoch=$('ts05-epoch')?.value||S.epoch;
-  validateTs05();
-  updateKwPreview();
-  bndShueUpdate(); // Shue params depend on Bz, Pdyn
-  updateSidebar();
-}
-const TS05R={
-  dst:{lo:-600,hi:50,wl:-300,wh:50},pdyn:{lo:0.1,hi:30,wl:0.5,wh:20},
-  bz:{lo:-50,hi:20,wl:-30,wh:15},vx:{lo:-900,hi:-200,wl:-800,wh:-200},
-  nsw:{lo:0.5,hi:80,wl:1,wh:50},by:{lo:-40,hi:40},bx:{lo:-40,hi:40},
-};
-function validateTs05(){
-  Object.entries(TS05R).forEach(([key,r])=>{
-    const v=S[key]; if(v===undefined) return;
-    const el=$(`ts05-${key}`), st=$(`ts05-${key}-status`);
-    if(!el) return;
-    el.classList.remove('valid','warn','error');
-    if(v<r.lo||v>r.hi){ el.classList.add('error'); if(st){st.textContent='✗ Out of TS05 range';st.style.color='var(--red)';} }
-    else if((r.wl&&v<r.wl)||(r.wh&&v>r.wh)){ el.classList.add('warn'); if(st){st.textContent='⚠ Unusual — verify data source';st.style.color='var(--orange)';} }
-    else{ el.classList.add('valid'); if(st){st.textContent='✓ Within normal range';st.style.color='var(--green)';} }
-  });
-}
-function updateKwPreview(){
-  const f=(v,d)=>Number(v).toFixed(d);
-  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
-  set('kv-dst', f(S.dst,1)); set('kv-pdyn',f(S.pdyn,2)); set('kv-bz',f(S.bz,2));
-  set('kv-vx',  f(S.vx,1));  set('kv-nsw', f(S.nsw,2)); set('kv-by', f(S.by,2));
-  set('kv-bx',  f(S.bx,2));  set('kv-epoch', S.epoch);
-}
-
-/* ── 3e. STEP 4 BOUNDARY ─────────────────────────────────────────── */
-function bndSet(type){
-  S.boundaryType=type;
-  $('bc-box')?.classList.toggle('sel',type==='BOX');
-  $('bc-shue')?.classList.toggle('sel',type==='SHUE');
-  $('bnd-box-panel').style.display=type==='BOX'?'block':'none';
-  $('bnd-shue-panel').style.display=type==='SHUE'?'block':'none';
-  if(type==='SHUE') bndShueUpdate(); else bndBoxUpdate();
-  updateSidebar();
-}
-function shueMode(m){
-  S.shueMode=m;
-  $('shue-auto-btn')?.classList.toggle('on',m==='auto');
-  $('shue-manual-btn')?.classList.toggle('on',m==='manual');
-  $('shue-manual-fields').style.display=m==='manual'?'block':'none';
-  $('shue-auto-box').style.opacity=m==='manual'?'0.5':'1';
-  bndShueUpdate();
-}
-function shueCalc(){
-  const bz=S.bz, pd=Math.max(0.1,S.pdyn);
-  const r0=Math.max(4,Math.min(15,(11.4+0.013*bz)*Math.pow(pd,-1/6.6)));
-  const al=Math.max(0.3,Math.min(0.9,(0.58-0.007*bz)*(1+0.024*Math.log(pd))));
-  return {r0,alpha:al};
-}
-function getShue(){
-  if(S.shueMode==='manual'&&S.shueR0&&S.shueAlpha) return {r0:S.shueR0,alpha:S.shueAlpha};
-  return shueCalc();
-}
-function shueR(r0,al,deg){
-  const th=deg*Math.PI/180, d=1+Math.cos(th); return d<1e-9?Infinity:r0*Math.pow(2/d,al);
-}
-// Map GSM → SVG
-const gx=re=>CX+re*SC, gz=re=>CY-re*SC, cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-
-function bndBoxUpdate(){
-  const v=k=>parseFloat($(k)?.value)||0;
-  S.boxXmax=v('box-xmax'); S.boxXmin=v('box-xmin'); S.boxYmax=v('box-ymax');
-  S.boxYmin=v('box-ymin'); S.boxZmax=v('box-zmax'); S.boxZmin=v('box-zmin');
-  S.boxRinner=v('box-rinner');
-  // Draw rectangle
-  const rx=cl(gx(S.boxXmin),5,390), ry=cl(gz(S.boxZmax),5,310);
-  const rw=cl(gx(S.boxXmax),5,390)-rx, rh=cl(gz(S.boxZmin),5,310)-ry;
-  const rect=$('box-rect');
-  if(rect){ rect.setAttribute('x',rx); rect.setAttribute('y',ry);
-            rect.setAttribute('width',Math.max(0,rw)); rect.setAttribute('height',Math.max(0,rh)); }
-  const ib=$('inner-box'); if(ib) ib.setAttribute('r',S.boxRinner*SC);
-  const sl=(id,t,x,y)=>{ const e=$(id); if(e){e.setAttribute('x',x);e.setAttribute('y',y);e.textContent=t;} };
-  sl('box-lbl-xmax','Xmax='+S.boxXmax, cl(gx(S.boxXmax)+2,10,360), CY+14);
-  sl('box-lbl-xmin','Xmin='+S.boxXmin, cl(gx(S.boxXmin)-34,5,300), CY+14);
-  sl('box-lbl-zmax','Zmax='+S.boxZmax, CX+4, cl(gz(S.boxZmax)-3,14,306));
-  sl('box-lbl-zmin','Zmin='+S.boxZmin, CX+4, cl(gz(S.boxZmin)+11,14,306));
-  // Validation
-  const vi=(id,ok,okTxt,failTxt)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="v-ok">${okTxt}</span>`:`<span class="v-warn">${failTxt}</span>`; };
-  vi('bv-xrange', S.boxXmax>9,  '✓ Dayside OK',       '⚠ Xmax < 9 RE');
-  vi('bv-yrange', S.boxYmax>=15,'✓ Flanks OK',        '⚠ Y < 15 RE');
-  vi('bv-zrange', S.boxZmax>12&&Math.abs(S.boxZmin)>12,'✓ Z range OK','⚠ |Z| < 12 RE');
-  vi('bv-inner',  S.boxRinner>=1.5&&S.boxRinner<=3.5,  '✓ R_inner OK','⚠ Typical 1.5–3.5 RE');
-  // KW
-  ['xmax','xmin','ymax','ymin','zmax','zmin','rinner'].forEach(k=>{
-    const e=$('kw-'+k); if(e) e.textContent=Number(S['box'+k.charAt(0).toUpperCase()+k.slice(1)]).toFixed(1);
-  });
-}
-
-function bndShueUpdate(){
-  const v=k=>parseFloat($(k)?.value);
-  S.xtail=v('shue-xtail')||S.xtail;
-  S.shueRinner=v('shue-rinner')||S.shueRinner;
-  if(S.shueMode==='manual'){ S.shueR0=v('shue-r0-in')||null; S.shueAlpha=v('shue-alpha-in')||null; }
-  const {r0,alpha}=getShue();
-  // Update auto-compute display (r0, alpha, Xsub, Rflank)
-  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
-  set('shue-r0-val',    r0.toFixed(2));
-  set('shue-alpha-val', alpha.toFixed(3));
-  set('shue-xsub-val',  r0.toFixed(2));
-  const rFlank=shueR(r0,alpha,90);
-  set('shue-rflank-val', isFinite(rFlank)?rFlank.toFixed(1):'—');
-  // Build path
-  const xtSvgX=cl(gx(S.xtail),8,390);
-  let upper=[],lower=[];
-  for(let d=0;d<=180;d+=1){
-    const r=shueR(r0,alpha,d); if(!isFinite(r)) continue;
-    const th=d*Math.PI/180, gx2=r*Math.cos(th), gz2=r*Math.sin(th);
-    if(gx2<S.xtail) continue;
-    upper.push([cl(gx(gx2),5,390), cl(gz(gz2),5,310)]);
-    lower.unshift([cl(gx(gx2),5,390), cl(gz(-gz2),5,310)]);
-  }
-  if(upper.length>1){
-    let path=`M ${upper[0][0]},${upper[0][1]}`;
-    upper.forEach(([x,y])=>path+=` L ${x},${y}`);
-    const tailZ=shueR(r0,alpha,179.9)*Math.sin(179.9*Math.PI/180);
-    path+=` L ${xtSvgX},${cl(gz(-tailZ),5,310)}`;
-    lower.forEach(([x,y])=>path+=` L ${x},${y}`);
-    path+=' Z';
-    $('shue-path')?.setAttribute('d',path);
-  }
-  const tc=$('shue-tailcap');
-  if(tc){ tc.setAttribute('x1',xtSvgX); tc.setAttribute('x2',xtSvgX); tc.setAttribute('y1','20'); tc.setAttribute('y2','300'); }
-  const tl=$('shue-tailcap-lbl'); if(tl){ tl.setAttribute('x',xtSvgX+3); tl.textContent='Xtail='+S.xtail; }
-  const ish=$('inner-shue'); if(ish) ish.setAttribute('r',S.shueRinner*SC);
-  set('inner-shue-lbl', `R_in=${S.shueRinner} RE`);
-  const r0svgX=cl(gx(r0),10,385);
-  const r0line=$('shue-r0-line');
-  if(r0line){ r0line.setAttribute('x2',r0svgX); r0line.setAttribute('y2',CY); }
-  const r0lbl=$('shue-r0-lbl');
-  if(r0lbl){ r0lbl.setAttribute('x',cl(gx(r0/2),10,370)); r0lbl.textContent=`r₀=${r0.toFixed(1)}`; }
-  if(isFinite(rFlank)){
-    const flkSvgY=cl(gz(Math.min(rFlank,28)),10,300);
-    const flkLine=$('shue-flank-line');
-    if(flkLine){ flkLine.setAttribute('x1',CX); flkLine.setAttribute('y1',CY); flkLine.setAttribute('x2',CX); flkLine.setAttribute('y2',flkSvgY); }
-    const flkLbl=$('shue-flank-lbl');
-    if(flkLbl){ flkLbl.setAttribute('y',((flkSvgY+CY)/2).toFixed(1)); flkLbl.textContent=`Rflk=${rFlank.toFixed(1)}`; }
-  }
-  set('shue-svg-r0',    `r₀=${r0.toFixed(2)} RE`);
-  set('shue-svg-alpha', `α=${alpha.toFixed(3)}`);
-  set('shue-svg-dst',   `Dst=${S.dst<0?'−'+Math.abs(S.dst):S.dst} nT`);
-  set('shue-svg-pdyn',  `Pdyn=${S.pdyn} nPa`);
-  const vi=(id,ok,okT,failT)=>{ const e=$(id); if(e) e.innerHTML=ok?`<span class="bv-ok">${okT}</span>`:`<span class="bv-warn">${failT}</span>`; };
-  vi('sv-r0',    r0>5&&r0<13,          `✓ r₀=${r0.toFixed(2)} R<sub>E</sub> (storm-time)`, `⚠ r₀=${r0.toFixed(2)} — outside 5–13 R<sub>E</sub>`);
-  vi('sv-alpha', alpha>0.4&&alpha<0.8, `✓ α=${alpha.toFixed(3)} (normal range)`,            `⚠ α=${alpha.toFixed(3)} — outside 0.40–0.80`);
-  vi('sv-tail',  S.xtail<-20,          `✓ Tail cap at ${S.xtail} R<sub>E</sub>`,            `⚠ X_tail should be < −20 R<sub>E</sub>`);
-  const isM=S.shueMode==='manual';
-  set('kw-shue-r0',     isM?r0.toFixed(2):'AUTO');
-  set('kw-shue-alpha',  isM?alpha.toFixed(3):'AUTO');
-  set('kw-xtail',       S.xtail.toFixed(1));
-  set('kw-shue-rinner', S.shueRinner.toFixed(1));
-}
-
-/* ── 3f. STEP 5 TEMPORAL ─────────────────────────────────────────── */
-function setTempMode(m){
-  S.tempMode=m;
-  document.querySelectorAll('.temp-card').forEach(c=>c.classList.toggle('sel',c.dataset.mode===m));
-  $('ts-form').style.display=m!=='STEADY_STATE'?'block':'none';
-  updateSidebar();
-}
-function checkDtPair(){
-  const fd=parseFloat($('field-update-dt')?.value)||5;
-  const id=parseFloat($('inject-dt')?.value)||30;
-  S.fieldDt=fd; S.injectDt=id;
-  $('dt-warn').style.display = id<fd?'block':'none';
-}
-function setTsSource(btnOrSrc, src){
-  const mode = src || btnOrSrc;
-  S.tsSource=mode;
-  document.querySelectorAll('#ts-source-tog .tog-btn').forEach(b=>b.classList.remove('on'));
-  const btnId={'omni':'ts-omni-btn','file':'ts-file-btn','scalar':'ts-scalar-btn'}[mode];
-  if(btnId) $(btnId)?.classList.add('on');
-  $('omni-panel').style.display=mode==='omni'?'block':'none';
-  $('file-panel').style.display=mode==='file'?'block':'none';
-}
-function simulateOmniFetch(){
-  const cadSel=$('omni-cadence');
-  const cadMin=cadSel&&cadSel.value.startsWith('1 min')?1:cadSel&&cadSel.value.startsWith('1 hr')?60:5;
-  const startEl=$('event-start'), endEl=$('event-end');
-  const start=startEl?new Date(startEl.value):new Date('2017-09-07T00:00');
-  const end=endEl?new Date(endEl.value):new Date('2017-09-10T20:00');
-  const hrs=Math.max(0,(end-start)/(1000*3600));
-  const rowCount=Math.round(hrs*60/cadMin);
-  const msgs=[
-    `⏳ Querying omniweb.gsfc.nasa.gov for ${cadMin}-min OMNI…`,
-    '⏳ Querying wdc.kugi.kyoto-u.ac.jp for Dst / Sym-H…',
-    '⏳ Merging streams and gap-filling…',
-    '⏳ Generating preview and data quality report…'
-  ];
-  const steps=['os-1','os-2','os-3','os-4'];
-  steps.forEach(id=>{ const e=$(id); if(e){e.classList.remove('done');e.className='os-num pending';e.textContent=steps.indexOf(id)+1;} });
-  const st=$('omni-status'); if(st) st.innerHTML=`<span style="color:var(--orange)">${msgs[0]}</span>`;
-  let i=0;
-  const adv=()=>{
-    if(i>0){ const pe=$(steps[i-1]); if(pe){pe.className='os-num done';pe.textContent='✓';} }
-    if(i<steps.length){
-      const ce=$(steps[i]); if(ce){ce.className='os-num';ce.style.background='var(--orange)';ce.textContent='…';}
-      if(st&&msgs[i]) st.innerHTML=`<span style="color:var(--orange)">${msgs[i]}</span>`;
-      i++; setTimeout(adv,700);
-    } else {
-      const s=startEl?startEl.value.replace('T',' '):'-', e=endEl?endEl.value.replace('T',' '):'-';
-      if(st) st.innerHTML=`<span class="ok">✓ Fetch complete</span>&nbsp;&nbsp;Time range: <span style="color:#fff;">${s} → ${e} UTC</span><br/>`+
-        `${rowCount} rows @ ${cadMin} min cadence&nbsp;·&nbsp;<span class="warn">⚠ 1 gap 19:00–19:30 UTC — linear interpolation applied (6 rows)</span>`;
-    }
-  };
-  adv();
-}
-
-/* ── 3g. STEP 6 SPECTRUM ─────────────────────────────────────────── */
-function setSpec(type,card){
-  S.specType=type;
-  document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
-  if(card) card.classList.add('sel');
-  ['pl-form','band-form','table-form'].forEach(id=>{
-    const m={'pl-form':'POWER_LAW','band-form':'BAND','table-form':'TABLE'};
-    const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
-  });
-  drawSpec();
-}
-function drawSpec(){
-  S.specJ0=parseFloat($('spec-j0')?.value)||S.specJ0;
-  S.specGamma=parseFloat($('spec-gamma')?.value)||S.specGamma;
-  S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
-  S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
-  S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
-  const canvas=$('spec-canvas'); if(!canvas) return;
-  const W=canvas.parentElement.clientWidth||400, H=160;
-  canvas.width=W; canvas.height=H;
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#060e1c'; ctx.fillRect(0,0,W,H);
-  const emin=Math.max(0.1,S.specEmin), emax=Math.min(1e5,S.specEmax);
-  const lemin=Math.log10(emin), lemax=Math.log10(emax);
-  const ljmin=-2, ljmax=8, pad=28;
-  ctx.strokeStyle='#0d2040'; ctx.lineWidth=0.5;
-  for(let le=Math.ceil(lemin);le<=Math.floor(lemax);le++){
-    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
-    ctx.beginPath(); ctx.moveTo(x,5); ctx.lineTo(x,H-18); ctx.stroke();
-    ctx.fillStyle='#2a4060'; ctx.font='8px IBM Plex Mono';
-    ctx.fillText('10^'+le,x-8,H-4);
-  }
-  for(let lj=ljmin;lj<=ljmax;lj+=2){
-    const y=H-18-((lj-ljmin)/(ljmax-ljmin))*(H-22);
-    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-8,y); ctx.stroke();
-    ctx.fillStyle='#2a4060'; ctx.font='7px IBM Plex Mono'; ctx.fillText('10^'+lj,1,y+3);
-  }
-  ctx.strokeStyle='#38c0ff'; ctx.lineWidth=2; ctx.beginPath();
-  let started=false;
-  for(let i=0;i<=300;i++){
-    const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
-    let J;
-    if(S.specType==='POWER_LAW') J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
-    else if(S.specType==='BAND'){
-      const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
-      const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
-      J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);
-    } else break;
-    const lJ=Math.log10(Math.max(1e-4,J));
-    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
-    const y=H-18-((lJ-ljmin)/(ljmax-ljmin))*(H-22);
-    if(!started){ ctx.moveTo(x,Math.max(5,Math.min(H-18,y))); started=true; }
-    else ctx.lineTo(x,Math.max(5,Math.min(H-18,y)));
-  }
-  ctx.stroke();
-}
-
-/* ── 3h. STEP 7 OUTPUT DOMAIN ────────────────────────────────────── */
-function setMode(m,card){
-  S.outputMode=m;
-  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('sel'));
-  if(card) card.classList.add('sel');
-  ['panel-mode-a','panel-mode-b','panel-mode-c'].forEach(id=>{
-    const map={'panel-mode-a':'POINTS','panel-mode-b':'TRAJECTORY','panel-mode-c':'SHELLS'};
-    const el=$(id); if(el) el.style.display=map[id]===m?'block':'none';
-  });
-  updateSidebar();
-}
-function loadTrajExample(){
-  S.trajLoaded=true;
-  const dz=$('traj-dropzone');
-  if(dz){ dz.classList.add('loaded');
-    dz.innerHTML='<div class="dz-icon">✅</div><div class="dz-primary" style="color:var(--green)">VanAllenProbeA_sep2017.txt</div><div class="dz-sub">14,412 rows · Gregorian format · 2017-09-07 → 2017-09-10 UTC</div>'; }
-  $('traj-preview-panel').style.display='block';
-}
-
-/* ── 3i. STEP 8 OUTPUT OPTIONS ───────────────────────────────────── */
-function setFluxType(t,btn){
-  S.fluxType=t;
-  document.querySelectorAll('.flux-type-btn').forEach(b=>b.classList.remove('on'));
-  if(btn) btn.classList.add('on');
-}
-const PRESETS={
-  default:[1,5,10,30,100,300,1000],
-  fine:[1,2,3,5,7,10,15,20,30,50,70,100,200,300,500,1000],
-  goes:[5,10,30,50,60,100,300,500],
-  broad:[1,10,100,1000],
-};
-function applyBinPreset(k){ if(PRESETS[k]){ S.energyBins=[...PRESETS[k]]; renderBins(); } }
-function addBin(){
-  const inp=$('new-bin-val'); if(!inp) return;
-  const v=parseFloat(inp.value);
-  if(v>0&&!S.energyBins.includes(v)){ S.energyBins.push(v); renderBins(); inp.value=''; }
-}
-function removeBin(i){ S.energyBins.splice(i,1); renderBins(); }
-function renderBins(){
-  S.energyBins.sort((a,b)=>a-b);
-  const c=$('ebin-list'); if(!c) return; c.innerHTML='';
-  const jAtE=E=>S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
-  const maxJ=Math.max(...S.energyBins.map(jAtE));
-  S.energyBins.forEach((e,i)=>{
-    const pct=Math.max(5,Math.min(100,(Math.log10(jAtE(e))-Math.log10(1e-3))/(Math.log10(maxJ+1)-Math.log10(1e-3))*100));
-    const row=document.createElement('div'); row.className='ebin-row';
-    row.innerHTML=`<span class="ebin-range" style="color:#38c0ff">${e} MeV/n</span>
-      <div class="ebin-bar-wrap"><div class="ebin-bar" style="width:${pct.toFixed(0)}%"></div></div>
-      <span style="font-size:10px;color:var(--text-dim)">${jAtE(e).toExponential(1)} p/cm²/s/sr/(MeV/n)</span>
-      <span class="ebin-del" onclick="removeBin(${i})" title="Remove">✕</span>`;
-    c.appendChild(row);
-  });
-  const ts=$('total-output-size'); if(ts) ts.textContent=`~${(S.energyBins.length*0.8).toFixed(1)} GB output`;
-}
-
-/* ── 4. SVG GRID INIT ────────────────────────────────────────────── */
-function drawSvgGrid(svgId){
-  const g=document.getElementById(svgId); if(!g) return;
-  let html='';
-  for(let x=-60;x<=20;x+=5){
-    const px=cl(gx(x),5,390);
-    html+=`<line x1="${px}" y1="4" x2="${px}" y2="316" stroke="${x===0?'#1e3a5a':'#0c1e38'}" stroke-width="${x===0?1:0.5}" ${x!==0?'stroke-dasharray="3,5"':''}/>`;
-    if(x%20===0&&x!==0) html+=`<text x="${px-8}" y="${CY+18}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${x}RE</text>`;
-  }
-  for(let z=-35;z<=35;z+=5){
-    const py=cl(gz(z),5,310);
-    html+=`<line x1="4" y1="${py}" x2="396" y2="${py}" stroke="${z===0?'#1e3a5a':'#0c1e38'}" stroke-width="${z===0?1:0.5}" ${z!==0?'stroke-dasharray="3,5"':''}/>`;
-    if(z%20===0&&z!==0) html+=`<text x="${CX+3}" y="${py+3}" fill="#1a3050" font-family="IBM Plex Mono" font-size="8">${z}RE</text>`;
-  }
-  g.innerHTML=html;
-}
-
-/* ── 5. REVIEW & PARAM FILE ──────────────────────────────────────── */
-function buildReview(){
-  const {r0,alpha}=getShue();
-  const isM=S.shueMode==='manual';
-  const f=(v,d)=>Number(v).toFixed(d);
-  const txt=[
-`! ═══════════════════════════════════════════════════════════════
-! AMPS_PARAM.in — generated by CCMC Runs-on-Request interface
-! Run: ${S.runName||'unnamed'}
-! ═══════════════════════════════════════════════════════════════
-
-#RUN_INFO
-RUN_ID                 ${S.runName||'unnamed'}
-PI_NAME                ${S.piName||'Unknown'}
-PI_EMAIL               ${S.piEmail||'unknown@unknown.edu'}
-SCIENCE_GOAL           ${$('science-goal')?.value||'custom'}
-
-#PARTICLE_SPECIES
-SPECIES                ${S.species.toUpperCase()}
-CHARGE                 ${S.charge}               ! elementary charge
-MASS_AMU               ${S.mass}           ! atomic mass units
-
-#BACKGROUND_FIELD
-FIELD_MODEL            ${S.fieldModel}
-TS05_DST               ${f(S.dst,1)}         ! nT ring current index
-TS05_PDYN              ${f(S.pdyn,2)}          ! nPa dynamic pressure
-TS05_BZ                ${f(S.bz,2)}         ! nT IMF Bz GSM
-TS05_VX                ${f(S.vx,1)}       ! km/s solar wind Vx
-TS05_NSW               ${f(S.nsw,2)}         ! cm-3 proton density
-TS05_BY                ${f(S.by,2)}          ! nT IMF By
-TS05_BX                ${f(S.bx,2)}          ! nT IMF Bx
-EPOCH                  ${S.epoch}  ! UTC snapshot
-
-#DOMAIN_BOUNDARY
-BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
-S.boundaryType==='BOX'?`DOMAIN_X_MAX           ${f(S.boxXmax,1)}         ! RE dayside
-DOMAIN_X_MIN           ${f(S.boxXmin,1)}        ! RE nightside
-DOMAIN_Y_MAX           ${f(S.boxYmax,1)}         ! RE dusk
-DOMAIN_Y_MIN           ${f(S.boxYmin,1)}        ! RE dawn
-DOMAIN_Z_MAX           ${f(S.boxZmax,1)}         ! RE north
-DOMAIN_Z_MIN           ${f(S.boxZmin,1)}        ! RE south
-R_INNER                ${f(S.boxRinner,1)}           ! RE inner loss sphere`:
-`SHUE_R0                ${isM?f(r0,2):'AUTO'}            ! RE; AUTO = from TS05 Bz,Pdyn
-SHUE_ALPHA             ${isM?f(alpha,3):'AUTO'}         ! flaring; AUTO = from TS05
-DOMAIN_X_TAIL          ${f(S.xtail,1)}        ! RE nightside cap
-R_INNER                ${f(S.shueRinner,1)}           ! RE inner loss sphere`,
-`
-#TEMPORAL
-TEMPORAL_MODE          ${S.tempMode}`,
-S.tempMode!=='STEADY_STATE'?`EVENT_START            ${S.eventStart}   ! UTC
-EVENT_END              ${S.eventEnd}   ! UTC
-FIELD_UPDATE_DT        ${S.fieldDt}                ! min
-INJECT_DT              ${S.injectDt}               ! min
-TS_INPUT_MODE          ${S.tsSource==='omni'?'OMNIWEB':S.tsSource==='file'?'FILE':'SCALAR'}`:
-`EPOCH                  ${S.epoch}`,
-`
-#SPECTRUM
-SPECTRUM_TYPE          ${S.specType}
-SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
-SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
-SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot
-SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
-SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
-
-#OUTPUT_DOMAIN
-OUTPUT_MODE            ${S.outputMode}
-FLUX_DT                ${f(S.fluxDt,1)}           ! min output cadence
-
-#OUTPUT_OPTIONS
-FLUX_TYPE              ${S.fluxType}
-OUTPUT_CUTOFF          ${$('output-cutoff')?.checked?'T':'F'}                    ! cutoff rigidity maps
-OUTPUT_PITCH           ${$('output-pitch')?.checked?'T':'F'}                    ! pitch angle distributions
-OUTPUT_FORMAT          ${$('output-format')?.value||S.outputFormat}
-OUTPUT_COORDS          ${$('output-coords')?.value||S.outputCoords}
-ENERGY_BINS            ${S.energyBins.join(' ')}   ! MeV/n
-
-#NUMERICAL
-N_PARTICLES            10000              ! test particles per injection
-MAX_BOUNCE             500                ! max mirror reflections
-DT_TRACE               1.0               ! s integration step
-PITCH_ISOTROPIC        T                 ! isotropic injection
-
-#END`
-].join('\n');
-
-  const el=$('review-param'); if(!el) return;
-  el.innerHTML=txt
-    .replace(/^(#\w[\w_]*)/gm,'<span class="r-section">$1</span>')
-    .replace(/^(! .+)/gm,'<span class="r-comment">$1</span>')
-    .replace(/(AUTO)/g,'<span class="r-auto">AUTO</span>');
-
-  buildManifest(); buildValidation();
-  return txt;
-}
-
-function copyParam(){ navigator.clipboard.writeText(buildReview().replace(/<[^>]+>/g,'')).then(()=>{ const b=$('copy-param'); if(b){b.textContent='✓ Copied';setTimeout(()=>{b.textContent='📋 Copy';},2000);} }); }
-function downloadParam(){
-  const txt=(buildReview()||'').replace(/<[^>]+>/g,'');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
-  a.download='AMPS_PARAM.in'; a.click();
-}
-
-function buildManifest(){
-  const tb=$('manifest-tbody'); if(!tb) return;
-  const files=[
-    {name:'AMPS_PARAM.in',      role:'Main configuration',            req:true, auto:true,  ok:true},
-    {name:'AMPS_MANIFEST.json', role:'Run metadata (auto-generated)', req:true, auto:true,  ok:true},
-    {name:'trajectory.txt',     role:'Spacecraft trajectory (Mode B)',req:S.outputMode==='TRAJECTORY', auto:false, ok:S.trajLoaded},
-    {name:'ts05_driving.txt',   role:'TS05 time-series drivers',      req:S.tempMode==='TIME_SERIES'&&S.tsSource==='file', auto:S.tsSource==='omni', ok:true},
-    {name:'sep_spectrum_H+.txt',role:'Spectrum table (if TABLE mode)',req:S.specType==='TABLE', auto:false, ok:S.specType!=='TABLE'},
-  ];
-  tb.innerHTML=files.filter(f=>f.req||f.auto).map(f=>`
-    <tr>
-      <td style="font-family:var(--font-mono);color:var(--text)">${f.name}</td>
-      <td style="color:var(--text-dim)">${f.role}</td>
-      <td style="color:${f.req?'var(--text)':'var(--text-muted)'}">${f.req?'Required':'Optional'}</td>
-      <td style="color:${f.auto?'var(--green)':'var(--text-dim)'}">${f.auto?'Auto-generated':'User upload'}</td>
-      <td class="${f.ok?'vt-pass':'vt-fail'}">${f.ok?'✓ READY':'✗ MISSING'}</td>
-    </tr>`).join('');
-}
-
-function buildValidation(){
-  const {r0,alpha}=getShue();
-  const chks=[
-    {l:'Run name set',           ok:!!(S.runName?.trim())},
-    {l:'PI email valid',         ok:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('pi-email')?.value||'')},
-    {l:'Dst in TS05 range',      ok:S.dst>=-600&&S.dst<=50},
-    {l:'Pdyn > 0.1 nPa',         ok:S.pdyn>0.1},
-    {l:'Domain boundary set',    ok:['BOX','SHUE'].includes(S.boundaryType)},
-    {l:'Shue r₀ plausible (5–13 RE)', ok:S.boundaryType!=='SHUE'||( r0>5&&r0<13)},
-    {l:'Inject Δt ≥ Field Update', ok:S.tempMode==='STEADY_STATE'||S.injectDt>=S.fieldDt},
-    {l:'Energy bins defined',    ok:S.energyBins.length>0},
-    {l:'Spectrum type selected', ok:['POWER_LAW','BAND','TABLE'].includes(S.specType)},
-    {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
-    {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
-  ];
-  const pass=chks.filter(c=>c.ok).length;
-  const fail=chks.filter(c=>!c.ok&&!c.warn).length;
-  const warn=chks.filter(c=>!c.ok&&c.warn).length;
-  const rs=$('review-summary');
-  if(rs) rs.innerHTML=`<span class="v-ok">✓ ${pass} passed</span> · <span class="v-warn">⚠ ${warn} warning</span> · <span class="v-err">✗ ${fail} fatal</span>`;
-  const rc=$('review-checks'); if(rc){ rc.innerHTML='';
-    chks.forEach(c=>{ const d=document.createElement('div');
-      d.className='review-item '+(c.ok?'ri-ok':c.warn?'ri-warn':'');
-      d.innerHTML=`<div class="ri-label">${c.l}</div><div class="ri-val">${c.ok?'✓ PASS':c.warn?'⚠ WARN':'✗ FAIL'}</div>`;
-      rc.appendChild(d); }); }
-  const sb=$('submit-btn-final'); if(sb) sb.disabled=fail>0;
-}
-
-function finalSubmit(){
-  const m=$('submit-modal'); if(m) m.style.display='flex';
-}
-
-/* ── 6. SIDEBAR ──────────────────────────────────────────────────── */
-function updateSidebar(){
-  const set=(id,v,cls)=>{ const e=$(id); if(e){e.textContent=v;if(cls)e.className='sb-v '+cls;} };
-  set('sb-run-name', S.runName||'(not set)', S.runName?'':'o');
-  set('sb-species',  S.species==='proton'?'H⁺ Proton':S.species==='helium'?'He²⁺':S.species==='electron'?'e⁻':S.species,'g');
-  set('sb-field-model','TS05','g');
-  set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
-  set('sb-temporal', S.tempMode.replace('_',' '),'');
-  set('sb-spec-type', S.specType.replace('_',' '),'');
-  set('sb-output-mode', S.outputMode.replace('_',' '),'g');
-  const pct=Math.round((S.done.size/9)*100);
-  const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';
-  const pp=$('progress-pct'); if(pp) pp.textContent=pct+'%';
-}
-
-/* ── 7. HELP MODAL ───────────────────────────────────────────────── */
-function openHelpModal(){ const m=$('help-modal'); if(m) m.style.display='flex'; }
-
-/* ── 8. INIT ─────────────────────────────────────────────────────── */
-function init(){
-  draw
+</body>
+</html>
