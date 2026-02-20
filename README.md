@@ -1,48 +1,96 @@
-# AMPS v2025 — CCMC Runs-on-Request Web Interface
+# AMPS CCMC Submission Interface — v3
 
-Complete 9-step submission wizard for configuring SEP/GCR transport simulation runs at CCMC.
+**Advanced Magnetospheric Particle Simulator**  
+NASA Community Coordinated Modeling Center · Runs-on-Request
+
+---
 
 ## Quick Start
 
-Open `index.html` in any modern browser — no server needed, fully self-contained.
+### Modular version (development / hosting)
+Serve the project root with any static HTTP server:
+```bash
+python3 -m http.server 8080   # then open http://localhost:8080/index.html
+```
+Do **not** open `index.html` directly via `file://` — browsers block
+cross-origin CSS/JS file loading.
 
-## File Structure
+### Standalone version (single-file deploy)
+Open `AMPS_Interface_v3_part1.html` directly in any browser — no server needed.
+
+---
+
+## Repository Layout
 
 ```
-amps-ccmc/
-├── index.html               ← Main application (start here)
-├── README.md
+amps-v3/
+├── index.html                      modular entry point
+├── AMPS_Interface_v3_part1.html    standalone single-file (offline / backup)
 ├── css/
-│   ├── tokens.css           ← Design tokens & CSS variables
-│   ├── layout.css           ← Page structure & grid
-│   ├── components.css       ← UI components (fields, cards, tables)
-│   └── diagrams.css         ← Format diagrams & SVG boundary styles
+│   ├── 01-tokens.css               CSS design tokens (colours, fonts, radii)
+│   ├── 02-layout.css               topbar, header, wizard, two-column grid
+│   ├── 03-components.css           fields, cards, toggles, badges, KW-strip
+│   └── 04-diagrams.css             SVG boundary, efield schematic, spectrum canvas
 ├── js/
-│   ├── app.js               ← Complete application logic (self-contained)
-│   ├── core.js              ← Shared utilities (ES module)
-│   ├── wizard.js            ← Step navigation (ES module)
-│   ├── param-builder.js     ← AMPS_PARAM.in generator (ES module)
-│   └── steps/               ← Step-specific handlers (ES modules)
+│   ├── 01-state.js                 global state S + $ + SVG constants
+│   ├── 02-wizard.js                step navigation + accordion
+│   ├── 03-bgfield.js               Steps 1-3: run info, particle, field model
+│   ├── 04-boundary.js              Step 4: BOX / Shue boundary + SVG renderer
+│   ├── 05-efield.js                Step 5: corotation + Volland-Stern + Weimer
+│   ├── 06-temporal.js              Step 6: temporal modes + OMNIWeb pipeline
+│   ├── 07-spectrum-output.js       Steps 7-9: spectrum, output domain, energy bins
+│   ├── 08-review.js                Step 10: AMPS_PARAM.in builder + submit
+│   └── 09-init.js                  DOMContentLoaded bootstrap (load last)
 └── examples/
-    ├── AMPS_PARAM_Sep2017_storm.in
     ├── ts05_driving_sample.txt
-    └── trajectory_sample.txt
+    ├── trajectory_sample.txt
+    └── AMPS_PARAM_Sep2017_storm.in
 ```
+
+---
 
 ## Wizard Steps
 
-1. **Run Info** — Name, PI, institution, science goal
-2. **Particle** — Species (H⁺, He²⁺, e⁻, O, Fe, custom), charge, mass
-3. **Background Field** — TS05: Dst, Pdyn, Bz, Vx, Nsw, By, Bx
-4. **Domain Boundary** — BOX (rectangular GSM) or SHUE (Shue 1998 magnetopause) with live SVG
-5. **Temporal** — STEADY_STATE / TIME_SERIES (OMNIWeb) / COUPLED_MHD (Y2)
-6. **Spectrum** — Power law / Band function / Table file
-7. **Output Domain** — Points / Trajectory (NAIRAS) / Spherical shells
-8. **Output Options** — Flux type, energy bins, NetCDF4/HDF5/ASCII, coordinates
-9. **Review & Submit** — Validation, AMPS_PARAM.in preview, download, submit
+| # | Step | Key choices |
+|---|------|-------------|
+| 1 | Run Info | run name, PI, science goal |
+| 2 | Particle | H+, He2+, e-, CNO, Fe |
+| 3 | Bkg B-Field | TS05 · T04s · T95m · T15 · BATSRUS · GAMERA |
+| 4 | Boundary | BOX (GSM cuboid) · Shue 1998 (magnetopause surface) |
+| 5 | E-Field | Corotation · Volland-Stern (Kp) · Weimer 2005 (IMF) |
+| 6 | Temporal | STEADY_STATE · TIME_SERIES · MHD_COUPLED |
+| 7 | Spectrum | Power-law · Band · Table upload |
+| 8 | Output Domain | Trajectory · 3-D / 2-D / 1-D grid |
+| 9 | Output Options | energy bins, flux type, format, coordinates |
+| 10 | Review & Submit | AMPS_PARAM.in preview, download, CCMC submit |
 
-## Physics
+---
 
-- **TS05**: Tsyganenko & Sitnov (2005), JGR 110, A12208
-- **Shue boundary**: Shue et al. (1998), JGR 103, 17691 — r(θ)=r₀·(2/(1+cosθ))^α
-- **Sep 2017 default**: Dst=−142 nT, Pdyn=3.5 nPa, Bz=−18.5 nT → r₀≈8.56 RE
+## Background Field Models
+
+| Model | Drivers required | Notes |
+|-------|-----------------|-------|
+| **TS05** | Dst, Pdyn, Bz, Vx, Nsw, By, Bx, epoch | Default. Drives Shue auto-compute + Weimer auto-mode |
+| T04s | same 8 | Tsyganenko 2004s; legacy |
+| **T95m** | Dst, Kp | Simple surveys |
+| **T15** | + GOES |B| | Most complete empirical model |
+| **BATSRUS** | .cdf / .h5 upload | CCMC 3-D MHD output |
+| **GAMERA** | .h5 upload | High-res curvilinear MHD; beta |
+
+---
+
+## Electric Field Models
+
+| Model | Parameterisation | Notes |
+|-------|-----------------|-------|
+| Corotation | always | default ON; disabling incorrect for L < 6 RE |
+| **Volland-Stern** | Kp (auto from Dst or manual) | Recommended default |
+| **Weimer 2005** | Bz, By, Pdyn, Vx | Event-realistic |
+
+---
+
+## Extending
+
+- **New field model**: add `.model-sel-card` in HTML Step 3 + handler in `js/03-bgfield.js` + keyword in `js/08-review.js`
+- **Re-skin**: edit `css/01-tokens.css` only
+- **New E-field model**: add card in Step 5 HTML + handler in `js/05-efield.js` + `drawEfieldSchematic()` branch
