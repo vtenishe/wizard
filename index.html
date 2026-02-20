@@ -1,4 +1,28 @@
 <!DOCTYPE html>
+<!-- =============================================================================
+FILE:    index.html
+PROJECT: AMPS v2025 — SEP/GCR Transport — CCMC Runs-on-Request Web Wizard
+PURPOSE: Modular, production-ready wizard UI for configuring a runs-on-request
+         AMPS SEP/GCR transport simulation. Provides 10-step workflow with
+         validation, dynamic diagrams (boundary geometry, etc.), and a generated
+         AMPS_PARAM.in preview for submission.
+
+NOTES / IMPLEMENTATION DETAILS
+- This is the modular build: styles are in /css and logic is in /js (loaded in
+  numeric order).
+- Step navigation is driven by js/02-wizard.js (goStep / wizClick). Panels are
+  pre-rendered in the HTML and shown/hidden via CSS classes.
+- The Boundary step (Step 4) is implemented inline in this file and wired to
+  js/04-boundary.js (BOX vs SHUE, auto/manual Shue controls, SVG diagram).
+- The "panel_boundary.html" and "panel_temporal.html" files are legacy/development
+  artifacts and are not included at runtime by default (see their headers).
+
+FIXES APPLIED IN THIS PACKAGE (2026-02-20)
+- Removed an accidental duplicate <body> tag (HTML validity / DOM stability).
+- Made the step indicator strip clickable (and keyboard accessible) by wiring
+  each step to wizClick(n).
+============================================================================= -->
+
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -18,7 +42,6 @@
 <!-- SVG/canvas diagram styles: boundary cross-sections, efield, spectrum -->
 <link rel="stylesheet" href="css/04-diagrams.css"/>
 </head>
-<body>
 <body>
 <div class="topbar">
   <div class="tb-nasa">AMPS</div><div class="tb-sep">|</div>
@@ -40,25 +63,25 @@
 </div></div>
 <div class="wizard">
   <!-- Step 1: Run identification and science goal -->
-  <div class="wz-step active"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
+  <div class="wz-step active" role="button" tabindex="0" onclick="wizClick(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(1);}"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
   <!-- Step 2: Particle species and charge state -->
-  <div class="wz-step"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(2)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(2);}"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
   <!-- Step 3: Background magnetic field model (TS05/T04s/T95/T15/MHD) -->
-  <div class="wz-step"><div class="wz-num">3</div><span class="wz-label">Bkg B-Field</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(3)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(3);}"><div class="wz-num">3</div><span class="wz-label">Bkg B-Field</span></div>
   <!-- Step 4: Simulation domain outer boundary (BOX or Shue) -->
-  <div class="wz-step"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(4)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(4);}"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
   <!-- Step 5: Electric field model (NEW — corotation + convection) -->
-  <div class="wz-step"><div class="wz-num">5</div><span class="wz-label">E-Field</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(5)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(5);}"><div class="wz-num">5</div><span class="wz-label">E-Field</span></div>
   <!-- Step 6: Temporal variability of the geomagnetic field -->
-  <div class="wz-step"><div class="wz-num">6</div><span class="wz-label">Temporal</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(6)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(6);}"><div class="wz-num">6</div><span class="wz-label">Temporal</span></div>
   <!-- Step 7: Source particle spectrum at the outer boundary -->
-  <div class="wz-step"><div class="wz-num">7</div><span class="wz-label">Spectrum</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(7)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(7);}"><div class="wz-num">7</div><span class="wz-label">Spectrum</span></div>
   <!-- Step 8: Output domain — trajectory or grid mode -->
-  <div class="wz-step"><div class="wz-num">8</div><span class="wz-label">Output Domain</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(8)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(8);}"><div class="wz-num">8</div><span class="wz-label">Output Domain</span></div>
   <!-- Step 9: Flux type, energy bins, file format -->
-  <div class="wz-step"><div class="wz-num">9</div><span class="wz-label">Output Options</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(9)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(9);}"><div class="wz-num">9</div><span class="wz-label">Output Options</span></div>
   <!-- Step 10: Final review, validation, and CCMC submission -->
-  <div class="wz-step"><div class="wz-num">10</div><span class="wz-label">Review &amp; Submit</span></div>
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(10)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(10);}"><div class="wz-num">10</div><span class="wz-label">Review &amp; Submit</span></div>
 </div>
 <div class="layout">
 <div class="main-col">

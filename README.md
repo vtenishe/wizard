@@ -1,3 +1,15 @@
+<!-- =============================================================================
+FILE:    README.md
+PROJECT: AMPS v2025 — SEP/GCR Transport — CCMC Runs-on-Request Web Wizard
+PURPOSE: Quick-start documentation for running the interface locally and for
+         understanding the modular vs standalone builds.
+
+MAINTENANCE NOTES
+- The modular build is index.html + /css + /js.
+- The standalone build is AMPS_Interface.html (all CSS/JS inlined).
+============================================================================= -->
+
+
 # AMPS CCMC Submission Interface — v3
 
 **Advanced Magnetospheric Particle Simulator**  
@@ -16,7 +28,7 @@ Do **not** open `index.html` directly via `file://` — browsers block
 cross-origin CSS/JS file loading.
 
 ### Standalone version (single-file deploy)
-Open `AMPS_Interface_v3_part1.html` directly in any browser — no server needed.
+Open `AMPS_Interface.html` directly in any browser — no server needed.
 
 ---
 
@@ -25,7 +37,7 @@ Open `AMPS_Interface_v3_part1.html` directly in any browser — no server needed
 ```
 amps-v3/
 ├── index.html                      modular entry point
-├── AMPS_Interface_v3_part1.html    standalone single-file (offline / backup)
+├── AMPS_Interface.html    standalone single-file (offline / backup)
 ├── css/
 │   ├── 01-tokens.css               CSS design tokens (colours, fonts, radii)
 │   ├── 02-layout.css               topbar, header, wizard, two-column grid

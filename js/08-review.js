@@ -206,7 +206,18 @@ function updateSidebar(){
   const set=(id,v,cls)=>{ const e=$(id); if(e){e.textContent=v;if(cls)e.className='sb-v '+cls;} };
   set('sb-run-name', S.runName||'(not set)', S.runName?'':'o');
   set('sb-species',  S.species==='proton'?'H⁺ Proton':S.species==='helium'?'He²⁺':S.species==='electron'?'e⁻':S.species,'g');
-  set('sb-field-model','TS05','g');
+  // Sidebar must reflect the actual user-selected background B-field model.
+  // (Previously this was hard-coded to 'TS05', which made the review summary incorrect.)
+  const prettyField = {
+    TS05: 'TS05 (Tsyganenko 2005)',
+    T04S: 'T04s (Tsyganenko 2004 storm)',
+    T96:  'T96 (Tsyganenko 1996)',
+    T95M: 'T95m (modified Tsyganenko 1995)',
+    T15:  'T15 (Tsyganenko 2015)',
+    BATSRUS: 'BATSRUS (MHD input)',
+    GAMERA:  'GAMERA (MHD input)'
+  };
+  set('sb-field-model', prettyField[S.fieldModel] || S.fieldModel || '—', 'g');
   set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
   set('sb-temporal', S.tempMode.replace('_',' '),'');
   set('sb-spec-type', S.specType.replace('_',' '),'');
@@ -218,4 +229,3 @@ function updateSidebar(){
 
 /* ── 7. HELP MODAL ───────────────────────────────────────────────── */
 function openHelpModal(){ const m=$('help-modal'); if(m) m.style.display='flex'; }
-
