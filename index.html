@@ -21,6 +21,22 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
 - Removed an accidental duplicate <body> tag (HTML validity / DOM stability).
 - Made the step indicator strip clickable (and keyboard accessible) by wiring
   each step to wizClick(n).
+
+ADDITIONAL UPDATES (2026-02-20): "Bkg B-Field" correctness + documentation
+- Replaced placeholder/legacy field-model labels with a consistent set of
+  Tsyganenko-family external-field options that match typical CCMC/GEOPACK
+  naming: TS05, TS04, T96, T01, TS07D, TA15.
+- Preserved physics-based background-field workflows via uploaded MHD output:
+  BATSRUS and GAMERA.
+- Implemented model-specific "Driving Parameters" forms that reflect how each
+  model is normally driven (scalar drivers for T96/T01; coefficient selection
+  for TS07D; GOES |B| requirement for TA15).
+- Added example quiet/storm presets (order-of-magnitude) in the TS05/TS04
+  driving-parameter section to guide users and improve reproducibility.
+
+MAINTAINER NOTE
+- If you change any field-model keyword labels here, update the corresponding
+  logic/state in js/01-state.js and js/03-bgfield.js.
 ============================================================================= -->
 
 <html lang="en">
@@ -66,7 +82,7 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
   <div class="wz-step active" role="button" tabindex="0" onclick="wizClick(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(1);}"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
   <!-- Step 2: Particle species and charge state -->
   <div class="wz-step" role="button" tabindex="0" onclick="wizClick(2)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(2);}"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
-  <!-- Step 3: Background magnetic field model (TS05/T04s/T95/T15/MHD) -->
+  <!-- Step 3: Background magnetic field model (TS05/TS04/T96/T01/TS07D/TA15/MHD) -->
   <div class="wz-step" role="button" tabindex="0" onclick="wizClick(3)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(3);}"><div class="wz-num">3</div><span class="wz-label">Bkg B-Field</span></div>
   <!-- Step 4: Simulation domain outer boundary (BOX or Shue) -->
   <div class="wz-step" role="button" tabindex="0" onclick="wizClick(4)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(4);}"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
@@ -484,8 +500,8 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
 <div class="sect" id="s-bgfield">
   <div class="sect-hd" onclick="toggleSection('s-bgfield')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#129522;</div>
-    <div><div class="sect-title">Background Magnetic Field — TS05 Driving Parameters</div>
-    <div style="font-size:11px;color:var(--text-dim)">Tsyganenko 2005 empirical model. Eight scalar parameters. Also sets Shue boundary inputs (Panel 4).</div></div>
+    <div><div class="sect-title">Background Magnetic Field — Model &amp; Driving Parameters</div>
+    <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05/TS04 support storm-time reconstruction; T96/T01 provide robust baseline; TS07D uses time-dependent coefficients; TA15 includes GOES total-B.</div></div>
     <span class="sect-sub"><span class="tag tag-new">Step 3</span></span>
     <span class="chevron">&#9660;</span>
   </div>
@@ -496,17 +512,19 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
          Maps to: FIELD_MODEL keyword in AMPS_PARAM.in.
 
          Empirical models — driven by scalar solar-wind / geomag indices:
-           TS05   Tsyganenko & Sitnov 2005  — 8 params  RECOMMENDED
-           T04s   Tsyganenko & Sitnov 2004  — 5 params  fast / quiet-time
-           T95m   Tsyganenko 1995 (mod.)    — Dst + Kp  simple / surveys
-           T15    Tsyganenko & Andreeva 2015 — most complete, needs GOES B
+           TS05   Tsyganenko & Sitnov 2005   — storm-time, robust drivers
+           TS04   Tsyganenko & Sitnov 2004   — storm-time empirical
+           T96    Tsyganenko 1996            — Dst/Pdyn/By/Bz/tilt baseline
+           T01    Tsyganenko 2001            — 2001 coefficient family
+           TS07D  Tsyganenko & Sitnov 2007D  — time-dependent coefficients
+           TA15   Tsyganenko & Andreeva 2015 — advanced, needs GOES |B|
 
          MHD simulation output — interpolated onto particle grid:
            BATSRUS  CCMC runs (upload .cdf/.h5)
            GAMERA   Lemos et al. 2023 (upload .h5)
     ══════════════════════════════════════════════════════ -->
 
-    <!-- Row 1: TS05 | T04s -->
+    <!-- Row 1: TS05 | TS04 -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
 
       <!-- TS05: full 8-parameter storm-time model — RECOMMENDED DEFAULT -->
@@ -517,32 +535,52 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
         <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--green);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS05</code></div>
       </div>
 
-      <!-- T04s: 6 W-function version — faster, fewer parameters -->
-      <div class="model-sel-card" id="msc-t04s" onclick="selectFieldModel('T04s')">
+      <!-- TS04: storm-time empirical model (Tsyganenko & Sitnov 2004) -->
+      <div class="model-sel-card" id="msc-ts04" onclick="selectFieldModel('TS04')">
         <div class="msc-icon">⚡</div>
-        <div class="msc-title">T04s — Fast Empirical</div>
-        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004). 6 W-functions, 5 drivers (no By, Bx). ~15% faster than TS05. Suitable for quiet-time studies, GCR surveys, and systematic parameter sweeps.</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T04s</code></div>
+        <div class="msc-title">TS04 — Storm-time Empirical</div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004). Storm-time model with improved current systems versus T96/T01. Typically used for disturbed intervals; supports parameter studies when TS05 is not required.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS04</code></div>
       </div>
     </div>
 
-    <!-- Row 2: T95m | T15 -->
+    <!-- Row 2: T96 | T01 -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
 
-      <!-- T95m: Tsyganenko 1995 modified — only Dst + Kp required -->
-      <div class="model-sel-card" id="msc-t95m" onclick="selectFieldModel('T95m')">
-        <div class="msc-icon">🌀</div>
-        <div class="msc-title">T95m — Dst &amp; Kp Only</div>
-        <div class="msc-sub">Tsyganenko (1995, modified). Two drivers: Dst (ring current) and Kp (geomagnetic activity). Simplest empirical model; recommended for rapid surveys, climatological studies, or when only Dst/Kp are available.</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T95m</code></div>
+      <!-- T96: solar-wind/IMF driven empirical model -->
+      <div class="model-sel-card" id="msc-t96" onclick="selectFieldModel('T96')">
+        <div class="msc-icon">🌐</div>
+        <div class="msc-title">T96 — SW/IMF Driven</div>
+        <div class="msc-sub">Tsyganenko (1996). Widely used baseline empirical model driven by Dst, solar-wind dynamic pressure, IMF By/Bz, and dipole tilt. Good for quick event studies when full storm-time W-parameters are not needed.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T96</code></div>
       </div>
 
-      <!-- T15: Tsyganenko & Andreeva 2015 — most complete empirical model -->
-      <div class="model-sel-card" id="msc-t15" onclick="selectFieldModel('T15')">
+      <!-- T01: 2001 model family -->
+      <div class="model-sel-card" id="msc-t01" onclick="selectFieldModel('T01')">
+        <div class="msc-icon">🧭</div>
+        <div class="msc-title">T01 — 2001 Model Family</div>
+        <div class="msc-sub">Tsyganenko (2001). Empirical model family commonly exposed as T01QUIET / T01STORM coefficient sets in many toolkits. Uses similar solar-wind/IMF drivers as T96 with improved current-system parameterization.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T01</code></div>
+      </div>
+    </div>
+
+    <!-- Row 3: TS07D | TA15 -->
+    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
+
+      <!-- TS07D: time-dependent coefficient family -->
+      <div class="model-sel-card" id="msc-ts07d" onclick="selectFieldModel('TS07D')">
+        <div class="msc-icon">⏱️</div>
+        <div class="msc-title">TS07D — Time Dependent</div>
+        <div class="msc-sub">Tsyganenko &amp; Sitnov (2007D). Time-dependent empirical field model using precomputed coefficient sets (commonly distributed as yearly files). Intended for event reconstructions with evolving storm-time current systems.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS07D</code></div>
+      </div>
+
+      <!-- TA15: Tsyganenko & Andreeva 2015 — advanced empirical model -->
+      <div class="model-sel-card" id="msc-ta15" onclick="selectFieldModel('TA15')">
         <div class="msc-icon">🔬</div>
-        <div class="msc-title">T15 — Most Complete <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
-        <div class="msc-sub">Tsyganenko &amp; Andreeva (2015). Uses GOES geostationary-orbit B, solar wind Pdyn &amp; Bz, Dst, and Sym-H. Highest physical accuracy of the empirical suite; requires GOES B data (upload or scalar).</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T15</code></div>
+        <div class="msc-title">TA15 — Advanced Empirical <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
+        <div class="msc-sub">Tsyganenko &amp; Andreeva (2015). Uses GOES geostationary total-B plus solar wind/IMF and geomagnetic indices. Highest realism among the empirical suite; requires GOES B input (scalar or uploaded time series).</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TA15</code></div>
       </div>
     </div>
 
@@ -574,11 +612,11 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
          Only one form is shown at a time; selectFieldModel() toggles visibility.
     ══════════════════════════════════════════════════════ -->
 
-    <!-- ── TS05 / T04s form (shared inputs — 8-param set) ── -->
+    <!-- ── TS05 / TS04 form (shared inputs — storm-time driver UI) ── -->
     <div id="ts05-form">
       <div id="ts05-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TS05 Driving Parameters</div>
     <div class="infobox info-orange">
-      <b>Sep 2017 storm main phase loaded as default</b> — Dst=&#8722;142&#160;nT, Pdyn=3.5&#160;nPa, Bz=&#8722;18.5&#160;nT (Sep&#160;7, 23:30&#160;UTC). Subsolar magnetopause compressed to ~8.6&#160;R<sub>E</sub>. Mid-latitude cutoff rigidity reduced ~40% from quiet-time values.
+      <b>Example presets:</b> <span style="color:var(--text-dim)">quiet</span> (Dst≈−10 nT, Pdyn≈2 nPa, Bz≈+2 nT, Vx≈−400 km/s, Nsw≈5 cm&#8315;&#179;) and <span style="color:var(--text-dim)">storm</span> (Dst≈−150 nT, Pdyn≈8 nPa, Bz≈−20 nT, Vx≈−700 km/s, Nsw≈15 cm&#8315;&#179;). Use OMNI/CCMC iSWA values for event runs.
     </div>
     <div class="frow c4">
       <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
@@ -623,68 +661,109 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
     </div>
     </div><!-- /ts05-form -->
 
-    <!-- ── T95m form: Dst + Kp only ── -->
-    <!-- Tsyganenko (1995, modified) uses only two driving parameters.
-         Kp is the globally-averaged geomagnetic activity index (0–9).
-         Dst is the ring-current proxy (nT). -->
-    <div id="t95m-form" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T95m Driving Parameters</div>
+    <!-- ── T96 form: Dst + Pdyn + IMF By/Bz + dipole tilt ── -->
+    <div id="t96-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T96 Driving Parameters</div>
       <div class="infobox info-blue" style="margin-bottom:10px;">
-        T95m only requires <b>Dst</b> and <b>Kp</b>. Simpler than TS05; suitable for surveys where
-        per-event accuracy is secondary. Kp range: 0 (very quiet) → 9 (extreme storm).
+        Typical examples (order-of-magnitude): <b>quiet</b> Dst≈0 to −20 nT, Pdyn≈1–3 nPa, IMF Bz≈0 to +5 nT;
+        <b>storm</b> Dst&lt;−100 nT, Pdyn≈5–15 nPa, IMF Bz≈−10 to −25 nT. (Refs: NOAA SWPC Dst/storm levels; NASA OMNIWeb typical solar-wind values.)
       </div>
       <div class="frow c4">
-        <div class="field">
-          <label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t95m-dst" type="number" value="-142" step="1" min="-400" max="50" oninput="t95mChange()"/>
-          <div class="hint">Ring current index. T95m valid: −400 to +50 nT.</div>
+        <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t96-dst" type="number" value="-20" step="1" min="-600" max="50" oninput="t96Change()"/>
         </div>
-        <div class="field">
-          <label>Kp <span class="unit">[0–9]</span> <span class="req">*</span></label>
-          <input id="t95m-kp" type="number" value="5" step="0.1" min="0" max="9" oninput="t95mChange()"/>
-          <div class="hint">Planetary geomagnetic activity. Auto-estimated from Dst if unknown:
-            Kp ≈ −Dst/28 + 0.8</div>
+        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="t96-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="t96Change()"/>
         </div>
-        <div class="field">
-          <label>Epoch <span class="unit">[UTC]</span></label>
-          <input id="t95m-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="liveUpdate()"/>
-          <div class="hint">Snapshot time (STEADY_STATE) or start time (TIME_SERIES).</div>
+        <div class="field"><label>IMF By <span class="unit">[nT]</span></label>
+          <input id="t96-by" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="t96Change()"/>
+        </div>
+        <div class="field"><label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t96-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="t96Change()"/>
         </div>
       </div>
-    </div><!-- /t95m-form -->
+      <div class="frow c4">
+        <div class="field"><label>Dipole tilt <span class="unit">[deg]</span></label>
+          <input id="t96-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" oninput="t96Change()"/>
+          <div class="hint">If unknown, leave 0; future option: compute from epoch/IGRF.</div>
+        </div>
+      </div>
+    </div><!-- /t96-form -->
 
-    <!-- ── T15 form: GOES B + solar wind + Dst ── -->
-    <!-- Tsyganenko & Andreeva (2015) is the most physically complete
-         empirical model. It requires the geostationary-orbit total
-         magnetic field magnitude from GOES-East or GOES-West. -->
-    <div id="t15-form" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T15 Driving Parameters</div>
+    <!-- ── T01 form: similar driver set (quiet/storm coefficient sets) ── -->
+    <div id="t01-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T01 Driving Parameters</div>
       <div class="infobox info-blue" style="margin-bottom:10px;">
-        T15 requires the <b>GOES geostationary total B</b> in addition to the standard solar wind inputs.
-        Obtain GOES B from <a href="https://www.ngdc.noaa.gov/stp/satellite/goes/" target="_blank"
-        style="color:var(--accent-bright);">NGDC GOES data archive</a> or CCMC iSWA.
-        Typical geostationary B: 100–200 nT quiet, 80–140 nT storm.
+        T01 commonly uses the same core solar-wind/IMF driver set as T96 (Dst, Pdyn, By/Bz, tilt) with updated current-system parameterization.
+        Select the appropriate coefficient set (quiet/storm) in the backend; UI uses the same inputs.
       </div>
       <div class="frow c4">
-        <div class="field">
-          <label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t15-dst" type="number" value="-142" step="1" min="-600" max="50" oninput="t15Change()"/>
+        <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t01-dst" type="number" value="-20" step="1" min="-600" max="50" oninput="t01Change()"/>
         </div>
-        <div class="field">
-          <label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
-          <input id="t15-pdyn" type="number" value="3.5" step="0.1" min="0.1" max="30" oninput="t15Change()"/>
+        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="t01-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="t01Change()"/>
         </div>
-        <div class="field">
-          <label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t15-bz" type="number" value="-18.5" step="0.1" min="-50" max="20" oninput="t15Change()"/>
+        <div class="field"><label>IMF By <span class="unit">[nT]</span></label>
+          <input id="t01-by" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="t01Change()"/>
         </div>
-        <div class="field">
-          <label>GOES B <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t15-goes" type="number" value="150" step="1" min="50" max="300" oninput="t15Change()"/>
-          <div class="hint">Geostationary total |B| from GOES-East or GOES-West. Typical: 100–200 nT.</div>
+        <div class="field"><label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t01-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="t01Change()"/>
         </div>
       </div>
-    </div><!-- /t15-form -->
+      <div class="frow c4">
+        <div class="field"><label>Dipole tilt <span class="unit">[deg]</span></label>
+          <input id="t01-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" oninput="t01Change()"/>
+        </div>
+      </div>
+    </div><!-- /t01-form -->
+
+    <!-- ── TS07D form: coefficient source (file vs OMNI) ── -->
+    <div id="ts07d-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TS07D Coefficient Inputs</div>
+      <div class="infobox info-orange" style="margin-bottom:10px;">
+        TS07D is time-dependent and typically distributed as yearly coefficient files. Select a coefficient source below.
+      </div>
+      <div class="frow c4">
+        <div class="field"><label>Coefficient source</label>
+          <select id="ts07d-source" oninput="ts07dChange()">
+            <option value="omni" selected>OMNI-derived (CCMC backend)</option>
+            <option value="file">Upload TS07D coefficient file</option>
+          </select>
+        </div>
+        <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
+          <input id="ts07d-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="ts07dChange()"/>
+        </div>
+      </div>
+      <div class="dropzone" id="ts07d-dropzone" onclick="this.classList.toggle('loaded')" style="margin-top:10px;display:none;">
+        <div class="dz-icon">📂</div>
+        <div class="dz-primary">Drop TS07D coefficient file here or click to browse</div>
+        <div class="dz-sub">.dat · .txt · max 200 MB</div>
+      </div>
+    </div><!-- /ts07d-form -->
+
+    <!-- ── TA15 form: GOES B + solar wind + Dst ── -->
+    <div id="ta15-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TA15 Driving Parameters</div>
+      <div class="infobox info-blue" style="margin-bottom:10px;">
+        TA15 requires <b>GOES geostationary total B</b> in addition to the standard solar-wind/IMF inputs.
+        Typical geostationary |B| is ~100–200 nT (varies with local time and activity).
+      </div>
+      <div class="frow c4">
+        <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="ta15-dst" type="number" value="-20" step="1" min="-600" max="50" oninput="ta15Change()"/>
+        </div>
+        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="ta15-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="ta15Change()"/>
+        </div>
+        <div class="field"><label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="ta15-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="ta15Change()"/>
+        </div>
+        <div class="field"><label>GOES |B| <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="ta15-goes" type="number" value="120" step="1" min="50" max="300" oninput="ta15Change()"/>
+        </div>
+      </div>
+    </div><!-- /ta15-form -->
 
     <!-- ── MHD file upload form (BATSRUS or GAMERA) ── -->
     <!-- AMPS reads the 3-D magnetic field directly from a global MHD
@@ -729,7 +808,7 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
     <div class="kw-strip" id="ts05-kw-preview">
 <span class="kw-section">#BACKGROUND_FIELD</span>
 <span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment">! Tsyganenko &amp; Sitnov (2005)</span>
-<!-- TS05/T04s rows — hidden when other model selected -->
+<!-- TS05/TS04 rows — hidden when other model selected -->
 <span class="ts05-kw-row"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-dst">-142.0</span>    <span class="kw-comment">! nT ring current index</span>
 </span><span class="ts05-kw-row"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa dynamic pressure</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM southward component</span>
@@ -737,15 +816,30 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
 </span><span class="ts05-kw-row"><span class="kw-key">SW_NSW</span>          <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm⁻³ proton density</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-by">3.20</span>      <span class="kw-comment">! nT dawn-dusk component</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BX</span>          <span class="kw-val" id="kv-bx">0.00</span>      <span class="kw-comment">! nT (optional)</span>
-</span><!-- T95m rows — hidden unless T95m selected -->
-<span class="t95m-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t95m-dst">-142.0</span>   <span class="kw-comment">! nT</span>
-</span><span class="t95m-kw-row" style="display:none;"><span class="kw-key">KP</span>              <span class="kw-val" id="kv-t95m-kp">5.0</span>      <span class="kw-comment">! 0–9 geomagnetic activity index</span>
-</span><!-- T15 rows — hidden unless T15 selected -->
-<span class="t15-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t15-dst">-142.0</span>   <span class="kw-comment">! nT</span>
-</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t15-pdyn">3.5</span>      <span class="kw-comment">! nPa</span>
-</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t15-bz">-18.5</span>    <span class="kw-comment">! nT</span>
-</span><span class="t15-kw-row" style="display:none;"><span class="kw-key">GOES_B</span>          <span class="kw-val" id="kv-t15-goes">150.0</span>    <span class="kw-comment">! nT geostationary total B</span>
-</span><!-- MHD rows — hidden unless BATSRUS/GAMERA selected -->
+</span><!-- T96/T01 rows — hidden unless T96 or T01 selected -->
+<span class="t96-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t96-dst">-20.0</span>    <span class="kw-comment">! nT</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t96-pdyn">2.00</span>     <span class="kw-comment">! nPa</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-t96-by">0.00</span>     <span class="kw-comment">! nT</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t96-bz">2.00</span>     <span class="kw-comment">! nT</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-t96-tilt">0.0</span>      <span class="kw-comment">! deg</span>
+</span>
+<span class="t01-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t01-dst">-20.0</span>    <span class="kw-comment">! nT</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t01-pdyn">2.00</span>     <span class="kw-comment">! nPa</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-t01-by">0.00</span>     <span class="kw-comment">! nT</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t01-bz">2.00</span>     <span class="kw-comment">! nT</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-t01-tilt">0.0</span>      <span class="kw-comment">! deg</span>
+</span>
+<!-- TS07D rows — hidden unless TS07D selected -->
+<span class="ts07d-kw-row" style="display:none;"><span class="kw-key">COEFF_SOURCE</span>   <span class="kw-val" id="kv-ts07d-source">omni</span>
+</span><span class="ts07d-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-ts07d-epoch">2017-09-10T16:00</span>
+</span>
+<!-- TA15 rows — hidden unless TA15 selected -->
+<span class="ta15-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-ta15-dst">-20.0</span>    <span class="kw-comment">! nT</span>
+</span><span class="ta15-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-ta15-pdyn">2.0</span>      <span class="kw-comment">! nPa</span>
+</span><span class="ta15-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-ta15-bz">2.0</span>      <span class="kw-comment">! nT</span>
+</span><span class="ta15-kw-row" style="display:none;"><span class="kw-key">GOES_B</span>          <span class="kw-val" id="kv-ta15-goes">120.0</span>    <span class="kw-comment">! nT</span>
+</span>
+<!-- MHD rows — hidden unless BATSRUS/GAMERA selected -->
 <span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_FILE</span>        <span class="kw-val" id="kv-mhd-file">(upload required)</span>
 </span><span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_INTERP</span>      <span class="kw-val" id="kv-mhd-interp">LINEAR</span>   <span class="kw-comment">! LINEAR | CUBIC</span>
 </span><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span></div>

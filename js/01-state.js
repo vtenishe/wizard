@@ -19,8 +19,10 @@
      Run info          runName, piName, piEmail, institution, sciGoal
      Particle          species, charge, mass
      Background field  fieldModel, dst, pdyn, bz, vx, nsw, by, bx, epoch
-                       t95mDst, t95mKp
-                       t15Goes, t15Dst, t15Pdyn, t15Bz, t15Vx, t15Nsw
+                       t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
+                       t01Dst/t01Pdyn/t01By/t01Bz/t01Tilt
+                       ts07dSource/ts07dEpoch
+                       ta15Dst/ta15Pdyn/ta15Bz/ta15Goes
      Domain boundary   boundaryType, shueMode
                        boxXmax/Xmin/Ymax/Ymin/Zmax/Zmin/Rinner
                        shueR0, shueAlpha, xtail, shueRinner
@@ -38,6 +40,30 @@
 
    DEPENDS ON: nothing (must be the first script loaded)
 =============================================================================*/
+
+/*
+  CHANGELOG (Feb 2026) — Background magnetic-field model normalization
+
+  Why this change:
+    The web UI previously used inconsistent/ambiguous labels for empirical
+    geomagnetic-field choices. This made it hard to map UI selections to the
+    standard Tsyganenko-family naming used by CCMC, GEOPACK and common wrappers.
+
+  What was updated:
+    - Normalized the Step 3 model list to: TS05, TS04, T96, T01, TS07D, TA15
+      plus file-driven MHD backgrounds: BATSRUS, GAMERA.
+    - Added dedicated state keys for model-specific drivers:
+        * t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
+        * t01Dst/t01Pdyn/t01By/t01Bz/t01Tilt
+        * ts07dSource/ts07dEpoch (coefficients are time-dependent)
+        * ta15Dst/ta15Pdyn/ta15Bz/ta15Goes (TA15 uses GOES |B|)
+    - Chose defaults consistent with a well-known storm case (Sep 2017) for
+      TS05, and quiet-ish baseline defaults for T96/T01/TA15 fields.
+
+  Where else this is implemented:
+    - index.html: model cards + forms shown to user
+    - js/03-bgfield.js: model selection, validation, and AMPS keyword preview
+*/
 
 const S = {
   /* ── Wizard meta ───────────────────────────────────────────────────── */
@@ -58,7 +84,7 @@ const S = {
 
   /* ── Step 3 · Background magnetic field model ──────────────────────── */
   fieldModel: 'TS05',
-  // TS05 / T04s shared 8-parameter driving set:
+  // TS05 / TS04 shared storm-time driver set (UI-compatible):
   dst:   -142.0,       // [nT]  Dst index (ring current proxy)
   pdyn:    3.5,        // [nPa] solar wind dynamic pressure
   bz:    -18.5,        // [nT]  IMF Bz (GSM)
@@ -67,13 +93,26 @@ const S = {
   by:      3.2,        // [nT]  IMF By (GSM)
   bx:      0.0,        // [nT]  IMF Bx (GSM)
   epoch: '2017-09-10T16:00',  // ISO-8601 epoch for STEADY_STATE runs
-  // T95m extra drivers (only Dst + Kp required):
-  t95mDst: -142.0,     // [nT]
-  t95mKp:     5.0,     // Kp index [0–9]
-  // T15 extra drivers (GOES total-B in addition to standard set):
-  t15Goes: 100.0,      // [nT] GOES geostationary total B
-  t15Dst:  -142.0, t15Pdyn: 3.5, t15Bz: -18.5,
-  t15Vx:   -650.0, t15Nsw:  12.0,
+  // T96 driver set:
+  t96Dst:  -20.0,
+  t96Pdyn:   2.0,
+  t96By:     0.0,
+  t96Bz:     2.0,
+  t96Tilt:   0.0,
+  // T01 driver set:
+  t01Dst:  -20.0,
+  t01Pdyn:   2.0,
+  t01By:     0.0,
+  t01Bz:     2.0,
+  t01Tilt:   0.0,
+  // TS07D coefficients:
+  ts07dSource: 'omni',
+  ts07dEpoch:  '2017-09-10T16:00',
+  // TA15 extra drivers (GOES total-B in addition to standard set):
+  ta15Dst:  -20.0,
+  ta15Pdyn:  2.0,
+  ta15Bz:    2.0,
+  ta15Goes: 120.0,
 
   /* ── Step 4 · Domain boundary ──────────────────────────────────────── */
   boundaryType: 'SHUE',     // 'BOX' or 'SHUE'
