@@ -60,11 +60,44 @@ function bndSet(type){
 function shueMode(m){
   S.shueMode=m;
   $('shue-auto-btn')?.classList.toggle('on',m==='auto');
+  // NOTE: Two button-id conventions exist across historical HTML variants:
+  //   index.html / AMPS_Interface.html  ->  shue-manual-btn
+  //   panel_boundary.html              ->  shue-man-btn
+  // Keep both working so standalone and multi-file builds stay in sync.
   $('shue-manual-btn')?.classList.toggle('on',m==='manual');
+  $('shue-man-btn')?.classList.toggle('on',m==='manual');
+
+  // Manual override fields container (current id: shue-manual-fields)
   $('shue-manual-fields').style.display=m==='manual'?'block':'none';
   $('shue-auto-box').style.opacity=m==='manual'?'0.5':'1';
   bndShueUpdate();
 }
+
+/* ---------------------------------------------------------------------------
+   Compatibility shims (DO NOT REMOVE)
+
+   Why:
+   - Some older/alternate HTML variants (including legacy snippets) call
+     setBoundary('box'|'shue') and setShueMode(this,'auto'|'manual').
+   - The standalone AMPS_Interface.html historically drifted from index.html.
+
+   Goal:
+   - Make Step 4 resilient: whichever HTML file is opened, manual override and
+     boundary selection must work.
+--------------------------------------------------------------------------- */
+
+// Legacy alias: setBoundary('box'|'shue')
+window.setBoundary = window.setBoundary || function(which){
+  const w=String(which||'').toLowerCase();
+  if(w==='box')  return bndSet('BOX');
+  if(w==='shue') return bndSet('SHUE');
+  return bndSet(which);
+};
+
+// Legacy alias: setShueMode(this,'auto'|'manual')
+window.setShueMode = window.setShueMode || function(_btn,mode){
+  return shueMode(mode);
+};
 function shueCalc(){
   const bz=S.bz, pd=Math.max(0.1,S.pdyn);
   const r0=Math.max(4,Math.min(15,(11.4+0.013*bz)*Math.pow(pd,-1/6.6)));
@@ -79,7 +112,15 @@ function shueR(r0,al,deg){
   const th=deg*Math.PI/180, d=1+Math.cos(th); return d<1e-9?Infinity:r0*Math.pow(2/d,al);
 }
 // Map GSM → SVG
-const gx=re=>CX+re*SC, gz=re=>CY-re*SC, cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+// IMPORTANT: gx/gz/cl are defined once in js/01-state.js and must not be
+// re-declared here. Re-declaring with const causes:
+//   "Identifier 'gx' has already been declared"
+// which prevents this entire file from loading, and therefore breaks the
+// Boundary step in index.html (bndSet/shueMode undefined, drawSvgGrid undefined).
+// Use the shared globals from 01-state.js.
+//   gx(re) => CX + re*SC
+//   gz(re) => CY - re*SC
+//   cl(v,lo,hi) => clamp
 
 function bndBoxUpdate(){
   const v=k=>parseFloat($(k)?.value)||0;
@@ -202,3 +243,45 @@ function drawSvgGrid(svgId){
 }
 
 /* ── 5. REVIEW & PARAM FILE ──────────────────────────────────────── */
+
+
+
+/* =============================================================================
+   COMPATIBILITY SHIMS (INDEX.HTML / PANEL INCLUDE VS STANDALONE)
+   -----------------------------------------------------------------------------
+   The multi-file site (index.html) loads panel_boundary.html, which historically
+   used legacy onclick handlers:
+     - setBoundary('box'|'shue')
+     - setShueMode(this,'auto'|'manual')
+   The standalone AMPS_Interface.html uses the newer handlers:
+     - bndSet('BOX'|'SHUE')
+     - shueMode('auto'|'manual')
+   To keep BOTH variants working and avoid subtle UI regressions when swapping
+   panel markup, we provide global shims here. Do NOT remove unless you also
+   update ALL boundary panel markup to use only the new API.
+============================================================================= */
+(function(){
+  // Ensure we attach to the global object explicitly (browser window).
+  const G = (typeof window !== 'undefined') ? window : globalThis;
+
+  // Legacy: setBoundary('box'|'shue')  -> new: bndSet('BOX'|'SHUE')
+  if (typeof G.setBoundary !== 'function') {
+    G.setBoundary = function(which){
+      const w = String(which||'').toLowerCase();
+      if (w === 'box' || w === 'rect' || w === 'rectangular') return bndSet('BOX');
+      if (w === 'shue' || w === 'mp'  || w === 'magnetopause') return bndSet('SHUE');
+      // fallback: keep current selection
+      return bndSet(S.boundary || 'SHUE');
+    };
+  }
+
+  // Legacy: setShueMode(this,'auto'|'manual') -> new: shueMode('auto'|'manual')
+  if (typeof G.setShueMode !== 'function') {
+    G.setShueMode = function(_btn, mode){
+      // mode string comes from onclick; ignore button reference and let shueMode
+      // update the UI consistently.
+      return shueMode(String(mode||'auto').toLowerCase());
+    };
+  }
+})();
+
