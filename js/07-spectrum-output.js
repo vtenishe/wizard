@@ -61,8 +61,8 @@ function setSpec(type,card){
   S.specType=type;
   document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
   if(card) card.classList.add('sel');
-  ['pl-form','band-form','table-form'].forEach(id=>{
-    const m={'pl-form':'POWER_LAW','band-form':'BAND','table-form':'TABLE'};
+  ['pl-form','plc-form','lis-form','band-form','table-form'].forEach(id=>{
+    const m={'pl-form':'POWER_LAW','plc-form':'POWER_LAW_CUTOFF','lis-form':'LIS_FORCE_FIELD','band-form':'BAND','table-form':'TABLE'};
     const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
   });
   drawSpec();
@@ -73,6 +73,10 @@ function drawSpec(){
   S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
   S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
   S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
+  S.specEc=parseFloat($('spec-ec')?.value)||S.specEc;
+  S.specPhi=parseFloat($('spec-phi')?.value)||S.specPhi;
+  S.specLisJ0=parseFloat($('lis-j0')?.value)||S.specLisJ0;
+  S.specLisGamma=parseFloat($('lis-gamma')?.value)||S.specLisGamma;
   const canvas=$('spec-canvas'); if(!canvas) return;
   const W=canvas.parentElement.clientWidth||400, H=160;
   canvas.width=W; canvas.height=H;
@@ -98,8 +102,27 @@ function drawSpec(){
   for(let i=0;i<=300;i++){
     const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
     let J;
-    if(S.specType==='POWER_LAW') J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
-    else if(S.specType==='BAND'){
+    if(S.specType==='POWER_LAW') {
+      J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+    } else if(S.specType==='POWER_LAW_CUTOFF') {
+      const j0=parseFloat($('plc-j0')?.value)||S.specJ0;
+      const gamma=parseFloat($('plc-gamma')?.value)||S.specGamma;
+      const e0=parseFloat($('plc-e0')?.value)||S.specE0;
+      const ec=S.specEc||500;
+      J=j0*Math.pow(E/e0,-gamma)*Math.exp(-E/ec);
+    } else if(S.specType==='LIS_FORCE_FIELD') {
+      const jLis=S.specLisJ0||10000;
+      const gammaLis=S.specLisGamma||2.7;
+      const e0=parseFloat($('lis-e0')?.value)||S.specE0;
+      const phi=S.specPhi||550; // modulation potential in MV
+      const M=938.272; // proton rest mass in MeV
+      // Force-field approximation: J(E,phi) = J_LIS(E+phi) * (E^2+2EM) / ((E+phi)^2+2(E+phi)M)
+      const Ephi=E+phi;
+      const Esq=E*E, Ephisq=Ephi*Ephi;
+      const T=E/(E+M), Tphi=Ephi/(Ephi+M); // kinetic energy ratios
+      const Jlis_at_Ephi=jLis*Math.pow(Ephi/e0,-gammaLis);
+      J=Jlis_at_Ephi*(Esq+2*E*M)/(Ephisq+2*Ephi*M);
+    } else if(S.specType==='BAND'){
       const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
       const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
       J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);

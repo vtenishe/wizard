@@ -134,6 +134,7 @@
 /* BADGE VARIANTS */
 .badge-green{background:rgba(45,212,160,.18);color:var(--green);border:1px solid rgba(45,212,160,.3);}
 .badge-blue {background:rgba(26,136,212,.18);color:var(--accent-bright);border:1px solid rgba(26,136,212,.3);}
+.badge-cyan{background:rgba(54,228,218,.18);color:var(--cyan);border:1px solid rgba(54,228,218,.3);}
 .badge-orange{background:rgba(255,154,60,.18);color:var(--orange);border:1px solid rgba(255,154,60,.3);}
 .badge-purple{background:rgba(139,111,247,.18);color:var(--purple);border:1px solid rgba(139,111,247,.3);}
 .badge-red{background:rgba(255,90,90,.15);color:var(--red);border:1px solid rgba(255,90,90,.3);}

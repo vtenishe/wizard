@@ -148,12 +148,18 @@ const S = {
   tsSource:    'omni', // 'omni' | 'file' | 'scalar'
 
   /* ── Step 7 · Particle source spectrum ──────────────────────────────── */
-  specType:   'POWER_LAW',   // 'POWER_LAW' | 'BAND' | 'TABLE'
+  specType:   'POWER_LAW',   // 'POWER_LAW' | 'POWER_LAW_CUTOFF' | 'LIS_FORCE_FIELD' | 'BAND' | 'TABLE'
   specJ0:     10000,         // [cm⁻² sr⁻¹ s⁻¹ MeV⁻¹] reference flux
   specGamma:  3.5,           // power-law spectral index
   specE0:     10,            // [MeV] reference energy
   specEmin:   1,             // [MeV] minimum energy
   specEmax:   1000,          // [MeV] maximum energy
+  // Power law + exponential cutoff parameters:
+  specEc:     500,           // [MeV] exponential cutoff energy
+  // LIS + Force-Field modulation parameters:
+  specPhi:    550,           // [MV] solar modulation potential (φ)
+  specLisJ0:  10000,         // [cm⁻² sr⁻¹ s⁻¹ MeV⁻¹] LIS reference flux
+  specLisGamma: 2.7,         // LIS power-law index (typically 2.6-2.8 for GCR protons)
 
   /* ── Step 8 · Output domain ─────────────────────────────────────────── */
   outputMode: 'TRAJECTORY',  // 'TRAJECTORY' | 'GRID_3D' | 'GRID_2D' | 'GRID_1D'

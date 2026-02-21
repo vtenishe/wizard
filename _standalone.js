@@ -62,6 +62,7 @@ const S = {
   tempMode:'TIME_SERIES', eventStart:'2017-09-07T00:00', eventEnd:'2017-09-10T20:00',
   fieldDt:5, injectDt:30, tsSource:'omni',
   specType:'POWER_LAW', specJ0:10000, specGamma:3.5, specE0:10, specEmin:1, specEmax:1000,
+  specEc:500, specPhi:550, specLisJ0:10000, specLisGamma:2.7,
   outputMode:'TRAJECTORY', fluxDt:1.0, trajLoaded:false,
   fluxType:'DIFFERENTIAL', outputCutoff:true, outputPitch:false,
   outputFormat:'NETCDF4', outputCoords:'GEO',
@@ -540,8 +541,8 @@ function setSpec(type,card){
   S.specType=type;
   document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
   if(card) card.classList.add('sel');
-  ['pl-form','band-form','table-form'].forEach(id=>{
-    const m={'pl-form':'POWER_LAW','band-form':'BAND','table-form':'TABLE'};
+  ['pl-form','plc-form','lis-form','band-form','table-form'].forEach(id=>{
+    const m={'pl-form':'POWER_LAW','plc-form':'POWER_LAW_CUTOFF','lis-form':'LIS_FORCE_FIELD','band-form':'BAND','table-form':'TABLE'};
     const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
   });
   drawSpec();
@@ -552,6 +553,10 @@ function drawSpec(){
   S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
   S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
   S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
+  S.specEc=parseFloat($('spec-ec')?.value)||S.specEc;
+  S.specPhi=parseFloat($('spec-phi')?.value)||S.specPhi;
+  S.specLisJ0=parseFloat($('lis-j0')?.value)||S.specLisJ0;
+  S.specLisGamma=parseFloat($('lis-gamma')?.value)||S.specLisGamma;
   const canvas=$('spec-canvas'); if(!canvas) return;
   const W=canvas.parentElement.clientWidth||400, H=160;
   canvas.width=W; canvas.height=H;
@@ -577,8 +582,25 @@ function drawSpec(){
   for(let i=0;i<=300;i++){
     const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
     let J;
-    if(S.specType==='POWER_LAW') J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
-    else if(S.specType==='BAND'){
+    if(S.specType==='POWER_LAW') {
+      J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+    } else if(S.specType==='POWER_LAW_CUTOFF') {
+      const j0=parseFloat($('plc-j0')?.value)||S.specJ0;
+      const gamma=parseFloat($('plc-gamma')?.value)||S.specGamma;
+      const e0=parseFloat($('plc-e0')?.value)||S.specE0;
+      const ec=S.specEc||500;
+      J=j0*Math.pow(E/e0,-gamma)*Math.exp(-E/ec);
+    } else if(S.specType==='LIS_FORCE_FIELD') {
+      const jLis=S.specLisJ0||10000;
+      const gammaLis=S.specLisGamma||2.7;
+      const e0=parseFloat($('lis-e0')?.value)||S.specE0;
+      const phi=S.specPhi||550;
+      const M=938.272;
+      const Ephi=E+phi;
+      const Esq=E*E, Ephisq=Ephi*Ephi;
+      const Jlis_at_Ephi=jLis*Math.pow(Ephi/e0,-gammaLis);
+      J=Jlis_at_Ephi*(Esq+2*E*M)/(Ephisq+2*Ephi*M);
+    } else if(S.specType==='BAND'){
       const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
       const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
       J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);
@@ -721,11 +743,24 @@ TS_INPUT_MODE          ${S.tsSource==='omni'?'OMNIWEB':S.tsSource==='file'?'FILE
 `EPOCH                  ${S.epoch}`,
 `
 #SPECTRUM
-SPECTRUM_TYPE          ${S.specType}
-SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPECTRUM_TYPE          ${S.specType}`,
+S.specType==='POWER_LAW'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
+SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot`:
+S.specType==='POWER_LAW_CUTOFF'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
 SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
 SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot
-SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
+SPEC_EC                ${f(S.specEc,1)}        ! MeV/n exponential cutoff`:
+S.specType==='LIS_FORCE_FIELD'?`SPEC_LIS_J0            ${S.specLisJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n) LIS normalization
+SPEC_LIS_GAMMA         ${f(S.specLisGamma,2)}         ! LIS spectral index
+SPEC_E0                ${f($('lis-e0')?.value||S.specE0,1)}          ! MeV/n pivot
+SPEC_PHI               ${f(S.specPhi,0)}          ! MV solar modulation potential`:
+S.specType==='BAND'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA1            ${f(parseFloat($('band-gamma1')?.value)||3.5,2)}         ! low-energy index
+SPEC_GAMMA2            ${f(parseFloat($('band-gamma2')?.value)||1.5,2)}         ! high-energy index
+SPEC_E0                ${f(parseFloat($('band-e0')?.value)||10,1)}          ! MeV/n break energy`:
+S.specType==='TABLE'?`SPEC_TABLE_FILE        sep_spectrum_H+.txt  ! user-provided E vs J table`:``,
+`SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
 SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
 
 #OUTPUT_DOMAIN
@@ -796,7 +831,7 @@ function buildValidation(){
     {l:'Shue r₀ plausible (5–13 RE)', ok:S.boundaryType!=='SHUE'||( r0>5&&r0<13)},
     {l:'Inject Δt ≥ Field Update', ok:S.tempMode==='STEADY_STATE'||S.injectDt>=S.fieldDt},
     {l:'Energy bins defined',    ok:S.energyBins.length>0},
-    {l:'Spectrum type selected', ok:['POWER_LAW','BAND','TABLE'].includes(S.specType)},
+    {l:'Spectrum type selected', ok:['POWER_LAW','POWER_LAW_CUTOFF','LIS_FORCE_FIELD','BAND','TABLE'].includes(S.specType)},
     {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
     {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
   ];
@@ -825,7 +860,14 @@ function updateSidebar(){
   set('sb-field-model','TS05','g');
   set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
   set('sb-temporal', S.tempMode.replace('_',' '),'');
-  set('sb-spec-type', S.specType.replace('_',' '),'');
+  const prettySpec = {
+    POWER_LAW: 'POWER LAW',
+    POWER_LAW_CUTOFF: 'PL + EXP CUTOFF',
+    LIS_FORCE_FIELD: 'LIS + FORCE-FIELD',
+    BAND: 'BAND FUNCTION',
+    TABLE: 'TABLE FILE'
+  };
+  set('sb-spec-type', prettySpec[S.specType] || S.specType.replace('_',' '),'');
   set('sb-output-mode', S.outputMode.replace('_',' '),'g');
   const pct=Math.round((S.done.size/9)*100);
   const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';

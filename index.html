@@ -1622,11 +1622,19 @@ MAINTAINER NOTE
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
-    <div class="opt-grid c3">
+    <div class="opt-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
       <div class="opt-card sel spec-card" id="sc-pl" onclick="setSpec('POWER_LAW',this)"><div class="oc-icon">&#128201;</div>
         <div class="oc-title">Power Law</div>
         <div class="oc-sub">J(E) = J&#8320;(E/E&#8320;)^&#8722;&#947;. Widely used for SEP and quiet-time GCR studies.</div>
         <span class="oc-badge badge-green">POWER_LAW</span></div>
+      <div class="opt-card spec-card" id="sc-plc" onclick="setSpec('POWER_LAW_CUTOFF',this)"><div class="oc-icon">&#128200;</div>
+        <div class="oc-title">Power Law + Exp Cutoff</div>
+        <div class="oc-sub">J(E) = J&#8320;(E/E&#8320;)^&#8722;&#947;exp(&#8722;E/E&#8337;). High-energy rolloff for relativistic events.</div>
+        <span class="oc-badge badge-purple">PL_CUTOFF</span></div>
+      <div class="opt-card spec-card" id="sc-lis" onclick="setSpec('LIS_FORCE_FIELD',this)"><div class="oc-icon">&#9728;</div>
+        <div class="oc-title">LIS + Force-Field</div>
+        <div class="oc-sub">Local Interstellar Spectrum with solar modulation &#966; [MV]. Standard for GCR modeling.</div>
+        <span class="oc-badge badge-cyan">FORCE_FIELD</span></div>
       <div class="opt-card spec-card" id="sc-band" onclick="setSpec('BAND',this)"><div class="oc-icon">&#12316;</div>
         <div class="oc-title">Band Function</div>
         <div class="oc-sub">Broken power law with spectral softening above E&#8320; (Band 1993). Better for large events.</div>
@@ -1648,6 +1656,42 @@ MAINTAINER NOTE
         <div class="field"><label>E&#8320; — Pivot <span class="unit">[MeV/n]</span></label>
           <input id="spec-e0" type="number" value="10" step="1" min="0.1" oninput="drawSpec()"/>
           <div class="hint">Reference energy. Convention: 10 MeV/n.</div></div>
+      </div>
+    </div>
+    <div id="plc-form" style="display:none;" class="subsection">
+      <div class="subsection-title">Power Law + Exponential Cutoff: J(E) = J&#8320; &middot; (E / E&#8320;)^&#8722;&#947; &middot; exp(&#8722;E / E&#8337;)</div>
+      <div class="infobox info-blue">High-energy exponential rolloff captures the finite acceleration energy in shock-associated SEP events. E&#8337; typically 100–1000 MeV for large gradual SEPs.</div>
+      <div class="frow c4">
+        <div class="field"><label>J&#8320; <span class="unit">[p/cm&#178;/s/sr/(MeV/n)]</span></label>
+          <input id="plc-j0" type="number" value="10000" step="100" min="0.001" oninput="drawSpec()"/>
+          <div class="hint">Flux normalization at pivot energy E&#8320;.</div></div>
+        <div class="field"><label>&#947; — Spectral index</label>
+          <input id="plc-gamma" type="number" value="3.5" step="0.1" min="0.5" max="10" oninput="drawSpec()"/>
+          <div class="hint">Low-energy power-law slope (same as simple PL).</div></div>
+        <div class="field"><label>E&#8320; — Pivot <span class="unit">[MeV/n]</span></label>
+          <input id="plc-e0" type="number" value="10" step="1" min="0.1" oninput="drawSpec()"/>
+          <div class="hint">Reference energy. Convention: 10 MeV/n.</div></div>
+        <div class="field"><label>E&#8337; — Cutoff <span class="unit">[MeV/n]</span></label>
+          <input id="spec-ec" type="number" value="500" step="50" min="10" oninput="drawSpec()"/>
+          <div class="hint">Exponential e-folding energy. Typical: 200–1000 MeV.</div></div>
+      </div>
+    </div>
+    <div id="lis-form" style="display:none;" class="subsection">
+      <div class="subsection-title">Local Interstellar Spectrum (LIS) + Force-Field Solar Modulation</div>
+      <div class="infobox info-blue">Gleeson-Axford force-field approximation: J(E,&#966;) = J<sub>LIS</sub>(E+&#966;) &middot; (E² + 2EM) / ((E+&#966;)² + 2(E+&#966;)M). Standard model for Galactic Cosmic Rays. &#966; = 550 MV ≈ solar minimum; &#966; = 1200 MV ≈ solar maximum.</div>
+      <div class="frow c4">
+        <div class="field"><label>J<sub>LIS</sub> <span class="unit">[p/cm&#178;/s/sr/(MeV/n)]</span></label>
+          <input id="lis-j0" type="number" value="10000" step="100" min="0.001" oninput="drawSpec()"/>
+          <div class="hint">LIS normalization (at E&#8320; in absence of modulation).</div></div>
+        <div class="field"><label>&#947;<sub>LIS</sub> — LIS index</label>
+          <input id="lis-gamma" type="number" value="2.7" step="0.05" min="2.0" max="3.5" oninput="drawSpec()"/>
+          <div class="hint">LIS power-law index. Typical GCR protons: 2.6–2.8.</div></div>
+        <div class="field"><label>E&#8320; — Pivot <span class="unit">[MeV/n]</span></label>
+          <input id="lis-e0" type="number" value="10" step="1" min="0.1" oninput="drawSpec()"/>
+          <div class="hint">Reference energy for LIS normalization.</div></div>
+        <div class="field"><label>&#966; — Modulation <span class="unit">[MV]</span></label>
+          <input id="spec-phi" type="number" value="550" step="50" min="0" max="2000" oninput="drawSpec()"/>
+          <div class="hint">Solar modulation potential. 400–700 MV = minimum; 1000–1400 MV = maximum.</div></div>
       </div>
     </div>
     <div id="band-form" style="display:none;" class="subsection">

@@ -105,11 +105,24 @@ TS_INPUT_MODE          ${S.tsSource==='omni'?'OMNIWEB':S.tsSource==='file'?'FILE
 `EPOCH                  ${S.epoch}`,
 `
 #SPECTRUM
-SPECTRUM_TYPE          ${S.specType}
-SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPECTRUM_TYPE          ${S.specType}`,
+S.specType==='POWER_LAW'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
+SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot`:
+S.specType==='POWER_LAW_CUTOFF'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
 SPEC_GAMMA             ${f(S.specGamma,2)}         ! spectral index
 SPEC_E0                ${f(S.specE0,1)}          ! MeV/n pivot
-SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
+SPEC_EC                ${f(S.specEc,1)}        ! MeV/n exponential cutoff`:
+S.specType==='LIS_FORCE_FIELD'?`SPEC_LIS_J0            ${S.specLisJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n) LIS normalization
+SPEC_LIS_GAMMA         ${f(S.specLisGamma,2)}         ! LIS spectral index
+SPEC_E0                ${f($('lis-e0')?.value||S.specE0,1)}          ! MeV/n pivot
+SPEC_PHI               ${f(S.specPhi,0)}          ! MV solar modulation potential`:
+S.specType==='BAND'?`SPEC_J0                ${S.specJ0.toExponential(2)}   ! p/cm2/s/sr/(MeV/n)
+SPEC_GAMMA1            ${f(parseFloat($('band-gamma1')?.value)||3.5,2)}         ! low-energy index
+SPEC_GAMMA2            ${f(parseFloat($('band-gamma2')?.value)||1.5,2)}         ! high-energy index
+SPEC_E0                ${f(parseFloat($('band-e0')?.value)||10,1)}          ! MeV/n break energy`:
+S.specType==='TABLE'?`SPEC_TABLE_FILE        sep_spectrum_H+.txt  ! user-provided E vs J table`:``,
+`SPEC_EMIN              ${f(S.specEmin,1)}          ! MeV/n
 SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
 
 #OUTPUT_DOMAIN
@@ -180,7 +193,7 @@ function buildValidation(){
     {l:'Shue r₀ plausible (5–13 RE)', ok:S.boundaryType!=='SHUE'||( r0>5&&r0<13)},
     {l:'Inject Δt ≥ Field Update', ok:S.tempMode==='STEADY_STATE'||S.injectDt>=S.fieldDt},
     {l:'Energy bins defined',    ok:S.energyBins.length>0},
-    {l:'Spectrum type selected', ok:['POWER_LAW','BAND','TABLE'].includes(S.specType)},
+    {l:'Spectrum type selected', ok:['POWER_LAW','POWER_LAW_CUTOFF','LIS_FORCE_FIELD','BAND','TABLE'].includes(S.specType)},
     {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
     {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
   ];
@@ -220,7 +233,14 @@ function updateSidebar(){
   set('sb-field-model', prettyField[S.fieldModel] || S.fieldModel || '—', 'g');
   set('sb-boundary', S.boundaryType==='SHUE'?'Shue 1998':'Box (GSM)','g');
   set('sb-temporal', S.tempMode.replace('_',' '),'');
-  set('sb-spec-type', S.specType.replace('_',' '),'');
+  const prettySpec = {
+    POWER_LAW: 'POWER LAW',
+    POWER_LAW_CUTOFF: 'PL + EXP CUTOFF',
+    LIS_FORCE_FIELD: 'LIS + FORCE-FIELD',
+    BAND: 'BAND FUNCTION',
+    TABLE: 'TABLE FILE'
+  };
+  set('sb-spec-type', prettySpec[S.specType] || S.specType.replace('_',' '),'');
   set('sb-output-mode', S.outputMode.replace('_',' '),'g');
   const pct=Math.round((S.done.size/9)*100);
   const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';
