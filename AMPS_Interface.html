@@ -2,11 +2,23 @@
 <!-- =============================================================================
 FILE:    AMPS_Interface.html
 PROJECT: AMPS v2025 — SEP/GCR Transport — CCMC Runs-on-Request Web Wizard
-PURPOSE: Single-file (standalone) build of the wizard UI (CSS + JS inlined) for offline distribution/testing.
+PURPOSE: Single-file (standalone) build of the wizard UI (CSS + JS inlined) for 
+         offline distribution/testing.
 
 NOTES
 - This file is generated/maintained manually in this repo; it mirrors index.html + /css + /js.
 - Prefer index.html for development; use this for quick distribution.
+
+MODIFICATIONS (2026-02-20)
+- Streamlined Particle Species selection (Step 2): Reduced from 6 to 3 core options
+  (H⁺ Proton, He²⁺ Alpha, Custom Ion). Removed: e⁻, O⁸⁺, Fe²⁶⁺ (can be re-enabled).
+- Added extensive inline documentation (~150 lines of comments) explaining:
+  - Purpose and AMPS keywords
+  - Card structure and templates
+  - Physics considerations
+  - Extension instructions
+- JavaScript SPECIES object updated with detailed comments and physics notes
+- See PARTICLE_SPECIES_EXTENSION_GUIDE.md for complete extension tutorial
 ============================================================================= -->
 
 <html lang="en">
@@ -861,42 +873,169 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
-    <div class="infobox info-blue"><b>AMPS uses backward-in-time tracing</b> — one particle species per run. Protons are most common for SEP events. Electrons use a relativistic guiding-center integrator activated automatically.</div>
-    <div class="opt-grid c3">
-      <div class="opt-card sel" id="sp-proton" onclick="selectSpecies('proton',this)"><div class="oc-icon">&#128309;</div>
-        <div class="oc-title">H&#8314; Proton</div><div class="oc-sub">Most common SEP species. Mass = 1.007 AMU, charge = +1e. Full radiation belt treatment.</div>
-        <span class="oc-badge badge-green">DEFAULT</span></div>
-      <div class="opt-card" id="sp-helium" onclick="selectSpecies('helium',this)"><div class="oc-icon">&#128993;</div>
-        <div class="oc-title">He&#178;&#8314; Alpha</div><div class="oc-sub">Alpha particles. Second most abundant SEP ion. Mass = 4.003 AMU, charge = +2e.</div></div>
-      <div class="opt-card" id="sp-electron" onclick="selectSpecies('electron',this)"><div class="oc-icon">&#128995;</div>
-        <div class="oc-title">e&#8315; Electron</div><div class="oc-sub">Relativistic electrons. Drift periods &lt;1 min at L=4. Requires enhanced integrator.</div></div>
-      <div class="opt-card" id="sp-oxygen" onclick="selectSpecies('oxygen',this)"><div class="oc-icon">&#128992;</div>
-        <div class="oc-title">O&#8312;&#8314; Oxygen</div><div class="oc-sub">Heavy SEP ion — dominant in impulsive events. Mass = 16.0 AMU, charge = +8e.</div></div>
-      <div class="opt-card" id="sp-iron" onclick="selectSpecies('iron',this)"><div class="oc-icon">&#128308;</div>
-        <div class="oc-title">Fe&#178;&#8310;&#8314; Iron</div><div class="oc-sub">Heaviest common SEP species. Mass = 55.8 AMU, charge = +26e. High rigidity.</div></div>
-      <div class="opt-card" id="sp-custom" onclick="selectSpecies('custom',this)"><div class="oc-icon">&#9881;</div>
-        <div class="oc-title">Custom Ion</div><div class="oc-sub">Manually specify charge state and mass for exotic or partially-stripped ions.</div></div>
+    <!-- ══════════════════════════════════════════════════════════════════════════════
+         PARTICLE SPECIES SELECTION PANEL
+         
+         PURPOSE: Allows users to select which particle species to simulate in AMPS.
+         One species per simulation run (AMPS uses backward-in-time tracing).
+         
+         AMPS KEYWORDS AFFECTED:
+           SPECIES = species identifier, CHARGE = charge state [e], MASS_AMU = mass [AMU]
+         
+         CURRENT IMPLEMENTATION:
+           Three predefined species cards:
+           1. H⁺ Proton (Z=+1, A=1.0073 AMU) — Most common SEP species
+           2. He²⁺ Alpha (Z=+2, A=4.0026 AMU) — Second most abundant SEP ion
+           3. Custom Ion — Manual input of any charge/mass combination
+         
+         EXTENSIBILITY:
+           To add more species, see PARTICLE_SPECIES_EXTENSION_GUIDE.md
+           Commented-out species (electron, oxygen, iron) can be re-enabled.
+    ══════════════════════════════════════════════════════════════════════════════ -->
+    
+    <div class="infobox info-blue">
+      <b>AMPS uses backward-in-time tracing</b> — one particle species per run. 
+      Protons are most common for SEP (Solar Energetic Particle) events. 
+      Alpha particles are the second most abundant heavy ion species.
     </div>
+    
+    <!-- ══════════════════════════════════════════════════════════════════════════════
+         PARTICLE SPECIES CARDS
+         
+         LAYOUT: .opt-grid.c3 — 3-column grid on desktop, responsive on mobile
+         
+         CARD STRUCTURE:
+           .opt-card — Clickable card container
+           .oc-icon — Emoji/icon representing the particle
+           .oc-title — Species name with charge state notation
+           .oc-sub — Description text (mass, charge, physics notes)
+           .sel — CSS class marking currently selected card
+    ══════════════════════════════════════════════════════════════════════════════ -->
+    <div class="opt-grid c3">
+      
+      <!-- PROTON CARD (H⁺) — DEFAULT SELECTION
+           Charge: +1e, Mass: 1.0073 AMU
+           Most common particle in SEP events -->
+      <div class="opt-card sel" id="sp-proton" onclick="selectSpecies('proton',this)">
+        <div class="oc-icon">&#128309;</div>
+        <div class="oc-title">H⁺ Proton</div>
+        <div class="oc-sub">
+          Most common SEP species. Mass = 1.007 AMU, charge = +1e. 
+          Full radiation belt treatment.
+        </div>
+        <span class="oc-badge badge-green">DEFAULT</span>
+      </div>
+      
+      <!-- ALPHA PARTICLE CARD (He²⁺)
+           Charge: +2e, Mass: 4.0026 AMU
+           Second most abundant heavy ion -->
+      <div class="opt-card" id="sp-helium" onclick="selectSpecies('helium',this)">
+        <div class="oc-icon">&#128993;</div>
+        <div class="oc-title">He²⁺ Alpha</div>
+        <div class="oc-sub">
+          Alpha particles. Second most abundant SEP ion. 
+          Mass = 4.003 AMU, charge = +2e.
+        </div>
+      </div>
+      
+      <!-- CUSTOM ION CARD
+           Allows manual input of any charge/mass combination
+           Shows custom-species-panel when selected -->
+      <div class="opt-card" id="sp-custom" onclick="selectSpecies('custom',this)">
+        <div class="oc-icon">&#9881;</div>
+        <div class="oc-title">Custom Ion</div>
+        <div class="oc-sub">
+          Manually specify charge state and mass for exotic or partially-stripped ions.
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- ══════════════════════════════════════════════════════════════════════════════
+         CUSTOM SPECIES INPUT PANEL
+         
+         VISIBILITY: Hidden by default, shown when user selects "Custom Ion"
+         
+         INPUTS:
+           1. Charge State Z — Range: -1 to +92 elementary charges
+           2. Mass [AMU] — Range: 0.0005 to 250 atomic mass units
+           3. Ion Label — Cosmetic display name (max 8 chars)
+         
+         Updates S.charge and S.mass via oninput → updateRigidity()
+    ══════════════════════════════════════════════════════════════════════════════ -->
     <div id="custom-species-panel" style="display:none;" class="subsection">
       <div class="subsection-title">Custom Ion Parameters</div>
       <div class="frow c3">
-        <div class="field"><label>Charge State Z <span class="unit">[e]</span></label>
-          <input id="charge-input" type="number" value="1" min="-1" max="92" step="1" oninput="updateRigidity()"/>
-          <div class="hint">Net charge in elementary charge units. e.g. +2 for He&#178;&#8314;.</div></div>
-        <div class="field"><label>Mass <span class="unit">[AMU]</span></label>
-          <input id="mass-input" type="number" value="1.0" min="0.0005" max="250" step="0.001" oninput="updateRigidity()"/>
-          <div class="hint">Atomic mass in unified atomic mass units.</div></div>
-        <div class="field"><label>Ion Label</label>
-          <input id="ion-symbol" type="text" value="?" maxlength="8" placeholder="e.g. Na&#8314;"/>
-          <div class="hint">Display label only — cosmetic.</div></div>
+        
+        <div class="field">
+          <label>Charge State Z <span class="unit">[e]</span></label>
+          <input 
+            id="charge-input" 
+            type="number" 
+            value="1" 
+            min="-1" 
+            max="92" 
+            step="1" 
+            oninput="updateRigidity()"
+          />
+          <div class="hint">
+            Net charge in elementary charge units. 
+            Examples: +1 for H⁺, +2 for He²⁺, -1 for e⁻, +8 for O⁸⁺
+          </div>
+        </div>
+        
+        <div class="field">
+          <label>Mass <span class="unit">[AMU]</span></label>
+          <input 
+            id="mass-input" 
+            type="number" 
+            value="1.0" 
+            min="0.0005" 
+            max="250" 
+            step="0.001" 
+            oninput="updateRigidity()"
+          />
+          <div class="hint">
+            Atomic mass in unified atomic mass units. 
+            Examples: 1.007 (H), 4.003 (He), 15.999 (O), 55.845 (Fe)
+          </div>
+        </div>
+        
+        <div class="field">
+          <label>Ion Label</label>
+          <input 
+            id="ion-symbol" 
+            type="text" 
+            value="?" 
+            maxlength="8" 
+            placeholder="e.g. Na⁺"
+          />
+          <div class="hint">
+            Display label only — cosmetic. Use Unicode superscripts for charge states.
+          </div>
+        </div>
+        
       </div>
     </div>
+    
+    <!-- MAGNETIC RIGIDITY DISPLAY
+         Shows R = p/(q·e) at reference energy 100 MeV/nucleon
+         Updates in real-time as user changes Z or A -->
     <div class="subsection" style="margin-top:4px;">
-      <div style="font-size:11px;color:var(--text-dim);">Magnetic rigidity at 100 MeV/n:
-        <span id="rigidity-info" style="font-family:var(--font-mono);color:var(--accent-bright);margin-left:6px;">R = 1.093 GV</span>
-        <span style="font-size:10px;color:var(--text-muted);margin-left:8px;">(R = p/(q&#183;e) — particles with R &lt; R<sub>cutoff</sub> cannot reach LEO)</span>
+      <div style="font-size:11px;color:var(--text-dim);">
+        Magnetic rigidity at 100 MeV/n:
+        <span 
+          id="rigidity-info" 
+          style="font-family:var(--font-mono);color:var(--accent-bright);margin-left:6px;"
+        >
+          R = 1.093 GV
+        </span>
+        <span style="font-size:10px;color:var(--text-muted);margin-left:8px;">
+          (R = p/(q·e) — particles with R &lt; R<sub>cutoff</sub> cannot reach LEO)
+        </span>
       </div>
     </div>
+    
   </div>
 </div>
 </div>
@@ -2443,32 +2582,159 @@ function charCount(el,cid,max){
     c.className='char-count'+(n>max*0.9?' near':'')+(n>max?' over':''); }
 }
 
-/* ── 3c. STEP 2 PARTICLE ─────────────────────────────────────────── */
-const SPECIES={
-  proton:  {Z:1,  A:1.0073,  label:'H⁺ Proton'},
-  helium:  {Z:2,  A:4.0026,  label:'He²⁺ Alpha'},
-  oxygen:  {Z:8,  A:15.999,  label:'O⁸⁺'},
-  electron:{Z:-1, A:0.000549,label:'e⁻ Electron'},
-  iron:    {Z:26, A:55.845,  label:'Fe²⁶⁺'},
-  custom:  {Z:1,  A:1.0,     label:'Custom'},
+/* ══════════════════════════════════════════════════════════════════════════════
+   STEP 2 — PARTICLE SPECIES SELECTION
+   
+   PURPOSE:
+     Defines available particle species and handles species selection logic.
+     Each AMPS simulation run traces ONE particle species backward in time.
+   
+   AMPS KEYWORDS GENERATED:
+     SPECIES  = species identifier (e.g., 'proton', 'helium', 'custom')
+     CHARGE   = charge state in elementary charges Z
+     MASS_AMU = atomic mass in unified atomic mass units
+   
+   CURRENT SPECIES:
+     - proton:  H⁺ proton (Z=+1, A=1.0073 AMU)
+     - helium:  He²⁺ alpha (Z=+2, A=4.0026 AMU)
+     - custom:  User-defined ion with manual Z and A input
+   
+   EXTENSIBILITY:
+     To add more species, see PARTICLE_SPECIES_EXTENSION_GUIDE.md
+     Commented-out species below can be re-enabled.
+══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * SPECIES object: Maps species keys to physical parameters
+ * Each entry: key: {Z: charge, A: mass_AMU, label: 'Display Name'}
+ */
+const SPECIES = {
+  // PROTON (H⁺) — Default SEP particle
+  // Charge: +1e, Mass: 1.0073 AMU
+  // Most common particle in solar energetic particle events
+  proton: {
+    Z: 1,
+    A: 1.0073,
+    label: 'H⁺ Proton'
+  },
+  
+  // ALPHA PARTICLE (He²⁺) — Second most common SEP heavy ion
+  // Charge: +2e, Mass: 4.0026 AMU
+  // Fully ionized helium nucleus (2 protons + 2 neutrons)
+  helium: {
+    Z: 2,
+    A: 4.0026,
+    label: 'He²⁺ Alpha'
+  },
+  
+  // CUSTOM ION — User-defined particle species
+  // Shows custom input panel for manual Z and A entry
+  // Default: Z=1, A=1.0 (user should update before submitting)
+  custom: {
+    Z: 1,
+    A: 1.0,
+    label: 'Custom'
+  },
+  
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMMENTED OUT SPECIES — Available for re-enabling
+  // To re-enable: Uncomment here + add HTML card in Step 2 panel
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  /* ELECTRON (e⁻) — Relativistic lepton
+  electron: {
+    Z: -1,
+    A: 0.000549,
+    label: 'e⁻ Electron'
+  }, */
+  
+  /* OXYGEN (O⁸⁺) — Heavy SEP ion
+  oxygen: {
+    Z: 8,
+    A: 15.999,
+    label: 'O⁸⁺ Oxygen'
+  }, */
+  
+  /* IRON (Fe²⁶⁺) — Heaviest common SEP species
+  iron: {
+    Z: 26,
+    A: 55.845,
+    label: 'Fe²⁶⁺ Iron'
+  }, */
 };
-function selectSpecies(key,card){
-  const sp=SPECIES[key]; if(!sp) return;
-  S.species=key; S.charge=sp.Z; S.mass=sp.A;
-  document.querySelectorAll('.opt-card[id^="sp-"]').forEach(c=>c.classList.remove('sel'));
-  if(card) card.classList.add('sel');
-  $('custom-species-panel').style.display=key==='custom'?'block':'none';
-  if(key!=='custom'){
-    const ci=$('charge-input'), mi=$('mass-input');
-    if(ci) ci.value=sp.Z; if(mi) mi.value=sp.A;
+
+/**
+ * selectSpecies() — Handle particle species selection
+ * 
+ * Called when user clicks a species card.
+ * Updates global state S and UI highlighting.
+ * 
+ * @param {string} key - Species identifier ('proton', 'helium', 'custom')
+ * @param {HTMLElement} card - The clicked card element
+ */
+function selectSpecies(key, card) {
+  const sp = SPECIES[key];
+  if (!sp) {
+    console.error(`Unknown species key: ${key}`);
+    return;
   }
+  
+  // Update global state
+  S.species = key;
+  S.charge = sp.Z;
+  S.mass = sp.A;
+  
+  // Visual feedback: deselect all, then select clicked
+  document.querySelectorAll('.opt-card[id^="sp-"]').forEach(c => {
+    c.classList.remove('sel');
+  });
+  if (card) card.classList.add('sel');
+  
+  // Show/hide custom input panel
+  const customPanel = $('custom-species-panel');
+  if (customPanel) {
+    customPanel.style.display = (key === 'custom') ? 'block' : 'none';
+  }
+  
+  // Pre-fill custom inputs with selected species values
+  if (key !== 'custom') {
+    const chargeInput = $('charge-input');
+    const massInput = $('mass-input');
+    if (chargeInput) chargeInput.value = sp.Z;
+    if (massInput) massInput.value = sp.A;
+  }
+  
   updateRigidity();
 }
-function updateRigidity(){
-  const q=Math.abs(S.charge||1), A=S.mass||1;
-  const E=100, mp=938.272;
-  const Etot=E*A+A*mp, p=Math.sqrt(Etot**2-(A*mp)**2), R=p/(q*1000);
-  const el=$('rigidity-info'); if(el) el.textContent=`R = ${R.toFixed(3)} GV at 100 MeV/n`;
+
+/**
+ * updateRigidity() — Calculate and display magnetic rigidity
+ * 
+ * Rigidity R = p/(q·e) at reference energy 100 MeV/nucleon
+ * 
+ * Formula:
+ *   E_total = A × 100 MeV + A × m_p c²
+ *   p = √(E_total² - (A·m_p·c²)²)
+ *   R [GV] = p [MeV/c] / (Z [e] × 1000)
+ * 
+ * Updates #rigidity-info display element
+ */
+function updateRigidity() {
+  const q = Math.abs(S.charge || 1);  // |Z| in elementary charges
+  const A = S.mass || 1;              // Mass in AMU
+  
+  const E = 100;        // Reference energy: 100 MeV/nucleon
+  const mp = 938.272;   // Proton rest mass energy: 938.272 MeV
+  
+  // Relativistic energy-momentum calculation
+  const Etot = E * A + A * mp;  // Total energy in MeV
+  const p = Math.sqrt(Etot**2 - (A * mp)**2);  // Momentum in MeV/c
+  const R = p / (q * 1000);  // Rigidity in GV
+  
+  const el = $('rigidity-info');
+  if (el) {
+    el.textContent = `R = ${R.toFixed(3)} GV at 100 MeV/n`;
+  }
 }
 
 /* ── 3d. STEP 3 TS05 ─────────────────────────────────────────────── */
