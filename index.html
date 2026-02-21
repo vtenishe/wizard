@@ -1130,13 +1130,11 @@ MAINTAINER NOTE
   </div>
   <div class="sect-body">
 
-    <div class="infobox info-blue">
-      <b>Why electric fields matter:</b> During storms the dawn-dusk convection
-      electric field penetrates deep into the inner magnetosphere, disrupting
-      radiation belt access and modifying particle drift paths. Including a
-      realistic E-field is essential for storm-time cutoff rigidity calculations.
-      The Volland–Stern model is the robust default; Weimer adds IMF/solar-wind
-      sensitivity for event-specific realism.
+        <div class="infobox info-blue">
+      <b>Why electric fields matter:</b> Particle drift depends on the <b>E×B</b> electric drift, so the choice of E-field strongly affects access and cutoffs during storms.
+      <br><b>Corotation E</b>: <code>E = -(Ω×r)×B</code>. Baseline inner-magnetosphere co-rotation; typically keep <b>ON</b>.
+      <br><b>Convection E</b>: <code>E = -∇Φ</code>. Solar-wind–driven dawn–dusk transport; choose <b>one</b> model (Volland–Stern for robust Kp sweeps, or Weimer for IMF/solar-wind realism) or <b>None</b>.
+      <br><b>Recommended:</b> use <b>Corotation + Convection</b> (additive) for most storm-time runs.
     </div>
 
     <!-- ══════════════════════════════════════════════════════
