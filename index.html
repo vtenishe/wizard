@@ -196,7 +196,63 @@ MAINTAINER NOTE
               </div>
             </div>
 
-            <div class="help-subsection">
+            
+<div class="help-subsection">
+  <div class="help-subsection-header" data-help-toggle="subsection" data-target="particle-spectrum-models">
+    <span class="help-sublabel">Particle Spectrum Models</span>
+    <span class="help-toggle" id="arrow-particle-spectrum-models">▶</span>
+  </div>
+  <div class="help-subsection-content" id="content-particle-spectrum-models" style="display:none;">
+    <div class="help-detail-panel">
+      <h4>Particle Source Spectrum Models</h4>
+
+      <div class="infobox info-blue" style="margin:0 0 10px 0;">
+        <b>What the code expects:</b> all options define the <b>differential</b> flux
+        <code>dJ/dE</code> as a function of kinetic energy per nucleon <code>E</code>.
+        In this wizard: <code>E</code> in <b>MeV/n</b>, <code>dJ/dE</code> in <b>p/cm²/s/sr/(MeV/n)</b>.
+        This choice maps to the <code>#SPECTRUM</code> section in <code>AMPS_PARAM.in</code>.
+      </div>
+
+      <div class="model-section">
+        <h5>POWER_LAW</h5>
+        <p><strong>Use:</strong> fast parameter studies and many SEP events when a single slope is adequate.</p>
+        <p><strong>Form:</strong> <code>J(E) = J0 · (E/E0)<sup>-γ</sup></code></p>
+        <p><strong>Parameters:</strong> J0 (normalization), γ (spectral index), E0 (pivot).</p>
+        <p><strong>Typical:</strong> SEP γ ≈ 2–5.</p>
+      </div>
+
+      <div class="model-section">
+        <h5>POWER_LAW_CUTOFF</h5>
+        <p><strong>Use:</strong> SEP spectra with a finite high-energy extent.</p>
+        <p><strong>Form:</strong> <code>J(E) = J0 · (E/E0)<sup>-γ</sup> · exp(-E/Ec)</code></p>
+        <p><strong>Parameters:</strong> J0, γ, E0, Ec (cutoff).</p>
+      </div>
+
+      <div class="model-section">
+        <h5>LIS_FORCE_FIELD</h5>
+        <p><strong>Use:</strong> Galactic Cosmic Ray (GCR) background with solar-cycle modulation.</p>
+        <p><strong>Physics:</strong> force-field approximation with modulation potential Φ.</p>
+        <p><strong>Reference:</strong> Gleeson, L. J., & Axford, W. I. (1968). <em>ApJ</em>, 154, 1011.</p>
+      </div>
+
+      <div class="model-section">
+        <h5>BAND</h5>
+        <p><strong>Use:</strong> spectra with curvature / break (softening above a characteristic energy).</p>
+        <p><strong>Idea:</strong> two slopes joined around a break energy E0 (γ1 below, γ2 above).</p>
+        <p><strong>Reference:</strong> Band, D., et al. (1993). <em>ApJ</em>, 413, 281–292.</p>
+      </div>
+
+      <div class="model-section">
+        <h5>TABLE</h5>
+        <p><strong>Use:</strong> event realism when you have measured spectra (e.g., GOES).</p>
+        <p><strong>Input:</strong> 2-column ASCII table <code>E  dJ/dE</code> (E in MeV/n).</p>
+        <p><strong>Notes:</strong> ensure the table covers the run’s Emin–Emax; interpolation is used between points.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="help-subsection">
               <div class="help-subsection-header" data-help-toggle="subsection" data-target="boundary-models">
                 <span class="help-sublabel">Boundary Models</span>
                 <span class="help-toggle" id="arrow-boundary-models">▶</span>
@@ -323,7 +379,22 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
                 <p><strong>GCR Extended:</strong> [10, 30, 100, 300, 1000, 3000, 10000] MeV/n</p>
                 <p><strong>Considerations:</strong> More bins = larger output files. Spacing should match instrument response functions.</p>
               </div>
-            </div>
+            
+              <div class="model-section">
+                <h5>Spectrum Models (Step 7)</h5>
+                <p><strong>All spectrum options expect differential flux dJ/dE</strong> in <code>p/cm²/s/sr/(MeV/n)</code> as a function of kinetic energy per nucleon <code>E</code> in <code>MeV/n</code>.</p>
+
+                <p><strong>POWER_LAW:</strong> <code>J(E)=J₀·(E/E₀)^(−γ)</code>. Use for basic SEP injections and quick sensitivity studies. Typical SEP γ ≈ 2–5, pivot E₀ often 10 MeV/n.</p>
+
+                <p><strong>POWER_LAW_CUTOFF:</strong> <code>J(E)=J₀·(E/E₀)^(−γ)·exp(−E/Ec)</code>. Adds a high-energy roll-off (finite acceleration limit). Typical Ec ≈ 200–1000 MeV/n for large gradual SEP events.</p>
+
+                <p><strong>LIS_FORCE_FIELD:</strong> Galactic Cosmic Ray baseline using a Local Interstellar Spectrum (LIS) with Gleeson–Axford force-field modulation parameter <code>Φ</code> [MV]. Use for GCR background and solar-cycle dependence (Φ ~ 400–700 MV near solar minimum; Φ ~ 1000–1400 MV near solar maximum).</p>
+
+                <p><strong>BAND:</strong> Band (1993)-style broken power law with a smooth transition. In this interface the break energy is derived from the two slopes (see preview formula in the Spectrum panel). Use for large SEP events where spectra soften above a characteristic energy.</p>
+
+                <p><strong>TABLE:</strong> Measured spectrum from a two-column ASCII file <code>E[MeV/n]  dJ/dE</code>. Minimum 5 points. The uploaded range should cover your selected <code>Emin</code>–<code>Emax</code>. Recommended for event studies using GOES/other instrument-derived spectra.</p>
+              </div>
+</div>
           </div>
         </div>
 
@@ -1896,6 +1967,21 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
+
+    <!--
+      NOTE (UI help location):
+      Spectrum model documentation is now presented in the global Help menu under:
+        Help → Physics Models → Particle Spectrum Models
+      This keeps all physics-model documentation in one consistent place.
+    -->
+
+	    <!--
+	      IMPORTANT:
+	      Do NOT close .sect-body/.sect here.
+	      The spectrum model cards and parameter forms below must remain inside
+	      this .sect-body container so that Step 7 renders correctly.
+	    -->
+
     <div class="opt-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
       <div class="opt-card sel spec-card" id="sc-pl" onclick="setSpec('POWER_LAW',this)"><div class="oc-icon">&#128201;</div>
         <div class="oc-title">Power Law</div>
