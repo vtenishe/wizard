@@ -238,6 +238,9 @@ body {
 .help-dropdown{position:relative;}
 .help-trigger{cursor:pointer;user-select:none;}
 #help-arrow{font-size:10px;margin-left:2px;transition:transform .2s;}
+.docs-dropdown{position:relative;}
+.docs-trigger{cursor:pointer;user-select:none;}
+#docs-arrow{font-size:10px;margin-left:2px;transition:transform .2s;}
 .help-menu{position:absolute;top:100%;right:0;margin-top:8px;min-width:320px;max-width:800px;background:var(--bg-panel);border:1px solid var(--border-lit);border-radius:var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:200;max-height:calc(100vh - 80px);overflow-y:auto;}
 
 /* Level 1: Main Sections */
@@ -267,6 +270,29 @@ body {
 .help-detail-panel code{background:var(--bg-inset);color:var(--accent-bright);padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:10px;}
 .help-detail-panel strong{color:var(--text);font-weight:600;}
 .help-detail-panel em{color:var(--text);font-style:italic;}
+
+/* DOCS MENU: Match Help menu typography for PDF links
+   Docs uses the same structural classes as Help (help-menu/help-section/help-detail-panel),
+   but the PDF links live inside <ul><li><a>... and were inheriting the small (11px) detail-panel list style.
+   We override ONLY inside #docs-main-menu so Help content stays unchanged.
+*/
+#docs-main-menu .help-detail-panel ul{
+  font-size:13px;
+  line-height:1.6;
+  color:var(--text);
+  margin:6px 0 6px 0;
+  padding-left:0;
+  list-style:none;
+}
+#docs-main-menu .help-detail-panel li{margin:6px 0;}
+#docs-main-menu .help-detail-panel a{
+  color:var(--accent-bright);
+  font-size:13px;
+  text-decoration:none;
+}
+#docs-main-menu .help-detail-panel a:hover{background:var(--bg-hover);color:var(--accent);text-decoration:none;}
+
+
 .model-section{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-dim);}
 .model-section:last-child{border-bottom:none;margin-bottom:0;}
 
@@ -811,7 +837,92 @@ canvas.spec-canvas{width:100%;height:100%;display:block;}
   <div class="tb-right">
     <a class="tb-link" href="#">Model Catalog</a>
     <a class="tb-link" href="#">My Runs</a>
-    <a class="tb-link" href="#">Docs</a>
+    <!--
+      DOCS MENU (NEW)
+      --------------
+      Standalone (single-file) version of the same Docs dropdown used by
+      index.html. Each entry opens a PDF in a new tab.
+
+      PDFs live in:          doc/*.pdf
+      LaTeX sources live in: doc/latex/*.tex
+    -->
+    <div class="docs-dropdown">
+      <a class="tb-link docs-trigger" id="docs-trigger" href="#">Docs <span id="docs-arrow">▼</span></a>
+      <div class="help-menu" id="docs-main-menu" style="display:none;">
+
+        <div class="help-section">
+          <div class="help-section-header" data-docs-toggle="section" data-target="docs-overview">
+            <span class="help-label">How Calculations Are Done</span>
+            <span class="help-toggle" id="docs-arrow-docs-overview">▶</span>
+          </div>
+          <div class="help-section-content" id="docs-content-docs-overview" style="display:none;">
+            <div class="help-detail-panel">
+              <ul>
+                <li><a href="doc/view.html?file=overview_calculation_pipeline.pdf" target="_blank" rel="noopener">Pipeline overview: rigidity cutoffs, flux evaluation, and spectrum reconstruction</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-docs-toggle="section" data-target="docs-cutoffs">
+            <span class="help-label">Cutoff Rigidity</span>
+            <span class="help-toggle" id="docs-arrow-docs-cutoffs">▶</span>
+          </div>
+          <div class="help-section-content" id="docs-content-docs-cutoffs" style="display:none;">
+            <div class="help-detail-panel">
+              <ul>
+                <li><a href="doc/view.html?file=cutoff_rigidity.pdf" target="_blank" rel="noopener">Geomagnetic cutoff rigidity: definitions, penumbra, and numerical backtracing</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-docs-toggle="section" data-target="docs-flux">
+            <span class="help-label">Flux and Spectra</span>
+            <span class="help-toggle" id="docs-arrow-docs-flux">▶</span>
+          </div>
+          <div class="help-section-content" id="docs-content-docs-flux" style="display:none;">
+            <div class="help-detail-panel">
+              <ul>
+                <li><a href="doc/view.html?file=flux_and_spectrum_definitions.pdf" target="_blank" rel="noopener">Flux, differential intensity, and unit conventions used by AMPS</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-docs-toggle="section" data-target="docs-goes">
+            <span class="help-label">GOES-18/19 Spectrum Reconstruction</span>
+            <span class="help-toggle" id="docs-arrow-docs-goes">▶</span>
+          </div>
+          <div class="help-section-content" id="docs-content-docs-goes" style="display:none;">
+            <div class="help-detail-panel">
+              <ul>
+                <li><a href="doc/view.html?file=goes18_19_spectrum_reconstruction.pdf" target="_blank" rel="noopener">Reconstructing differential spectra from GOES-18/19 proton channels</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-docs-toggle="section" data-target="docs-fields">
+            <span class="help-label">Electric &amp; Magnetic Field Models</span>
+            <span class="help-toggle" id="docs-arrow-docs-fields">▶</span>
+          </div>
+          <div class="help-section-content" id="docs-content-docs-fields" style="display:none;">
+            <div class="help-detail-panel">
+              <ul>
+                <li><a href="doc/view.html?file=electric_field_models.pdf" target="_blank" rel="noopener">Electric field models: corotation, Volland–Stern, Weimer, and inductive dB/dt</a></li>
+                <li><a href="doc/view.html?file=magnetic_field_models.pdf" target="_blank" rel="noopener">Magnetic field models: T96/T15, IGRF, and MHD-driven fields</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
     <div class="help-dropdown">
       <a class="tb-link help-trigger" id="help-trigger" href="#">Help <span id="help-arrow">▼</span></a>
       <div class="help-menu" id="help-main-menu" style="display:none;">
@@ -4266,6 +4377,123 @@ document.addEventListener('DOMContentLoaded', init);
     document.addEventListener('DOMContentLoaded', initHelpMenu);
   }else{
     initHelpMenu();
+  }
+})();
+</script>
+
+<script>
+/* =============================================================================
+   FILE:    inline-docs.js (inlined into AMPS_Interface.html)
+   PROJECT: AMPS CCMC Submission Interface
+   PURPOSE: "Docs" dropdown menu controller.
+            Mirrors the behavior of the Help dropdown but drives PDF links.
+
+            - Toggle the main Docs dropdown from the topbar
+            - Expand/collapse Level-1 category sections
+            - Close on outside click / ESC
+            - Keyboard accessible (Enter / Space)
+
+   NOTE: index.html loads equivalent logic from js/11-docs.js. This block is
+         inlined to keep the standalone build fully portable.
+============================================================================= */
+(function(){
+  'use strict';
+
+  function $(id){ return document.getElementById(id); }
+
+  function isVisible(el){
+    if(!el) return false;
+    return el.style.display !== 'none' && el.style.visibility !== 'hidden' && el.offsetParent !== null;
+  }
+
+  function bindAccessibility(el){
+    if(!el) return;
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+    if(!el.hasAttribute('role')) el.setAttribute('role','button');
+  }
+
+  function onKeyActivate(e){
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      e.currentTarget.click();
+    }
+  }
+
+  function setMenuOpen(open){
+    var menu  = $('docs-main-menu');
+    var arrow = $('docs-arrow');
+    if(!menu) return;
+
+    menu.style.display = open ? 'block' : 'none';
+    if(arrow){
+      arrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+  }
+
+  function toggleMenu(){
+    var menu = $('docs-main-menu');
+    if(!menu) return;
+    var open = (menu.style.display === 'block');
+    setMenuOpen(!open);
+  }
+
+  function closeMenu(){ setMenuOpen(false); }
+
+  function toggleSection(targetId){
+    var content = $('docs-content-' + targetId);
+    var arrow   = $('docs-arrow-' + targetId);
+    if(!content) return;
+
+    var open = (content.style.display === 'block');
+    content.style.display = open ? 'none' : 'block';
+    if(arrow){
+      arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+    }
+  }
+
+  function initDocsMenu(){
+    var trigger = $('docs-trigger');
+    var menu    = $('docs-main-menu');
+    if(!trigger || !menu) return;
+
+    menu.style.display = 'none';
+
+    bindAccessibility(trigger);
+    trigger.addEventListener('click', function(e){
+      e.preventDefault();
+      toggleMenu();
+    }, true);
+    trigger.addEventListener('keydown', onKeyActivate, true);
+
+    document.addEventListener('click', function(e){
+      var hdr = e.target.closest('[data-docs-toggle]');
+      if(hdr){
+        e.preventDefault();
+        e.stopPropagation();
+        var tid = hdr.getAttribute('data-target');
+        toggleSection(tid);
+        return;
+      }
+
+      var inside = e.target.closest('.docs-dropdown');
+      if(!inside && isVisible(menu)) closeMenu();
+    }, true);
+
+    var headers = document.querySelectorAll('[data-docs-toggle]');
+    headers.forEach(function(h){
+      bindAccessibility(h);
+      h.addEventListener('keydown', onKeyActivate, true);
+    });
+
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && isVisible(menu)) closeMenu();
+    }, true);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initDocsMenu);
+  }else{
+    initDocsMenu();
   }
 })();
 </script>
