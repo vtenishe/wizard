@@ -66,7 +66,281 @@ MAINTAINER NOTE
     <a class="tb-link" href="#">Model Catalog</a>
     <a class="tb-link" href="#">My Runs</a>
     <a class="tb-link" href="#">Docs</a>
-    <a class="tb-link" href="#">Help</a>
+    <div class="help-dropdown">
+      <a class="tb-link help-trigger" id="help-trigger" href="#">Help <span id="help-arrow">▼</span></a>
+      <div class="help-menu" id="help-main-menu" style="display:none;">
+        <!-- Level 1: Main Categories -->
+        <div class="help-section">
+          <div class="help-section-header" data-help-toggle="section" data-target="physics-models">
+            <span class="help-label">Physics Models</span>
+            <span class="help-toggle" id="arrow-physics-models">▶</span>
+          </div>
+          <div class="help-section-content" id="content-physics-models" style="display:none;">
+            <!-- Level 2: Physics Model Categories -->
+            <div class="help-subsection">
+              <div class="help-subsection-header" data-help-toggle="subsection" data-target="electric-field">
+                <span class="help-sublabel">Background Electric Field</span>
+                <span class="help-toggle" id="arrow-electric-field">▶</span>
+              </div>
+              <div class="help-subsection-content" id="content-electric-field" style="display:none;">
+                <!-- Level 3: Detailed Content -->
+                <div class="help-detail-panel">
+                  <h4>Electric Field Models</h4>
+                  
+                  <div class="model-section">
+                    <h5>Corotation Electric Field</h5>
+                    <p><strong>Physics:</strong> Earth's rotation-induced electric field in the magnetosphere.</p>
+                    <p><strong>Formula:</strong> <code>E = -(ω × r) × B</code></p>
+                    <p>where ω is Earth's angular velocity (7.292×10⁻⁵ rad/s), r is position vector, B is magnetic field.</p>
+                    <p><strong>Reference:</strong> Volland, H. (1973). "A semiempirical model of large-scale magnetospheric electric fields." <em>J. Geophys. Res.</em>, 78(1), 171-180.</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>Volland-Stern Convection Model</h5>
+                    <p><strong>Physics:</strong> Empirical model of magnetospheric convection driven by solar wind interaction.</p>
+                    <p><strong>Formula:</strong> <code>Φ(r,θ) = A·r^γ·sin(θ)</code></p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                      <li><strong>Kp:</strong> Geomagnetic activity index (0-9). Higher Kp = stronger convection.</li>
+                      <li><strong>γ (gamma):</strong> Shielding exponent (typical: 2.0; range: 1.5-3.0). Controls radial dependence.</li>
+                      <li><strong>A:</strong> Intensity coefficient derived from Kp via Maynard & Chen (1975) relation.</li>
+                    </ul>
+                    <p><strong>References:</strong></p>
+                    <ul>
+                      <li>Volland, H. (1973). "A semiempirical model of large-scale magnetospheric electric fields." <em>J. Geophys. Res.</em>, 78(1), 171-180.</li>
+                      <li>Stern, D. P. (1975). "The motion of a proton in the equatorial magnetosphere." <em>J. Geophys. Res.</em>, 80(4), 595-599.</li>
+                      <li>Maynard, N. C., & Chen, A. J. (1975). "Isolated cold plasma regions: Observations and their relation to possible production mechanisms." <em>J. Geophys. Res.</em>, 80(7), 1009-1013.</li>
+                    </ul>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>Weimer 2005 Model</h5>
+                    <p><strong>Physics:</strong> Data-driven empirical model based on satellite electric field measurements.</p>
+                    <p><strong>Inputs:</strong> IMF By, Bz, solar wind velocity, dipole tilt angle.</p>
+                    <p><strong>Coverage:</strong> High-latitude ionospheric electric potential mapped to magnetosphere.</p>
+                    <p><strong>Reference:</strong> Weimer, D. R. (2005). "Improved ionospheric electrodynamic models and application to calculating Joule heating rates." <em>J. Geophys. Res.</em>, 110(A5), A05306. doi:10.1029/2004JA010884</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="help-subsection">
+              <div class="help-subsection-header" data-help-toggle="subsection" data-target="magnetic-field">
+                <span class="help-sublabel">Background Magnetic Field</span>
+                <span class="help-toggle" id="arrow-magnetic-field">▶</span>
+              </div>
+              <div class="help-subsection-content" id="content-magnetic-field" style="display:none;">
+                <div class="help-detail-panel">
+                  <h4>Magnetic Field Models</h4>
+                  
+                  <div class="model-section">
+                    <h5>TS05 (Tsyganenko 2005)</h5>
+                    <p><strong>Type:</strong> Storm-time empirical model with realistic tail current dynamics.</p>
+                    <p><strong>Driving Parameters:</strong></p>
+                    <ul>
+                      <li><strong>Dst:</strong> Disturbance storm-time index [nT]. Proxy for ring current intensity. Typical range: +50 (quiet) to -600 (extreme storm).</li>
+                      <li><strong>Pdyn:</strong> Solar wind dynamic pressure [nPa]. Typical: 1-5 nPa (quiet), 5-20 nPa (storm).</li>
+                      <li><strong>IMF By, Bz:</strong> Interplanetary magnetic field components [nT, GSM]. Control magnetopause shape and tail configuration.</li>
+                      <li><strong>Vx:</strong> Solar wind velocity [km/s, GSM]. Typical: 300-800 km/s.</li>
+                      <li><strong>Nsw:</strong> Solar wind proton density [cm⁻³]. Typical: 1-30 cm⁻³.</li>
+                    </ul>
+                    <p><strong>Applications:</strong> SEP event modeling, radiation belt dynamics, geomagnetic storm studies.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A., & Sitnov, M. I. (2005). "Modeling the dynamics of the inner magnetosphere during strong geomagnetic storms." <em>J. Geophys. Res.</em>, 110(A3), A03208. doi:10.1029/2004JA010798</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>T96 (Tsyganenko 1996)</h5>
+                    <p><strong>Type:</strong> Widely-used empirical model with dipole tilt dependence.</p>
+                    <p><strong>Driving Parameters:</strong> Dst, Pdyn, IMF By, Bz, dipole tilt angle.</p>
+                    <p><strong>Strengths:</strong> Computationally efficient, good for statistical studies.</p>
+                    <p><strong>Limitations:</strong> Less accurate during extreme storms compared to TS05.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A. (1995). "Modeling the Earth's magnetospheric magnetic field confined within a realistic magnetopause." <em>J. Geophys. Res.</em>, 100(A4), 5599-5612. (Updated in 1996)</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>T01 (Tsyganenko 2001)</h5>
+                    <p><strong>Type:</strong> Storm-time model with substorm dynamics.</p>
+                    <p><strong>Driving Parameters:</strong> Similar to T96, plus substorm indices.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A. (2002). "A model of the near magnetosphere with a dawn-dusk asymmetry: 1. Mathematical structure." <em>J. Geophys. Res.</em>, 107(A8), 1179. doi:10.1029/2001JA000219</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>TS07D (Tsyganenko 2007 Data-Based)</h5>
+                    <p><strong>Type:</strong> Data-assimilative model with time-dependent coefficients.</p>
+                    <p><strong>Inputs:</strong> Pre-computed coefficient files from OMNI database or user upload.</p>
+                    <p><strong>Advantage:</strong> Best accuracy for historical event reconstruction.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A., & Sitnov, M. I. (2007). "Magnetospheric configurations from a high-resolution data-based magnetic field model." <em>J. Geophys. Res.</em>, 112(A6), A06225. doi:10.1029/2007JA012260</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>TA15 (Tsyganenko-Andreeva 2015)</h5>
+                    <p><strong>Type:</strong> Latest empirical model with improved ring current representation.</p>
+                    <p><strong>Additional Parameter:</strong> GOES total magnetic field magnitude [nT].</p>
+                    <p><strong>Improvements:</strong> Better accuracy in inner magnetosphere (L < 6.6).</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A., & Andreeva, V. A. (2015). "A forecasting model of the magnetosphere driven by an optimal solar wind coupling function." <em>J. Geophys. Res. Space Physics</em>, 120, 8401-8425. doi:10.1002/2015JA021641</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>MHD Models (BATS-R-US, GAMERA)</h5>
+                    <p><strong>Type:</strong> Physics-based magnetohydrodynamic simulations.</p>
+                    <p><strong>Input:</strong> Time-dependent 3D magnetic field from uploaded MHD output files.</p>
+                    <p><strong>Advantages:</strong> Self-consistent physics, captures non-linear dynamics.</p>
+                    <p><strong>Computational Cost:</strong> High (typically 10× empirical models).</p>
+                    <p><strong>References:</strong></p>
+                    <ul>
+                      <li>BATS-R-US: Tóth, G., et al. (2012). "Adaptive numerical algorithms in space weather modeling." <em>J. Comput. Phys.</em>, 231(3), 870-903.</li>
+                      <li>GAMERA: Zhang, B., et al. (2019). "GAMERA: A three-dimensional finite-volume MHD solver for non-orthogonal curvilinear geometries." <em>Astrophys. J. Suppl. Ser.</em>, 244(1), 20.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="help-subsection">
+              <div class="help-subsection-header" data-help-toggle="subsection" data-target="boundary-models">
+                <span class="help-sublabel">Boundary Models</span>
+                <span class="help-toggle" id="arrow-boundary-models">▶</span>
+              </div>
+              <div class="help-subsection-content" id="content-boundary-models" style="display:none;">
+                <div class="help-detail-panel">
+                  <h4>Domain Boundary Models</h4>
+                  
+                  <div class="model-section">
+                    <h5>BOX Boundary</h5>
+                    <p><strong>Geometry:</strong> Rectangular domain in GSM coordinates.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                      <li><strong>X_max, X_min:</strong> Sunward/tailward extent [RE]. Typical: +15 to -60 RE.</li>
+                      <li><strong>Y_max, Y_min:</strong> Dawn/dusk extent [RE]. Typical: ±20-30 RE.</li>
+                      <li><strong>Z_max, Z_min:</strong> North/south extent [RE]. Typical: ±15-25 RE.</li>
+                      <li><strong>R_inner:</strong> Inner boundary radius [RE]. Typical: 2.0 RE (above ionosphere).</li>
+                    </ul>
+                    <p><strong>Use Cases:</strong> Full magnetotail studies, large-scale transport, computational simplicity.</p>
+                    <p><strong>Advantages:</strong> Simple geometry, easy to configure, no empirical dependencies.</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>Shue 1998 Magnetopause Model</h5>
+                    <p><strong>Geometry:</strong> Empirical magnetopause surface that adapts to solar wind conditions.</p>
+                    <p><strong>Formula:</strong> <code>r(θ) = r₀·(2/(1+cos(θ)))^α</code></p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                      <li><strong>r₀:</strong> Subsolar standoff distance [RE]. Derived from Pdyn and Bz, or user-specified. Typical: 8-12 RE.</li>
+                      <li><strong>α (alpha):</strong> Flaring parameter. Controls day-night asymmetry. Typical: 0.5-0.8.</li>
+                      <li><strong>X_tail:</strong> Nightside tail cutoff [RE]. Typical: -60 RE.</li>
+                    </ul>
+                    <p><strong>Auto Mode:</strong> r₀ and α computed from TS05 drivers using Shue et al. empirical relations:</p>
+                    <ul>
+                      <li>r₀ = (10.22 + 1.29·tanh(0.184·(Bz+8.14)))·Pdyn^(-1/6.6)</li>
+                      <li>α = (0.58 - 0.007·Bz)·(1 + 0.024·log(Pdyn))</li>
+                    </ul>
+                    <p><strong>Use Cases:</strong> Near-Earth SEP events, realistic magnetopause geometry, storm-time compression studies.</p>
+                    <p><strong>Reference:</strong> Shue, J.-H., et al. (1998). "Magnetopause location under extreme solar wind conditions." <em>J. Geophys. Res.</em>, 103(A8), 17,691-17,700. doi:10.1029/98JA01103</p>
+                  </div>
+
+                  <div class="model-section">
+                    <h5>Inner Boundary (Loss Cone)</h5>
+                    <p><strong>Physics:</strong> Particles crossing the inner boundary are assumed lost to atmospheric precipitation.</p>
+                    <p><strong>Typical Radius:</strong> 2.0 RE (≈650 km altitude). Below this, particle gyroradii become comparable to field-line curvature.</p>
+                    <p><strong>Implementation:</strong> Particles that reach r < R_inner are removed from simulation.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-help-toggle="section" data-target="input-files">
+            <span class="help-label">Input Files</span>
+            <span class="help-toggle" id="arrow-input-files">▶</span>
+          </div>
+          <div class="help-section-content" id="content-input-files" style="display:none;">
+            <div class="help-detail-panel">
+              <h4>Input File Formats</h4>
+              
+              <div class="model-section">
+                <h5>Trajectory File</h5>
+                <p><strong>Format:</strong> NAIRAS Gregorian (9 columns) or MJD (4 columns)</p>
+                <p><strong>Columns (Gregorian):</strong></p>
+                <code style="display:block;background:#0a1628;padding:8px;margin:8px 0;font-size:11px;">
+YYYY MM DD HH mm ss.s Lat[deg] Lon[deg] Alt[km]
+                </code>
+                <p><strong>Requirements:</strong> Monotonic timestamps, overlaps simulation time window, altitude > 100 km.</p>
+                <p><strong>Example:</strong> VanAllenProbeA_Sep2017_trajectory.txt</p>
+              </div>
+
+              <div class="model-section">
+                <h5>TS05 Driving Parameter File</h5>
+                <p><strong>Format:</strong> Time-series of solar wind and geomagnetic indices</p>
+                <p><strong>Columns:</strong> DateTime, Dst[nT], Pdyn[nPa], Bz[nT], Vx[km/s], Nsw[cm⁻³], By[nT], Bx[nT]</p>
+                <p><strong>Source:</strong> Auto-fetch from OMNIWeb or user upload</p>
+                <p><strong>Cadence:</strong> Typically 1-minute or 5-minute resolution</p>
+              </div>
+
+              <div class="model-section">
+                <h5>Spectrum Table File</h5>
+                <p><strong>Format:</strong> Two-column ASCII</p>
+                <code style="display:block;background:#0a1628;padding:8px;margin:8px 0;font-size:11px;">
+E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
+1.0         10000.0
+10.0        1000.0
+100.0       100.0
+                </code>
+                <p><strong>Requirements:</strong> Energy range must span [E_min, E_max], minimum 5 data points</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-header" data-help-toggle="section" data-target="model-parameters">
+            <span class="help-label">Model Parameters</span>
+            <span class="help-toggle" id="arrow-model-parameters">▶</span>
+          </div>
+          <div class="help-section-content" id="content-model-parameters" style="display:none;">
+            <div class="help-detail-panel">
+              <h4>Key AMPS Parameters</h4>
+              
+              <div class="model-section">
+                <h5>Temporal Parameters</h5>
+                <p><strong>FIELD_UPDATE_DT:</strong> Magnetic/electric field refresh interval [minutes]. Typical: 1-5 min during storms, 10-30 min for quiet times.</p>
+                <p><strong>INJECT_DT:</strong> Particle injection cadence [minutes]. Must be ≥ FIELD_UPDATE_DT. Typical: 5-60 min.</p>
+                <p><strong>FLUX_DT:</strong> Output flux computation interval [minutes]. Typical: 1 min (matches satellite data cadence).</p>
+              </div>
+
+              <div class="model-section">
+                <h5>Numerical Parameters</h5>
+                <p><strong>N_PARTICLES:</strong> Test particles per injection batch. Typical: 10,000 (balance accuracy vs speed).</p>
+                <p><strong>DT_TRACE:</strong> Integration timestep [seconds]. Typical: 0.1-1.0 s. Smaller = more accurate but slower.</p>
+                <p><strong>MAX_BOUNCE:</strong> Maximum mirror bounces before termination. Typical: 500 (captures ~10 drift orbits).</p>
+              </div>
+
+              <div class="model-section">
+                <h5>Energy Bins</h5>
+                <p><strong>Purpose:</strong> Discrete energies at which flux is computed and output.</p>
+                <p><strong>SEP Standard:</strong> [1, 5, 10, 30, 100, 300, 1000] MeV/n</p>
+                <p><strong>GCR Extended:</strong> [10, 30, 100, 300, 1000, 3000, 10000] MeV/n</p>
+                <p><strong>Considerations:</strong> More bins = larger output files. Spacing should match instrument response functions.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section help-link-section">
+          <a href="#" class="help-link">
+            <span class="help-label">CCMC Model Documentation</span>
+            <span class="help-external">↗</span>
+          </a>
+        </div>
+        
+        <div class="help-section help-link-section">
+          <a href="#" class="help-link" href="mailto:amps-support@ccmc.gsfc.nasa.gov">
+            <span class="help-label">Contact Support</span>
+          </a>
+        </div>
+      </div>
+    </div>
     <div class="tb-divider"></div>
     <div class="tb-badge">AMPS v2025</div>
   </div>
@@ -1980,7 +2254,6 @@ BOUNDARY_TYPE   SHUE
 SHUE_R0         AUTO
 TEMPORAL_MODE   TIME_SERIES</pre>
   </div>
-  <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="openHelpModal()">? Help &amp; Documentation</button>
 </div>
 
 </div>
@@ -1995,26 +2268,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
     <span>Output: <b id="est-output">~5.6 GB</b></span>
   </div>
 </div>
-
-
-<div id="help-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;">
-  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-xl);padding:28px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h3 style="font-size:15px;color:#fff;">AMPS Documentation &amp; Help</h3>
-      <button onclick="document.getElementById('help-modal').style.display='none'" style="background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;">&#10005;</button>
-    </div>
-    <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">
-      <div style="margin-bottom:12px;"><b style="color:var(--text);">AMPS v2025 Model</b><br>
-      Adaptive Magnetospheric Particle Simulator — traces SEPs and GCRs backward in time through a TS05-specified geomagnetic field to compute energy-dependent particle access and cutoff rigidity.</div>
-      <div style="margin-bottom:12px;"><b style="color:var(--text);">Key References</b><br>
-      &#8226; Tsyganenko &amp; Sitnov (2005) — TS05 field model<br>
-      &#8226; Shue et al. (1998) JGR 103, 17691 — magnetopause model<br>
-      &#8226; Smart &amp; Shea (1985) — cosmic ray cutoff rigidity method</div>
-      <div style="margin-bottom:12px;"><b style="color:var(--text);">CCMC Contact</b><br>
-      <a href="/cdn-cgi/l/email-protection#1073737d73507e7163713e777f66" style="color:var(--accent);"><span class="__cf_email__" data-cfemail="6f0c0c020c2f010e1c0e41080019">[email&#160;protected]</span></a> &nbsp;|&nbsp;
-      <a href="https://ccmc.gsfc.nasa.gov" style="color:var(--accent);" target="_blank">ccmc.gsfc.nasa.gov</a></div>
-    </div>
-  </div>
+</div>
 </div>
 
 
@@ -2051,5 +2305,6 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 <!-- 9. Init — boot sequence (must be last) -->
 <script src="js/09-init.js"></script>
 
+<script src="js/10-help.js"></script>
 </body>
 </html>
