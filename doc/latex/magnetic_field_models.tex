@@ -1,0 +1,72 @@
+% ==============================================================================
+% FILE:    magnetic_field_models.tex
+% PROJECT: AMPS CCMC SEP/GCR Transport Interface
+% PURPOSE: Documentation of magnetic field models exposed in the interface.
+%
+% BUILD:
+%   pdflatex -interaction=nonstopmode -halt-on-error magnetic_field_models.tex
+% OUTPUT:
+%   ../magnetic_field_models.pdf
+% ============================================================================== 
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\title{Magnetic Field Models for Geospace Particle Tracing}
+\author{AMPS Interface Documentation}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Total field representation}
+AMPS typically represents the magnetic field as
+\begin{equation}
+  \mathbf{B}(\mathbf{r},t) = \mathbf{B}_{\mathrm{int}}(\mathbf{r},t) + \mathbf{B}_{\mathrm{ext}}(\mathbf{r},t),
+\end{equation}
+where $\mathbf{B}_{\mathrm{int}}$ is the internal (main) field and $\mathbf{B}_{\mathrm{ext}}$ is the magnetospheric current system contribution.
+
+\section{Internal field (IGRF / dipole)}
+For most applications, $\mathbf{B}_{\mathrm{int}}$ is modeled using IGRF (or a dipole approximation for sensitivity testing).
+The internal field provides the dominant contribution near Earth and controls low-altitude cutoffs.
+
+\section{Empirical external field models (Tsyganenko family)}
+Empirical models represent $\mathbf{B}_{\mathrm{ext}}$ using parametrizations constrained by spacecraft observations.
+Typical inputs are solar-wind dynamic pressure, IMF $B_y/B_z$, Dst, and/or Kp.
+
+\subsection*{T96}
+Tsyganenko (1996) provides a widely used external field model suitable for many cutoff studies.
+
+\subsection*{TS05 / T15}
+Storm-time models incorporate additional drivers and are designed to capture disturbed intervals.
+These are often preferred for event-realistic SEP cutoff calculations.
+
+\section{MHD-driven fields (BATSRUS / GAMERA)}
+For highest fidelity, AMPS can ingest a 3D time-dependent magnetic field from a global MHD model.
+In this mode:
+\begin{itemize}
+  \item The MHD solution provides $\mathbf{B}(\mathbf{r},t)$ (and optionally $\mathbf{E}$).
+  \item Particle tracing uses spatio-temporal interpolation on the MHD grid.
+  \item Boundary surfaces (magnetopause, inner boundary) should be consistent with the MHD domain.
+\end{itemize}
+This option is computationally heavier but can reproduce event-specific structures not captured by analytic fits.
+
+\section{Notes for cutoff calculations}
+\begin{itemize}
+  \item Using a storm-time external model (e.g., TS05/T15) can change $R_C$ by several GV at mid-latitudes.
+  \item Time dependence can be critical during rapid Dst changes; ensure $\Delta t$ in tracing resolves the driver cadence.
+  \item Consistency with the electric field model matters for drift trajectories, especially in the inner magnetosphere.
+\end{itemize}
+
+\section{References (selected)}
+\begin{itemize}
+  \item Tsyganenko, N. A. (1996). ``Effects of the solar wind conditions on the global magnetosphere configuration...'' \emph{JGR}.
+  \item Tsyganenko, N. A., \& Sitnov, M. I. (2005). (TS05). \emph{JGR}.
+  \item Tsyganenko, N. A., \& Andreeva, V. A. (2015). (T15). \emph{JGR}.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,88 @@
+<!--
+  AMPS Geospace Wizard - Documentation PDF Viewer
+  ------------------------------------------------
+  Purpose:
+    A tiny, dependency-free in-browser PDF viewer wrapper for the Docs menu.
+    Some browsers/user settings may download PDFs instead of rendering them
+    when opening a raw *.pdf link. This page forces an in-tab render by
+    embedding the PDF via <embed> (and provides a fallback link).
+
+  Usage:
+    doc/view.html?file=<pdf-file-name>
+    Examples:
+      doc/view.html?file=cutoff_rigidity.pdf
+
+  Notes:
+    - This file is designed to work when served over HTTP(S) OR opened locally
+      as a static site, as long as the PDF files live in the same directory.
+    - No external libraries; compatible with the rest of the wizard styling.
+
+  Last updated: 2026-02-21
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMPS Docs</title>
+  <style>
+    /* Minimal, self-contained styling (do not depend on the main site CSS). */
+    html, body { height: 100%; margin: 0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+    }
+    .title { font-weight: 600; }
+    .actions a { text-decoration: none; }
+    .frame { height: calc(100% - 48px); }
+    embed { width: 100%; height: 100%; border: 0; }
+    .fallback { padding: 16px; }
+    .note { color: rgba(0,0,0,0.70); font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="title" id="docTitle">AMPS Documentation</div>
+    <div class="actions">
+      <a id="openDirect" href="#" target="_blank" rel="noopener">Open PDF directly</a>
+    </div>
+  </div>
+
+  <div class="frame" id="frame"></div>
+
+  <script>
+    // Parse ?file=... and embed the requested PDF.
+    // We keep this tiny and robust: reject path separators to prevent traversal.
+    const params = new URLSearchParams(location.search);
+    const file = (params.get('file') || '').trim();
+
+    const frame = document.getElementById('frame');
+    const openDirect = document.getElementById('openDirect');
+    const docTitle = document.getElementById('docTitle');
+
+    function isSafeFileName(name) {
+      // Allow only simple filenames ending in .pdf
+      return /^[A-Za-z0-9._-]+\.pdf$/i.test(name);
+    }
+
+    if (!isSafeFileName(file)) {
+      frame.innerHTML = '<div class="fallback"><div class="note">No valid PDF specified. Use: <code>view.html?file=some_doc.pdf</code></div></div>';
+      openDirect.style.display = 'none';
+    } else {
+      // PDFs live in the same directory as this viewer.
+      const pdfUrl = file;
+      openDirect.href = pdfUrl;
+      docTitle.textContent = 'AMPS Docs — ' + file;
+
+      // Force in-tab rendering.
+      // Many browsers will render application/pdf in an embedded viewer.
+      frame.innerHTML = '<embed src="' + pdfUrl + '" type="application/pdf" />';
+    }
+  </script>
+</body>
+</html>
