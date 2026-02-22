@@ -1,3 +1,25 @@
+/*
+=====================================================================
+FILE: css/04-diagrams.css
+INTENT:
+  Styling for the AMPS wizard static site. This stylesheet is part of a
+  layered CSS system: tokens → layout → components → diagrams.
+
+METHODS / DESIGN:
+  - Tokens (css/01-tokens.css): colors, spacing, font sizes.
+  - Layout (css/02-layout.css): page/grid/topbar/menus.
+  - Components (css/03-components.css): buttons, inputs, cards.
+  - Diagrams (css/04-diagrams.css): SVG/canvas-specific styling.
+
+IMPLEMENTATION NOTES:
+  - Keep selectors scoped and predictable (prefer class selectors).
+  - Match Help and Docs dropdown look & feel for UI consistency.
+  - When adding a new menu/panel, copy Help menu patterns to keep
+    interaction and typography consistent.
+
+LAST UPDATED: 2026-02-21
+=====================================================================
+*/
 /* =============================================================================
    FILE:    css/04-diagrams.css
    PROJECT: AMPS CCMC Submission Interface  v3

@@ -1,3 +1,33 @@
+
+<!--
+=====================================================================
+FILE: panel_boundary.html
+INTENT:
+  This file defines the user-facing wizard interface for configuring
+  AMPS geospace / SEP transport runs and generating an AMPS_PARAM.in
+  preview. It is designed to run as a static site (no server required).
+
+METHODS / DESIGN:
+  - Step-based wizard UI with collapsible section bodies.
+  - Declarative HTML for each step; behavior implemented in JS modules.
+  - All state is stored in a single in-memory object (see js/01-state.js),
+    and UI elements update the state via small handler functions.
+  - The Review step converts the current state into a human-readable
+    AMPS_PARAM.in preview.
+
+IMPLEMENTATION NOTES:
+  - Keep markup stable: JS selects elements by ids and data attributes.
+  - When adding new models/options, update:
+      (1) the UI markup (this file),
+      (2) the state defaults (js/01-state.js),
+      (3) model handlers (relevant js/* modules),
+      (4) the Review/preview writer (js/08-review.js),
+      (5) Help/Docs text if user-facing behavior changes.
+  - Do not delete existing comments; add new ones to explain intent.
+
+LAST UPDATED: 2026-02-21
+=====================================================================
+-->
 <!-- =============================================================================
 FILE:    panel_boundary.html
 PROJECT: AMPS v2025 — SEP/GCR Transport — CCMC Runs-on-Request Web Wizard

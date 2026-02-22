@@ -1,4 +1,31 @@
+/*
+=====================================================================
+FILE: js/07-spectrum-output.js
+INTENT:
+  JavaScript logic for the AMPS web wizard (static site). This module
+  implements a focused part of the UI: state updates, model selection,
+  preview rendering, or navigation.
+
+METHODS / DESIGN:
+  - Reads/writes the shared state object `S` (defined in js/01-state.js).
+  - Uses direct DOM manipulation (no framework) for portability.
+  - Functions are intentionally small and side-effectful: they update `S`
+    and then update the DOM so the UI always reflects the current state.
+
+IMPLEMENTATION NOTES:
+  - Prefer pure helpers for formatting and mapping, but keep UI updates
+    local so it’s clear which elements are affected.
+  - Avoid introducing new global names unless necessary; when you do,
+    document them here and in-line.
+  - Keep behavior consistent between modular (index.html + js/*.js) and
+    standalone (AMPS_Interface.html) entrypoints.
+
+LAST UPDATED: 2026-02-21
+=====================================================================
+*/
 /* ── 3g. STEP 7 SPECTRUM ───────────────────────────────────────── */
+// Select a spectrum model card, update state, and refresh the parameter UI + preview.
+// NOTE: index.html calls setSpec(...) from onclick handlers, so this must exist in the modular build.
 function setSpec(type,card){
   S.specType=type;
   document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
@@ -9,6 +36,8 @@ function setSpec(type,card){
   });
   drawSpec();
 }
+// Render the small "Spectrum Preview" plot based on the currently selected model and parameters.
+// The preview is intentionally qualitative (shape/relative scaling) and is not used for physics.
 function drawSpec(){
   S.specJ0=parseFloat($('spec-j0')?.value)||S.specJ0;
   S.specGamma=parseFloat($('spec-gamma')?.value)||S.specGamma;

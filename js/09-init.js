@@ -1,3 +1,28 @@
+/*
+=====================================================================
+FILE: js/09-init.js
+INTENT:
+  JavaScript logic for the AMPS web wizard (static site). This module
+  implements a focused part of the UI: state updates, model selection,
+  preview rendering, or navigation.
+
+METHODS / DESIGN:
+  - Reads/writes the shared state object `S` (defined in js/01-state.js).
+  - Uses direct DOM manipulation (no framework) for portability.
+  - Functions are intentionally small and side-effectful: they update `S`
+    and then update the DOM so the UI always reflects the current state.
+
+IMPLEMENTATION NOTES:
+  - Prefer pure helpers for formatting and mapping, but keep UI updates
+    local so it’s clear which elements are affected.
+  - Avoid introducing new global names unless necessary; when you do,
+    document them here and in-line.
+  - Keep behavior consistent between modular (index.html + js/*.js) and
+    standalone (AMPS_Interface.html) entrypoints.
+
+LAST UPDATED: 2026-02-21
+=====================================================================
+*/
 /* =============================================================================
    FILE:    js/09-init.js
    PROJECT: AMPS CCMC Submission Interface  v3
