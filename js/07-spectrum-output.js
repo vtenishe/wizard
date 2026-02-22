@@ -116,6 +116,56 @@ function setMode(m,card){
   });
   updateSidebar();
 }
+/**
+ * Update POINTS-mode freeform list.
+ * The UI accepts one point per line. We keep the raw text here so that:
+ *   (a) the Review step can embed it into the generated AMPS_PARAM.in (human readable), and
+ *   (b) the backend can optionally write it into a sidecar file (points.txt) for ingestion.
+ *
+ * NOTE: This wizard is a front-end; the definitive parsing/validation should happen in the backend.
+ */
+function updatePoints(){
+  const ta=$('points-text');
+  if(!ta) return;
+  S.pointsText=ta.value||'';
+  // Trigger sidebar refresh / review refresh hooks, if present.
+  if(typeof liveUpdate==='function') liveUpdate();
+  if(typeof updateSidebar==='function') updateSidebar();
+}
+
+/**
+ * Update SHELLS-mode configuration.
+ * We store:
+ *   - shellCount: number of altitude shells
+ *   - shellResDeg: angular resolution in degrees
+ *   - shellAltsKm: array of altitudes (km) length = shellCount
+ *
+ * Also shows/hides altitude fields in the UI so users don’t accidentally edit inactive shells.
+ */
+function updateShells(){
+  const sel=$('shell-count');
+  const res=$('shell-res-deg');
+  const n=Math.max(1, Math.min(5, parseInt(sel?.value||'1',10)));
+  const d=Math.max(1, parseInt(res?.value||'1',10));
+
+  S.shellCount=n;
+  S.shellResDeg=d;
+  S.shellAltsKm=[];
+
+  for(let i=1;i<=5;i++){
+    const wrap=$(`shell-alt-wrap-${i}`);
+    if(wrap) wrap.style.display = (i<=n) ? 'block' : 'none';
+    const inp=$(`shell-alt-${i}`);
+    if(i<=n){
+      const v=parseFloat(inp?.value||'0');
+      S.shellAltsKm.push(isFinite(v)?v:0);
+    }
+  }
+
+  if(typeof liveUpdate==='function') liveUpdate();
+  if(typeof updateSidebar==='function') updateSidebar();
+}
+
 function loadTrajExample(){
   S.trajLoaded=true;
   const dz=$('traj-dropzone');

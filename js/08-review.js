@@ -94,6 +94,60 @@ function buildReview(){
   const {r0,alpha}=getShue();
   const isM=S.shueMode==='manual';
   const f=(v,d)=>Number(v).toFixed(d);
+  /* ── Output-domain block assembly (Step 9) ───────────────────────────
+   *  The UI supports three output domains:
+   *    - POINTS: a free-form list of points entered in the UI
+   *    - TRAJECTORY: an uploaded/selected spacecraft trajectory file
+   *    - SHELLS: one or more spherical shells for global maps
+   *
+   *  We assemble the domain-specific lines here to keep the template below
+   *  readable and to avoid deeply nested template literals.
+   */
+  const fluxLine = `FLUX_DT                ${f(S.fluxDt,1)}           ! min (trajectory cadence; ignored for POINTS/SHELLS)`;
+
+    /*
+    OUTPUT DOMAIN EMISSION
+    ----------------------
+    The Output Domain step defines WHERE the model is evaluated and what the output
+    cadence/representation should be. This affects the generated AMPS_PARAM.in.
+
+    Modes implemented here:
+      - POINTS: user-provided list of locations (one point per line).
+      - TRAJECTORY: uploaded trajectory file with time-tagged samples.
+      - SHELLS: one or more spherical shells defined by altitude(s) and angular resolution.
+
+    Strategy:
+      - Keep the UI layer simple: store raw text for POINTS and numeric arrays for SHELLS.
+      - Perform light sanitization (trim empty lines / ignore comment lines starting with '#').
+      - Emit explicit BEGIN/END blocks so the backend parser can read variable-length lists.
+  */
+let outDomainExtra = '';
+  if (S.outputMode === 'POINTS') {
+        // Parse the multiline textbox. We treat each non-empty, non-comment line as a point record.
+    // The backend decides how to interpret the columns (e.g., lat lon alt_km).
+    const raw = (S.pointsText || '')
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'));
+    const n = raw.length;
+        // Emit each point as a single line starting with the POINT keyword.
+    const body = raw.map(l => `POINT                 ${l}`).join('\n');
+    outDomainExtra =
+      `N_POINTS               ${n}                 ! number of points provided below\n` +
+      `POINTS_BEGIN\n` +
+      `${body || '! (no points specified)'}\n` +
+      `POINTS_END`;
+  } else if (S.outputMode === 'SHELLS') {
+    const n = Math.max(1, Math.min(5, parseInt(S.shellCount || 1, 10)));
+    const res = parseInt(S.shellResDeg || 1, 10);
+    const alts = (Array.isArray(S.shellAltsKm) ? S.shellAltsKm : [])
+      .slice(0, n)
+      .map(v => f(parseFloat(v) || 0, 1));
+    outDomainExtra =
+      `SHELL_COUNT            ${n}                 ! number of shells\n` +
+      `SHELL_ALTS_KM          ${alts.join(' ')}          ! km; one altitude per shell\n` +
+      `SHELL_RES_DEG          ${res}                 ! deg; angular resolution (lat/lon)`;
+  }
 
   /* ── Assemble the AMPS_PARAM.in text ─────────────────────────────────
    *  The array elements are joined with '\n'.  Conditional blocks use
@@ -218,7 +272,8 @@ SPEC_EMAX              ${f(S.specEmax,1)}       ! MeV/n
 
 #OUTPUT_DOMAIN
 OUTPUT_MODE            ${S.outputMode}
-FLUX_DT                ${f(S.fluxDt,1)}           ! min output cadence
+${fluxLine}
+${outDomainExtra}
 
 #OUTPUT_OPTIONS
 FLUX_TYPE              ${S.fluxType}
@@ -260,6 +315,7 @@ function buildManifest(){
     {name:'AMPS_PARAM.in',      role:'Main configuration',            req:true, auto:true,  ok:true},
     {name:'AMPS_MANIFEST.json', role:'Run metadata (auto-generated)', req:true, auto:true,  ok:true},
     {name:'trajectory.txt',     role:'Spacecraft trajectory (Mode B)',req:S.outputMode==='TRAJECTORY', auto:false, ok:S.trajLoaded},
+    {name:'points.txt',         role:'Point list (Mode A)',             req:S.outputMode==='POINTS', auto:false, ok:!!(S.pointsText&&S.pointsText.trim())},
     {name:'ts05_driving.txt',   role:'TS05 time-series drivers',      req:S.tempMode==='TIME_SERIES'&&S.tsSource==='file', auto:S.tsSource==='omni', ok:true},
     {name:'sep_spectrum_H+.txt',role:'Spectrum table (if TABLE mode)',req:S.specType==='TABLE', auto:false, ok:S.specType!=='TABLE'},
   ];
@@ -322,6 +378,8 @@ function buildValidation(){
     {l:'Spectrum type selected', ok:['POWER_LAW','POWER_LAW_CUTOFF','LIS_FORCE_FIELD','BAND','TABLE'].includes(S.specType)},
     {l:'Output mode selected',   ok:['POINTS','TRAJECTORY','SHELLS'].includes(S.outputMode)},
     {l:'Trajectory file loaded', ok:S.outputMode!=='TRAJECTORY'||S.trajLoaded, warn:true},
+    {l:'Point list provided',    ok:S.outputMode!=='POINTS'||!!(S.pointsText&&S.pointsText.trim())},
+    {l:'Shell altitudes set',    ok:S.outputMode!=='SHELLS'||(Array.isArray(S.shellAltsKm)&&S.shellAltsKm.length>=1&&S.shellAltsKm.slice(0,Math.max(1,parseInt(S.shellCount||1,10))).every(v=>parseFloat(v)>0))},
   ];
   const pass=chks.filter(c=>c.ok).length;
   const fail=chks.filter(c=>!c.ok&&!c.warn).length;

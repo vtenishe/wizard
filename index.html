@@ -2832,16 +2832,104 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       <div class="subsection-title">Individual Points</div>
       <div class="infobox info-blue">Enter up to 500 (lat, lon, alt) points. One per line: <code>lat lon alt_km</code>. Or use GSM mode: <code>X Y Z RE</code>.</div>
       <div class="field"><label>Point List</label>
-        <textarea rows="5" placeholder="51.5  -0.12  450.0&#10;28.5  -81.4  400.0&#10;&#8230;"></textarea></div>
+        <!--
+          OUTPUT DOMAIN / POINTS MODE
+          --------------------------
+          The website allows the user to specify an arbitrary list of points (typically
+          lat/lon/alt or x/y/z depending on the selected coordinate convention) that
+          will be used as evaluation locations for cutoff rigidity / flux calculations.
+
+          Implementation detail:
+            - This <textarea> MUST have a stable id (points-text) so the JS layer can
+              read it and store it into the shared state object S.pointsText.
+            - The handler updatePoints() (js/07-spectrum-output.js) keeps S.pointsText
+              in sync with the UI as the user types.
+            - The final AMPS_PARAM.in writer (js/08-review.js) emits a POINTS block
+              only when outputMode === 'POINTS'.
+        -->
+
+        <textarea id="points-text" rows="5" placeholder="51.5  -0.12  450.0&#10;28.5  -81.4  400.0&#10;&#8230;" oninput="updatePoints()" ></textarea></div>
     </div>
     <div id="panel-mode-c" style="display:none;" class="subsection">
       <div class="subsection-title">Spherical Shell Configuration</div>
-      <div class="frow c3">
-        <div class="field"><label>Number of Shells</label><select id="shell-count"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
-        <div class="field"><label>Shell 1 Altitude <span class="unit">[km]</span></label><input type="number" value="450" step="10"/><div class="hint">ISS orbit ~410 km, GPS ~20200 km</div></div>
-        <div class="field"><label>Grid Resolution</label><select><option value="1">1&#176; &#215; 1&#176;</option><option value="2">2&#176; &#215; 2&#176;</option><option value="5">5&#176; &#215; 5&#176;</option></select></div>
+      <div class="infobox info-blue">
+        Define one or more spherical shells (altitude surfaces) where global cutoff/flux maps are computed.
+        The website writes these settings into the generated <code>AMPS_PARAM.in</code> so the backend can build the latitude/longitude grid and compute maps.
       </div>
-    </div>
+
+      <!--
+        Shell controls:
+          - shell-count drives how many altitude fields are active.
+          - shell-res-deg sets angular grid resolution (deg × deg).
+        NOTE: These IDs are consumed by js/07-spectrum-output.js (updateShells()) and written by js/08-review.js.
+      -->
+      <div class="frow c3">
+        <div class="field">
+          <label>Number of Shells</label>
+          <!--
+            OUTPUT DOMAIN / SHELLS MODE
+            ---------------------------
+            Shells are represented as one or more spherical surfaces at user-defined
+            altitudes (km) with a simple (lon,lat) angular sampling.
+
+            Implementation detail:
+              - UI elements shell-count, shell-res-deg, and shell-alt-* are wired to
+                updateShells() which updates S.shellCount, S.shellResDeg, S.shellAltsKm.
+              - The dynamic visibility of altitude inputs (wrap-1..wrap-5) avoids
+                accidental stale values while still preserving prior user entries.
+              - js/08-review.js emits the SHELLS section as:
+                  SHELL_COUNT, SHELL_ALTS_KM (comma list), SHELL_RES_DEG
+          -->
+
+          <select id="shell-count" onchange="updateShells()">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Grid Resolution</label>
+          <select id="shell-res-deg" onchange="updateShells()">
+            <option value="1" selected>1&#176; &#215; 1&#176;</option>
+            <option value="2">2&#176; &#215; 2&#176;</option>
+            <option value="5">5&#176; &#215; 5&#176;</option>
+          </select>
+          <div class="hint">Sets the latitude/longitude sampling for global maps.</div>
+        </div>
+
+        <div class="field">
+          <label>Altitude Units</label>
+          <input type="text" value="km (above WGS-84)" disabled style="opacity:.85"/>
+          <div class="hint">All shell altitudes are specified in kilometers.</div>
+        </div>
+      </div>
+
+      <div id="shell-altitudes" class="frow c3" style="margin-top:10px;">
+        <div class="field" id="shell-alt-wrap-1">
+          <label>Shell 1 Altitude <span class="unit">[km]</span></label>
+          <input id="shell-alt-1" type="number" value="450" step="10" oninput="updateShells()"/>
+          <div class="hint">ISS orbit ~410 km, GPS ~20200 km</div>
+        </div>
+        <div class="field" id="shell-alt-wrap-2" style="display:none;">
+          <label>Shell 2 Altitude <span class="unit">[km]</span></label>
+          <input id="shell-alt-2" type="number" value="2000" step="10" oninput="updateShells()"/>
+        </div>
+        <div class="field" id="shell-alt-wrap-3" style="display:none;">
+          <label>Shell 3 Altitude <span class="unit">[km]</span></label>
+          <input id="shell-alt-3" type="number" value="10000" step="10" oninput="updateShells()"/>
+        </div>
+        <div class="field" id="shell-alt-wrap-4" style="display:none;">
+          <label>Shell 4 Altitude <span class="unit">[km]</span></label>
+          <input id="shell-alt-4" type="number" value="20000" step="10" oninput="updateShells()"/>
+        </div>
+        <div class="field" id="shell-alt-wrap-5" style="display:none;">
+          <label>Shell 5 Altitude <span class="unit">[km]</span></label>
+          <input id="shell-alt-5" type="number" value="35000" step="10" oninput="updateShells()"/>
+        </div>
+      </div></div>
   </div>
 </div>
 </div>

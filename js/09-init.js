@@ -79,6 +79,24 @@ function init() {
   /* ── 8. Spectrum canvas ── */
   drawSpec();
 
+  /* ── 8a. Output-domain defaults (POINTS / SHELLS) ──
+   * We mirror any default values from S into the UI, then run updateShells()
+   * to enforce visibility of Shell altitude fields.
+   */
+  const pt=$('points-text');
+  if(pt && typeof S.pointsText==='string') pt.value=S.pointsText;
+
+  // Initialize shell controls if present.
+  const sc=$('shell-count');
+  if(sc) sc.value=String(S.shellCount||1);
+  const sr=$('shell-res-deg');
+  if(sr) sr.value=String(S.shellResDeg||1);
+  for(let i=1;i<=5;i++){
+    const inp=$(`shell-alt-${i}`);
+    if(inp && Array.isArray(S.shellAltsKm) && S.shellAltsKm[i-1]!=null) inp.value=String(S.shellAltsKm[i-1]);
+  }
+  if(typeof updateShells==='function') updateShells();
+
   /* ── 9. Electric field schematic ── */
   drawEfieldSchematic();
 

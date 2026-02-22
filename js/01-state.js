@@ -20,6 +20,13 @@ IMPLEMENTATION NOTES:
   - Keep behavior consistent between modular (index.html + js/*.js) and
     standalone (AMPS_Interface.html) entrypoints.
 
+
+OUTPUT DOMAIN ADDITIONS:
+  - Added S.pointsText for POINTS mode: stores the raw multiline user text.
+    We intentionally store the raw text (not a parsed array) so the UI can round-trip
+    exactly what the user typed and so we can preserve comments/whitespace in future.
+  - Added S.shellCount, S.shellResDeg, S.shellAltsKm for SHELLS mode.
+    These are emitted into AMPS_PARAM.in by js/08-review.js.
 LAST UPDATED: 2026-02-21
 =====================================================================
 */
@@ -260,10 +267,25 @@ const S = {
   specLisJ0:  10000,         // [cm⁻² sr⁻¹ s⁻¹ MeV⁻¹] LIS reference flux
   specLisGamma: 2.7,         // LIS power-law index (typically 2.6-2.8 for GCR protons)
 
-  /* ── Step 8 · Output domain ─────────────────────────────────────────── */
-  outputMode: 'TRAJECTORY',  // 'TRAJECTORY' | 'GRID_3D' | 'GRID_2D' | 'GRID_1D'
-  fluxDt:      1.0,          // [min] output cadence for trajectory mode
-  trajLoaded:  false,        // has a trajectory file been loaded?
+  /* ── Step 8 · Output domain ───────────────────────────────────────────
+     This step defines WHERE the model is evaluated (points, a trajectory, or shells).
+     These settings are written into AMPS_PARAM.in by js/08-review.js.
+   ─────────────────────────────────────────────────────────────────────── */
+  outputMode: 'TRAJECTORY',     // 'POINTS' | 'TRAJECTORY' | 'SHELLS'
+  fluxDt:      1.0,             // [min] output cadence for TRAJECTORY mode (FLUX_DT)
+  trajLoaded:  false,           // has a trajectory file been loaded? (TRAJECTORY mode)
+
+  // POINTS mode:
+  pointsText:  '',              // raw multiline text of points (one point per line)
+                              // NOTE: We keep this as raw text so the site can:
+                              //   (1) preserve user formatting (spaces vs commas),
+                              //   (2) keep the UI simple (no CSV parser in-browser), and
+                              //   (3) pass-through to AMPS_PARAM.in in a transparent way.
+
+  // SHELLS mode:
+  shellCount:  1,               // number of shells (1..5)
+  shellResDeg: 1,               // angular grid resolution in degrees (1,2,5,...)
+  shellAltsKm: [450],           // list of shell altitudes (km), length = shellCount
 
   /* ── Step 9 · Output options ─────────────────────────────────────────── */
   fluxType:      'DIFFERENTIAL', // 'DIFFERENTIAL' | 'INTEGRAL'
