@@ -107,7 +107,23 @@ function goToReview() { goStep(10); }
  * @param {number} n - target step number
  */
 function wizClick(n) {
-  if (S.done.has(n) || n === S.step || n === S.step + 1) goStep(n);
+  /*
+   * INDEX.HTML (modular build) originally enforced a linear “wizard order”
+   * by allowing navigation only to:
+   *   - the current step,
+   *   - the next step, or
+   *   - previously completed steps (tracked in S.done).
+   *
+   * However, the standalone version allows RANDOM ACCESS to any step, and
+   * that interaction is preferred for development + power-user workflows.
+   *
+   * We therefore remove gating here: any step label can jump directly to
+   * that step. The rest of the wizard still:
+   *   - marks the current step “done” when leaving (goStep adds S.step to S.done)
+   *   - updates step strip styling (done/active)
+   *   - rebuilds Review (step 10) on entry
+   */
+  goStep(n);
 }
 
 /* ── Section accordion ──────────────────────────────────────────────── */
