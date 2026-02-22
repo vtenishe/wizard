@@ -230,10 +230,13 @@ LAST UPDATED: 2026-02-21
  * AMPS_PARAM.in.  The choice determines:
  *   • Whether the #CUTOFF_RIGIDITY block is emitted in the param file.
  *   • Whether Section C (cutoff parameters) is visible in the wizard.
- *   • Whether the Spectrum step (Step 8) is mandatory — FLUX and BOTH
- *     require a source spectrum; CUTOFF_RIGIDITY does not.
+ *   • Whether Section D (density parameters) is visible in the wizard.
+ *   • Whether the Spectrum step (Step 8) is mandatory — FLUX, BOTH,
+ *     and DENSITY_3D require a source spectrum; CUTOFF_RIGIDITY does not.
+ *   • Whether the 3-D grid is required — DENSITY_3D forces GRID_3D
+ *     because density is sampled on the simulation grid.
  *
- * @param {'CUTOFF_RIGIDITY'|'FLUX'|'BOTH'} target — calculation target
+ * @param {'CUTOFF_RIGIDITY'|'FLUX'|'BOTH'|'DENSITY_3D'} target
  * @param {HTMLElement} card — the clicked opt-card element (for styling)
  */
 function setCalcQuantity(target, card) {
@@ -254,16 +257,37 @@ function setCalcQuantity(target, card) {
   if (kw) kw.textContent = target;
 
   /* ── 4. Show/hide Section C: Cutoff Rigidity Parameters ──
-   *  If the user selected FLUX only, the cutoff parameters are
-   *  irrelevant and the section is hidden.  For CUTOFF_RIGIDITY and
-   *  BOTH, the section is shown so the user can configure Emin, Emax,
-   *  max particles, and energy bin count. */
+   *  Shown for CUTOFF_RIGIDITY and BOTH (cutoff scan is part of the run).
+   *  Hidden for FLUX and DENSITY_3D (no cutoff computation). */
   const cutSec = $('cutoff-params-section');
   if (cutSec) {
-    cutSec.style.display = (target === 'FLUX') ? 'none' : '';
+    const needsCutoff = (target === 'CUTOFF_RIGIDITY' || target === 'BOTH');
+    cutSec.style.display = needsCutoff ? '' : 'none';
   }
 
-  /* ── 5. Refresh sidebar summary ── */
+  /* ── 5. Show/hide Section D: 3-D Ion Density Parameters ──
+   *  Shown only for DENSITY_3D.  Hidden for all other targets. */
+  const densSec = $('density-params-section');
+  if (densSec) {
+    densSec.style.display = (target === 'DENSITY_3D') ? '' : 'none';
+  }
+
+  /* ── 6. Force GRID_3D when DENSITY_3D is selected ──
+   *  3-D density sampling requires a simulation grid (the density
+   *  is accumulated on the grid nodes).  If the user is currently
+   *  in GRIDLESS mode, automatically switch to GRID_3D and show
+   *  a warning banner in Section D. */
+  if (target === 'DENSITY_3D' && S.fieldMethod === 'GRIDLESS') {
+    const g3Card = $('fm-grid3d-card');
+    setFieldMethod('GRID_3D', g3Card);
+    const warn = $('density-grid-warn');
+    if (warn) warn.style.display = '';
+  } else {
+    const warn = $('density-grid-warn');
+    if (warn) warn.style.display = 'none';
+  }
+
+  /* ── 7. Refresh sidebar summary ── */
   updateSidebar();
 }
 
@@ -569,4 +593,86 @@ function cutoffParamChange() {
 
   /* ── Refresh sidebar ── */
   updateSidebar();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   3-D ION DENSITY SAMPLING PARAMETERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * densityParamChange — synchronize 3-D density sampling inputs to state S.
+ *
+ * Called from the onchange handlers on the dens-emin, dens-emax, and
+ * dens-nenergy input fields in the panel-2 HTML (Section D).
+ *
+ * In DENSITY_3D mode, AMPS forward-models particle transport:
+ *   1. Particles are injected from the outer boundary with the source
+ *      spectrum (Step 8) and traced forward through the EM field.
+ *   2. As particles traverse the simulation grid, their contribution
+ *      to the local ion density is accumulated in energy-resolved bins.
+ *   3. The energy range [densEmin, densEmax] is divided into
+ *      densNenergy bins (log or linear spacing, set by setDensSpacing).
+ *   4. Each bin k produces a separate 3-D output field:
+ *        n_i(E_k, x, y, z)  [cm^-3]
+ *      representing the spatial distribution of ions in that energy band.
+ *
+ * After syncing to S, this function:
+ *   1. Updates keyword preview spans in the AMPS_PARAM.in strip.
+ *   2. Updates the visual energy-bins bar labels.
+ *   3. Refreshes the sidebar summary.
+ */
+function densityParamChange() {
+  /* ── Read density parameter inputs ──
+   *  || fallback is safe because 0 is never valid for these params. */
+  S.densEmin     = parseFloat($('dens-emin')?.value)    || S.densEmin;
+  S.densEmax     = parseFloat($('dens-emax')?.value)    || S.densEmax;
+  S.densNenergy  = parseInt($('dens-nenergy')?.value)   || S.densNenergy;
+
+  /* ── Update keyword preview elements ── */
+  const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+  setKw('kw-dens-emin', S.densEmin.toFixed(1));
+  setKw('kw-dens-emax', S.densEmax.toFixed(1));
+  setKw('kw-dens-nen',  S.densNenergy);
+
+  /* ── Update visual labels ──
+   *  Displayed above the gradient energy-bins bar in Section D. */
+  const spacingLabel = S.densEnergySpacing === 'LOG' ? 'log-spaced' : 'linear';
+  setKw('dens-range-label',   `${S.densEmin.toFixed(1)} – ${S.densEmax.toFixed(1)} MeV/n`);
+  setKw('dens-bins-label',    `${S.densNenergy} bins`);
+  setKw('dens-spacing-label', spacingLabel);
+
+  /* ── Update energy bar endpoint labels ── */
+  setKw('dens-emin-bar',      `${S.densEmin.toFixed(1)} MeV/n`);
+  setKw('dens-emax-bar',      `${S.densEmax.toFixed(0)} MeV/n`);
+  setKw('dens-spacing-bar',   `← ${spacingLabel} bins →`);
+
+  /* ── Refresh sidebar ── */
+  updateSidebar();
+}
+
+
+/**
+ * setDensSpacing — toggle energy bin spacing between LOG and LINEAR.
+ *
+ * Called from the toggle button pair in Section D.  Updates S, the
+ * toggle button visual state, keyword preview, and visual bar labels.
+ *
+ * @param {'LOG'|'LINEAR'} mode — energy bin spacing
+ */
+function setDensSpacing(mode) {
+  S.densEnergySpacing = mode;
+
+  /* ── Toggle button visual state ── */
+  const logBtn = $('dens-log-btn');
+  const linBtn = $('dens-lin-btn');
+  if (logBtn) logBtn.classList.toggle('on', mode === 'LOG');
+  if (linBtn) linBtn.classList.toggle('on', mode === 'LINEAR');
+
+  /* ── Update keyword preview ── */
+  const kwEl = $('kw-dens-spacing');
+  if (kwEl) kwEl.textContent = mode;
+
+  /* ── Refresh visual bar and sidebar via densityParamChange ── */
+  densityParamChange();
 }

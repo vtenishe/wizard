@@ -761,8 +761,10 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <br><b>Flux:</b> computes differential and/or integral particle flux at observation points by
         injecting particles from the outer boundary with a specified source spectrum.
         <br><b>Both:</b> performs cutoff rigidity calculation first, then uses those cutoffs in the flux evaluation.
+        <br><b>3-D Ion Density:</b> forward-models particle transport in geospace, sampling energy-resolved ion density
+        on the simulation grid. Each energy bin produces a separate 3-D density field.
       </div>
-      <div class="frow c3" id="calc-target-cards">
+      <div class="frow c2" id="calc-target-cards" style="row-gap:10px;">
         <div class="opt-card sel" id="calc-cutoff-card" onclick="setCalcQuantity('CUTOFF_RIGIDITY',this)">
           <div class="opt-icon" style="font-size:28px;">&#128200;</div>
           <div class="opt-label">Cutoff Rigidity</div>
@@ -780,6 +782,19 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <div class="opt-label">Both</div>
           <div class="opt-desc">Cutoff rigidity + particle flux. Full pipeline: cutoff scan followed by flux evaluation with spectrum.</div>
           <div class="opt-badge" style="background:rgba(139,111,247,.15);color:var(--purple);">Complete &middot; Highest compute cost</div>
+        </div>
+        <!-- ── 4th card: 3-D Ion Density (forward modeling) ──
+             Forward-models particle transport in 3-D geospace.
+             Particles are injected from the outer boundary and traced forward;
+             ion density is sampled on the simulation grid in energy-resolved bins.
+             Each bin produces a separate density output field (n_i(E, x, y, z)).
+             Requires: 3-D grid (GRID_3D field method), source spectrum.
+             AMPS_PARAM.in: CALC_TARGET = DENSITY_3D -->
+        <div class="opt-card" id="calc-density-card" onclick="setCalcQuantity('DENSITY_3D',this)">
+          <div class="opt-icon" style="font-size:28px;">&#129529;</div>
+          <div class="opt-label">3-D Ion Density</div>
+          <div class="opt-desc">Forward-model particle transport; sample energy-resolved ion density on the 3-D simulation grid.</div>
+          <div class="opt-badge" style="background:rgba(56,192,255,.15);color:var(--accent-bright);">Requires 3-D grid &middot; Spectrum needed</div>
         </div>
       </div>
       <!-- Keyword preview -->
@@ -1015,6 +1030,109 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div><span class="kw-key">CUTOFF_EMAX</span>         <span class="kw-val" id="kw-cutoff-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
         <div><span class="kw-key">CUTOFF_MAX_PARTICLES</span> <span class="kw-val" id="kw-cutoff-maxp">500</span></div>
         <div><span class="kw-key">CUTOFF_NENERGY</span>      <span class="kw-val" id="kw-cutoff-nen">50</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECTION D — 3-D ION DENSITY SAMPLING PARAMETERS
+         Visible only when S.calcQuantity === 'DENSITY_3D'.
+
+         Forward-models particle transport in 3-D geospace.  Particles
+         are injected from the outer boundary with the source spectrum
+         (Step 8) and traced forward through the electromagnetic field.
+         Ion density is accumulated on the simulation grid in
+         energy-resolved bins:
+           Emin / Emax:          Energy range [MeV/n] for density bins.
+           Nenergy:              Number of energy bins.
+           Energy spacing:       LOG (logarithmic) or LINEAR.
+
+         Each energy bin produces a separate 3-D output field:
+           n_i(E_k, x, y, z) for k = 1..Nenergy
+         giving the spatial distribution of ions at each energy.
+
+         AMPS_PARAM.in keywords:
+           #DENSITY_3D
+           DENS_EMIN              = <float> MeV/n
+           DENS_EMAX              = <float> MeV/n
+           DENS_NENERGY           = <int>
+           DENS_ENERGY_SPACING    = LOG | LINEAR
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="subsection" id="density-params-section" style="display:none;">
+      <div class="subsection-title">D — 3-D Ion Density Sampling</div>
+      <div class="infobox info-blue" style="margin-bottom:12px;">
+        Configure the energy binning for 3-D ion density output.
+        Particles are forward-modeled from the outer boundary through the geomagnetic field.
+        Density is sampled on the simulation grid in <b>energy-resolved bins</b> — each bin produces
+        a separate 3-D density field <b>n<sub>i</sub>(E, x, y, z)</b>.
+        <br>This mode <b>requires the 3-D grid</b> field method (Section B) and a <b>source spectrum</b> (Step 8).
+      </div>
+
+      <div class="frow c2">
+        <div class="field"><label>Minimum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="dens-emin" type="number" value="0.1" min="0.001" max="100" step="0.1" onchange="densityParamChange()"/>
+          <div class="hint">Lower bound of density sampling energy range. Typical: 0.1 MeV/n for ring-current ions; 1 MeV/n for SEP.</div>
+        </div>
+        <div class="field"><label>Maximum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="dens-emax" type="number" value="1000" min="1" max="100000" step="10" onchange="densityParamChange()"/>
+          <div class="hint">Upper bound. Should cover the full energy range of the source spectrum.</div>
+        </div>
+      </div>
+
+      <div class="frow c2">
+        <div class="field"><label>Number of Energy Bins</label>
+          <input id="dens-nenergy" type="number" value="30" min="2" max="500" step="1" onchange="densityParamChange()"/>
+          <div class="hint">Total energy bins. Each bin produces a separate 3-D density output. Typical: 20–60.</div>
+        </div>
+        <div class="field"><label>Energy Bin Spacing</label>
+          <!-- ── Toggle: LOG vs LINEAR ──
+               LOG:    bins equally spaced in log10(E), finer resolution at low energies.
+               LINEAR: bins equally spaced in E, uniform resolution. -->
+          <div class="tog" style="width:fit-content;">
+            <button class="tog-btn on" id="dens-log-btn" onclick="setDensSpacing('LOG')">
+              Log (recommended)
+            </button>
+            <button class="tog-btn" id="dens-lin-btn" onclick="setDensSpacing('LINEAR')">
+              Linear
+            </button>
+          </div>
+          <div class="hint">Log spacing gives finer resolution at low energies where gradients are steepest. Linear is uniform in E.</div>
+        </div>
+      </div>
+
+      <!-- Visual: density energy bins bar -->
+      <div style="margin-top:12px;padding:12px 14px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">
+          <b style="color:var(--accent-bright);">Density Energy Bins</b>
+          &nbsp;&middot;&nbsp;
+          <span id="dens-range-label">0.1 – 1000.0 MeV/n</span>
+          &nbsp;&middot;&nbsp;
+          <span id="dens-bins-label">30 bins</span>
+          &nbsp;&middot;&nbsp;
+          <span id="dens-spacing-label">log-spaced</span>
+        </div>
+        <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(56,192,255,.08),rgba(26,136,212,.18),rgba(56,192,255,.08));border-radius:4px;overflow:hidden;">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
+            <span style="font-size:10px;color:var(--accent-bright);font-family:var(--font-mono);" id="dens-emin-bar">0.1 MeV/n</span>
+            <span style="font-size:9px;color:var(--text-dim);" id="dens-spacing-bar">← log-spaced bins →</span>
+            <span style="font-size:10px;color:var(--accent-bright);font-family:var(--font-mono);" id="dens-emax-bar">1000 MeV/n</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-D grid requirement note -->
+      <div id="density-grid-warn" class="infobox info-orange" style="display:none;margin-top:10px;font-size:11px;">
+        ⚠ <b>3-D Ion Density requires the 3-D Grid field method.</b>
+        The field method has been automatically switched to <b>GRID_3D</b>.
+        Configure grid dimensions in Section B above.
+      </div>
+
+      <!-- Keyword preview -->
+      <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;">
+        <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+        <div><span class="kw-key">DENS_EMIN</span>            <span class="kw-val" id="kw-dens-emin">0.1</span>       <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">DENS_EMAX</span>            <span class="kw-val" id="kw-dens-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">DENS_NENERGY</span>         <span class="kw-val" id="kw-dens-nen">30</span></div>
+        <div><span class="kw-key">DENS_ENERGY_SPACING</span>  <span class="kw-val" id="kw-dens-spacing">LOG</span></div>
       </div>
     </div>
 

@@ -48,8 +48,13 @@ LAST UPDATED: 2026-02-21
          GRID_NX/NY/NZ + extents — only when fieldMethod === 'GRID_3D'
 
      CUTOFF_RIGIDITY SECTION (added 2026-02-21):
-       Emitted only when S.calcQuantity is not 'FLUX'.  Contains:
+       Emitted only when S.calcQuantity is CUTOFF_RIGIDITY or BOTH.
+       Contains:
          CUTOFF_EMIN, CUTOFF_EMAX, CUTOFF_MAX_PARTICLES, CUTOFF_NENERGY
+
+     DENSITY_3D SECTION (added 2026-02-22):
+       Emitted only when S.calcQuantity is DENSITY_3D.  Contains:
+         DENS_EMIN, DENS_EMAX, DENS_NENERGY, DENS_ENERGY_SPACING
 
    RUN MANIFEST  (buildManifest)
      Lists all expected output files so users know what to retrieve after
@@ -129,8 +134,8 @@ GRID_ZMAX              ${f(S.gridZmax,1)}`:'',
 
 /* ── Conditional: cutoff rigidity parameters ──
  *  Emitted when CALC_TARGET is CUTOFF_RIGIDITY or BOTH.
- *  Omitted when CALC_TARGET is FLUX (cutoff not computed). */
-S.calcQuantity!=='FLUX'?`
+ *  Omitted for FLUX and DENSITY_3D (no cutoff computation). */
+(S.calcQuantity==='CUTOFF_RIGIDITY'||S.calcQuantity==='BOTH')?`
 ! ── Cutoff rigidity scan (Step 2, Section C) ───────────────────
 ! Energy range and particle budget for backward-tracing cutoff search.
 #CUTOFF_RIGIDITY
@@ -138,6 +143,18 @@ CUTOFF_EMIN            ${f(S.cutoffEmin,1)}          ! MeV/n
 CUTOFF_EMAX            ${f(S.cutoffEmax,1)}       ! MeV/n
 CUTOFF_MAX_PARTICLES   ${S.cutoffMaxParticles}              ! per injection point
 CUTOFF_NENERGY         ${S.cutoffNenergy}               ! log-spaced energy bins`:'',
+
+/* ── Conditional: 3-D ion density sampling parameters ──
+ *  Emitted only when CALC_TARGET is DENSITY_3D.
+ *  Defines the energy binning for energy-resolved density output. */
+S.calcQuantity==='DENSITY_3D'?`
+! ── 3-D ion density sampling (Step 2, Section D) ──────────────
+! Energy-resolved density bins for forward-modeled particle transport.
+#DENSITY_3D
+DENS_EMIN              ${f(S.densEmin,1)}          ! MeV/n
+DENS_EMAX              ${f(S.densEmax,1)}       ! MeV/n
+DENS_NENERGY           ${S.densNenergy}               ! energy bins
+DENS_ENERGY_SPACING    ${S.densEnergySpacing}           ! LOG or LINEAR`:'',
 `
 #PARTICLE_SPECIES
 SPECIES                ${S.species.toUpperCase()}
@@ -282,11 +299,15 @@ function buildValidation(){
      *  These ensure the two top-level choices are valid and mutually
      *  consistent.  The gridless+Tsyganenko check prevents the user
      *  from submitting an impossible configuration (MHD model needs
-     *  a grid, but gridless was selected). */
-    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','FLUX','BOTH'].includes(S.calcQuantity)},
+     *  a grid, but gridless was selected).
+     *  The DENSITY_3D checks ensure grid mode is active and that the
+     *  density energy range is valid. */
+    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','FLUX','BOTH','DENSITY_3D'].includes(S.calcQuantity)},
     {l:'Field method selected',  ok:['GRIDLESS','GRID_3D'].includes(S.fieldMethod)},
-    {l:'Cutoff Emin < Emax',     ok:S.calcQuantity==='FLUX'||(S.cutoffEmin<S.cutoffEmax)},
-    {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity==='FLUX'||(S.cutoffMaxParticles>=50)},
+    {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'&&S.calcQuantity!=='BOTH'||(S.cutoffEmin<S.cutoffEmax)},
+    {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'&&S.calcQuantity!=='BOTH'||(S.cutoffMaxParticles>=50)},
+    {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
+    {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
     {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
 
     /* ── Step 3–5: Field, boundary ── */
@@ -345,7 +366,8 @@ function updateSidebar(){
   const prettyCalcTarget = {
     CUTOFF_RIGIDITY: 'CUTOFF RIGIDITY',
     FLUX: 'PARTICLE FLUX',
-    BOTH: 'CUTOFF + FLUX'
+    BOTH: 'CUTOFF + FLUX',
+    DENSITY_3D: '3-D ION DENSITY'
   };
   set('sb-calc-target', prettyCalcTarget[S.calcQuantity] || S.calcQuantity, 'g');
   set('sb-field-method', S.fieldMethod === 'GRIDLESS' ? 'Gridless (analytic)' : '3-D Grid', S.fieldMethod === 'GRIDLESS' ? 'g' : '');

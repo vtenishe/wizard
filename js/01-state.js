@@ -45,6 +45,7 @@ LAST UPDATED: 2026-02-21
      Calculation mode  calcQuantity, fieldMethod
                        cutoffEmin/cutoffEmax/cutoffMaxParticles/cutoffNenergy
                        gridNx/gridNy/gridNz/gridXmin..gridZmax
+                       densEmin/densEmax/densNenergy/densEnergySpacing
      Particle          species, charge, mass
      Background field  fieldModel, dst, pdyn, bz, vx, nsw, by, bx, epoch
                        t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
@@ -158,6 +159,22 @@ const S = {
   gridXmin: -60, gridXmax:  15,     // [RE] X extent (tailward to sunward)
   gridYmin: -25, gridYmax:  25,     // [RE] Y extent (dawn to dusk)
   gridZmin: -20, gridZmax:  20,     // [RE] Z extent (south to north)
+
+  /*  3-D density sampling parameters (used when calcQuantity === 'DENSITY_3D').
+   *  Forward-models particle transport in 3-D geospace, sampling the
+   *  resulting ion density in energy-resolved bins on the simulation
+   *  grid.  Each energy bin produces a separate density output field.
+   *  The energy range is divided into densNenergy bins, spaced either
+   *  linearly or logarithmically.
+   *  AMPS_PARAM.in keywords:
+   *    #DENSITY_3D
+   *    DENS_EMIN / DENS_EMAX     = <float> MeV/n
+   *    DENS_NENERGY              = <int>
+   *    DENS_ENERGY_SPACING       = LOG | LINEAR */
+  densEmin:        0.1,             // [MeV/n] lower bound for density sampling
+  densEmax:     1000.0,             // [MeV/n] upper bound for density sampling
+  densNenergy:     30,              // number of energy bins
+  densEnergySpacing: 'LOG',         // 'LOG' | 'LINEAR'
 
   /* ── Step 3 · Particle species ─────────────────────────────────────── */
   species: 'proton',
