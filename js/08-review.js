@@ -209,7 +209,22 @@ DENS_EMIN              ${f(S.densEmin,1)}          ! MeV/n
 DENS_EMAX              ${f(S.densEmax,1)}       ! MeV/n
 DENS_NENERGY           ${S.densNenergy}               ! energy bins
 DENS_ENERGY_SPACING    ${S.densEnergySpacing}           ! LOG or LINEAR`:'',
-`
+	/* NOTE ON NAMING CONSISTENCY -------------------------------------------------
+	 * The website supports multiple background magnetic-field models (T96, T15, TS05,
+	 * etc.). However, the *driving inputs* are shared physical quantities (Dst, Pdyn,
+	 * IMF components, solar-wind Vx, solar-wind density). Older versions incorrectly
+	 * prefixed these keys with a particular model ID (e.g., TS05_DST) even when
+	 * FIELD_MODEL was not TS05, leading to confusing output like:
+	 *   FIELD_MODEL T96 + TS05_* parameters
+	 *
+	 * To keep the generated AMPS input file stable and model-agnostic, we emit
+	 * *generic* parameter names in the generated AMPS_PARAM.in. The backend/solver can
+	 * interpret (or ignore) these fields depending on FIELD_MODEL.
+	 *
+	 * IMPORTANT: This note is a *code comment only*. It must NOT be emitted into the
+	 * generated input file.
+	 * -------------------------------------------------------------------------- */
+	`
 #PARTICLE_SPECIES
 SPECIES                ${S.species.toUpperCase()}
 CHARGE                 ${S.charge}               ! elementary charge
@@ -217,13 +232,13 @@ MASS_AMU               ${S.mass}           ! atomic mass units
 
 #BACKGROUND_FIELD
 FIELD_MODEL            ${S.fieldModel}
-TS05_DST               ${f(S.dst,1)}         ! nT ring current index
-TS05_PDYN              ${f(S.pdyn,2)}          ! nPa dynamic pressure
-TS05_BZ                ${f(S.bz,2)}         ! nT IMF Bz GSM
-TS05_VX                ${f(S.vx,1)}       ! km/s solar wind Vx
-TS05_NSW               ${f(S.nsw,2)}         ! cm-3 proton density
-TS05_BY                ${f(S.by,2)}          ! nT IMF By
-TS05_BX                ${f(S.bx,2)}          ! nT IMF Bx
+DST                    ${f(S.dst,1)}         ! nT ring current index (Dst)
+PDYN                   ${f(S.pdyn,2)}          ! nPa solar-wind dynamic pressure
+IMF_BZ                 ${f(S.bz,2)}         ! nT IMF Bz (GSM)
+SW_VX                  ${f(S.vx,1)}       ! km/s solar-wind Vx
+SW_N                   ${f(S.nsw,2)}         ! cm-3 solar-wind proton density
+IMF_BY                 ${f(S.by,2)}          ! nT IMF By
+IMF_BX                 ${f(S.bx,2)}          ! nT IMF Bx
 EPOCH                  ${S.epoch}  ! UTC snapshot
 
 #DOMAIN_BOUNDARY

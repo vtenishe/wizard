@@ -18,13 +18,13 @@ MASS_AMU               1.0073          ! atomic mass units
 
 #BACKGROUND_FIELD
 FIELD_MODEL            TS05
-TS05_DST               -142.0          ! nT ring current index
-TS05_PDYN              3.50            ! nPa dynamic pressure
-TS05_BZ                -18.50          ! nT IMF Bz GSM
-TS05_VX                -650.0          ! km/s solar wind Vx
-TS05_NSW               12.00           ! cm-3 proton density
-TS05_BY                3.20            ! nT IMF By
-TS05_BX                0.00            ! nT IMF Bx
+DST               -142.0          ! nT ring current index
+PDYN              3.50            ! nPa dynamic pressure
+IMF_BZ                -18.50          ! nT IMF Bz GSM
+SW_VX                -650.0          ! km/s solar wind Vx
+SW_N               12.00           ! cm-3 proton density
+IMF_BY                3.20            ! nT IMF By
+IMF_BX                0.00            ! nT IMF Bx
 EPOCH                  2017-09-10T16:00
 
 #DOMAIN_BOUNDARY
