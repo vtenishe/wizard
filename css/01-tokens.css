@@ -163,3 +163,37 @@ body {
   outline-offset: 2px;
 }
 
+/* ── Wizard step disabled / N/A state (added 2026-02-21) ──────────
+ *  Applied to .wz-step elements that are auto-skipped due to a
+ *  constraint from another step.
+ *
+ *  Current usage:
+ *    Step 6 (E-Field) receives .step-disabled when S.fieldMethod
+ *    is 'GRIDLESS' (set in Step 2).
+ *
+ *  Applied by: applyFieldMethodConstraints() in js/02a-calcmode.js.
+ *
+ *  DESIGN: the step remains clickable — navigating to it shows the
+ *  panel with a gridless-overlay message explaining why E-field is
+ *  excluded.  The Next/Prev buttons skip step 6 automatically
+ *  (see goStep() in js/02-wizard.js), but direct clicks still work.
+ *
+ *  Visual treatment:
+ *    - opacity 0.35: clearly the dimmest element in the strip.
+ *    - cursor: default — less inviting than pointer, but still usable.
+ *    - Dashed bottom border instead of solid — signals "N/A".
+ *    - Strikethrough on number and label — "skipped" indicator.
+ *  The step is NOT added to S.done, so it keeps the default gray base.
+ * ────────────────────────────────────────────────────────────────── */
+.wz-step.step-disabled {
+  opacity: 0.35;
+  cursor: default;
+  border-bottom: 3px dashed var(--border) !important;
+}
+.wz-step.step-disabled .wz-num {
+  text-decoration: line-through;
+}
+.wz-step.step-disabled .wz-label {
+  text-decoration: line-through;
+}
+

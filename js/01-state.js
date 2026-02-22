@@ -42,6 +42,9 @@ LAST UPDATED: 2026-02-21
    PROPERTY GROUPS IN S
      Wizard meta       step, done
      Run info          runName, piName, piEmail, institution, sciGoal
+     Calculation mode  calcQuantity, fieldMethod
+                       cutoffEmin/cutoffEmax/cutoffMaxParticles/cutoffNenergy
+                       gridNx/gridNy/gridNz/gridXmin..gridZmax
      Particle          species, charge, mass
      Background field  fieldModel, dst, pdyn, bz, vx, nsw, by, bx, epoch
                        t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
@@ -102,7 +105,61 @@ const S = {
   institution: '',
   sciGoal:     '',
 
-  /* ── Step 2 · Particle species ─────────────────────────────────────── */
+  /* ── Step 2 · Calculation mode ────────────────────────────────────────
+   *
+   *  These properties control the two top-level architectural choices
+   *  made in Step 2 (Calc Mode).  They cascade forward through the
+   *  entire wizard: fieldMethod determines whether MHD models and
+   *  E-field are available; calcQuantity determines whether the cutoff
+   *  section appears in AMPS_PARAM.in.
+   *
+   *  See js/02a-calcmode.js for the full constraint-propagation logic.
+   *
+   *  AMPS_PARAM.in keywords affected:
+   *    #CALCULATION_MODE
+   *    CALC_TARGET            = CUTOFF_RIGIDITY | FLUX | BOTH
+   *    FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
+   *    (plus GRID_NX/NY/NZ/XMIN..ZMAX when GRID_3D)
+   *    #CUTOFF_RIGIDITY       (emitted only when target ≠ FLUX)
+   *    CUTOFF_EMIN / EMAX     = <float> MeV/n
+   *    CUTOFF_MAX_PARTICLES   = <int>
+   *    CUTOFF_NENERGY         = <int>
+   * ───────────────────────────────────────────────────────────────────── */
+
+  /*  What to calculate: cutoff rigidity only, particle flux only, or both.
+   *  CUTOFF_RIGIDITY: backward-trace to find geomagnetic cutoff.
+   *  FLUX:            forward-inject from boundary with source spectrum.
+   *  BOTH:            cutoff first, then flux (full pipeline). */
+  calcQuantity: 'CUTOFF_RIGIDITY',  // 'CUTOFF_RIGIDITY' | 'FLUX' | 'BOTH'
+
+  /*  How the background B (and optionally E) field is evaluated at
+   *  each particle position during Lorentz-force integration.
+   *  GRIDLESS: analytic Tsyganenko call per step (no E-field, no MHD).
+   *  GRID_3D:  tri-linear interpolation from pre-computed 3-D grid
+   *            (supports MHD + E-field; requires grid config below). */
+  fieldMethod:  'GRIDLESS',         // 'GRIDLESS' | 'GRID_3D'
+
+  /*  Cutoff rigidity scan parameters (used when calcQuantity ≠ 'FLUX').
+   *  At each observation point, AMPS injects test particles across
+   *  [cutoffEmin, cutoffEmax] in cutoffNenergy log-spaced energy bins.
+   *  cutoffMaxParticles is the total injected per point (divided among bins). */
+  cutoffEmin:        1.0,           // [MeV/n] lower bound of energy scan
+  cutoffEmax:     1000.0,           // [MeV/n] upper bound of energy scan
+  cutoffMaxParticles: 500,          // total test particles per injection point
+  cutoffNenergy:      50,           // log-spaced energy bins in [Emin, Emax]
+
+  /*  3-D interpolation grid parameters (used when fieldMethod === 'GRID_3D').
+   *  The grid is a regular Cartesian mesh in GSM coordinates.
+   *  Memory ≈ 6 components × 8 bytes × Nx × Ny × Nz.
+   *  Defaults span the standard magnetospheric simulation domain. */
+  gridNx:  100,                     // grid cells along X (GSM, sunward/tailward)
+  gridNy:  100,                     // grid cells along Y (GSM, dawn/dusk)
+  gridNz:   60,                     // grid cells along Z (GSM, north/south)
+  gridXmin: -60, gridXmax:  15,     // [RE] X extent (tailward to sunward)
+  gridYmin: -25, gridYmax:  25,     // [RE] Y extent (dawn to dusk)
+  gridZmin: -20, gridZmax:  20,     // [RE] Z extent (south to north)
+
+  /* ── Step 3 · Particle species ─────────────────────────────────────── */
   species: 'proton',
   charge:  1,          // elementary charges (Z)
   mass:    1.0073,     // atomic mass units (u)

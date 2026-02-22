@@ -30,10 +30,10 @@ LAST UPDATED: 2026-02-21
             section accordion collapse/expand, and step-indicator strip updates.
 
    PUBLIC API (called from HTML onclick / keyboard handlers)
-     goStep(n)        — navigate to wizard step n (1–10)
+     goStep(n)        — navigate to wizard step n (1–11)
      nextStep()       — advance one step
      prevStep()       — go back one step
-     goToReview()     — jump directly to step 10 (review & submit)
+     goToReview()     — jump directly to step 11 (review & submit)
      toggleSection(id)— collapse or expand an accordion section card
 
    BEHAVIOUR
@@ -41,10 +41,12 @@ LAST UPDATED: 2026-02-21
          – S.done marks the current step as completed
          – The .panel-{n} element becomes visible; all others hidden
          – Wizard step indicators in .wz-step update: done / active / default
-         – Prev button disabled on step 1; Next button hidden on step 10
+         – Prev button disabled on step 1; Next button hidden on step 11
          – Page scrolls to top (smooth)
          – Sidebar summary refreshes
-         – Review step (10) triggers buildReview()
+         – Review step (11) triggers buildReview()
+     · Step 6 (E-Field) is automatically skipped when S.fieldMethod
+       is 'GRIDLESS' (set in Step 2).  See goStep() for details.
      · toggleSection flips the 'closed' CSS class which hides .sect-body
        and rotates the chevron icon via CSS transform.
 
@@ -55,15 +57,29 @@ LAST UPDATED: 2026-02-21
  * Navigate the wizard to step n.
  * Marks the current step as done, activates panel n,
  * updates the step-indicator strip, and scrolls to top.
- * @param {number} n - target step (1–10)
+ *
+ * GRIDLESS E-FIELD HANDLING (added 2026-02-21):
+ *   When S.fieldMethod === 'GRIDLESS' (set in Step 2), the electric
+ *   field is physically excluded from the simulation.  Step 6 (E-Field)
+ *   is still navigable by direct click on the wizard strip — this
+ *   shows the panel with a gridless-overlay message explaining why
+ *   E-field is excluded and how to enable it (switch to GRID_3D).
+ *
+ *   However, the sequential Next/Prev buttons skip step 6 automatically
+ *   so the user doesn't have to click through an empty step during
+ *   the normal linear workflow.  This skip is implemented in
+ *   nextStep() and prevStep(), NOT in goStep() itself.
+ *
+ * @param {number} n - target step (1–11)
  */
 function goStep(n) {
-  if (n < 1 || n > 10) return;
+  if (n < 1 || n > 11) return;
+
   S.done.add(S.step);   // mark current step completed before leaving
   S.step = n;
 
   /* ── Show/hide step content panels ── */
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 11; i++) {
     const panel = $(`panel-${i}`);
     if (panel) panel.classList.toggle('active', i === n);
   }
@@ -82,23 +98,33 @@ function goStep(n) {
   const btnNext   = $('btn-next');
   const btnSubmit = $('btn-submit');
   if (btnPrev)   btnPrev.disabled                = (n === 1);
-  if (btnNext)   btnNext.style.display           = n < 10 ? 'inline-flex' : 'none';
-  if (btnSubmit) btnSubmit.style.display         = n === 10 ? 'inline-flex' : 'none';
+  if (btnNext)   btnNext.style.display           = n < 11 ? 'inline-flex' : 'none';
+  if (btnSubmit) btnSubmit.style.display         = n === 11 ? 'inline-flex' : 'none';
 
   /* ── Side effects ── */
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateSidebar();
-  if (n === 10) buildReview();  // re-render the param-file preview
+  if (n === 11) buildReview();  // re-render the param-file preview
 }
 
-/** Advance one wizard step. */
-function nextStep() { goStep(S.step + 1); }
+/** Advance one wizard step.
+ *  In gridless mode, skip step 6 (E-Field is excluded). */
+function nextStep() {
+  let next = S.step + 1;
+  if (next === 6 && S.fieldMethod === 'GRIDLESS') next = 7;
+  goStep(next);
+}
 
-/** Go back one wizard step. */
-function prevStep() { goStep(S.step - 1); }
+/** Go back one wizard step.
+ *  In gridless mode, skip step 6 (E-Field is excluded). */
+function prevStep() {
+  let prev = S.step - 1;
+  if (prev === 6 && S.fieldMethod === 'GRIDLESS') prev = 5;
+  goStep(prev);
+}
 
 /** Jump directly to the Review & Submit step. */
-function goToReview() { goStep(10); }
+function goToReview() { goStep(11); }
 
 /* ── Wizard step label click handlers (generated in HTML) ── */
 /**

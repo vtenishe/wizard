@@ -574,24 +574,26 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 <div class="wizard">
   <!-- Step 1: Run identification and science goal -->
   <div class="wz-step active" role="button" tabindex="0" onclick="wizClick(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(1);}"><div class="wz-num">1</div><span class="wz-label">Run Info</span></div>
-  <!-- Step 2: Particle species and charge state -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(2)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(2);}"><div class="wz-num">2</div><span class="wz-label">Particle</span></div>
-  <!-- Step 3: Background magnetic field model (TS05/TS04/T96/T01/TS07D/TA15/MHD) -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(3)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(3);}"><div class="wz-num">3</div><span class="wz-label">Bkg B-Field</span></div>
-  <!-- Step 4: Simulation domain outer boundary (BOX or Shue) -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(4)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(4);}"><div class="wz-num">4</div><span class="wz-label">Boundary</span></div>
-  <!-- Step 5: Electric field model (NEW — corotation + convection) -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(5)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(5);}"><div class="wz-num">5</div><span class="wz-label">E-Field</span></div>
-  <!-- Step 6: Temporal variability of the geomagnetic field -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(6)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(6);}"><div class="wz-num">6</div><span class="wz-label">Temporal</span></div>
-  <!-- Step 7: Source particle spectrum at the outer boundary -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(7)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(7);}"><div class="wz-num">7</div><span class="wz-label">Spectrum</span></div>
-  <!-- Step 8: Output domain — trajectory or grid mode -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(8)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(8);}"><div class="wz-num">8</div><span class="wz-label">Output Domain</span></div>
-  <!-- Step 9: Flux type, energy bins, file format -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(9)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(9);}"><div class="wz-num">9</div><span class="wz-label">Output Options</span></div>
-  <!-- Step 10: Final review, validation, and CCMC submission -->
-  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(10)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(10);}"><div class="wz-num">10</div><span class="wz-label">Review &amp; Submit</span></div>
+  <!-- Step 2: Calculation mode — what to compute and field method -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(2)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(2);}"><div class="wz-num">2</div><span class="wz-label">Calc Mode</span></div>
+  <!-- Step 3: Particle species and charge state -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(3)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(3);}"><div class="wz-num">3</div><span class="wz-label">Particle</span></div>
+  <!-- Step 4: Background magnetic field model -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(4)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(4);}"><div class="wz-num">4</div><span class="wz-label">Bkg B-Field</span></div>
+  <!-- Step 5: Simulation domain outer boundary -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(5)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(5);}"><div class="wz-num">5</div><span class="wz-label">Boundary</span></div>
+  <!-- Step 6: Electric field model -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(6)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(6);}"><div class="wz-num">6</div><span class="wz-label">E-Field</span></div>
+  <!-- Step 7: Temporal variability -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(7)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(7);}"><div class="wz-num">7</div><span class="wz-label">Temporal</span></div>
+  <!-- Step 8: Source particle spectrum -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(8)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(8);}"><div class="wz-num">8</div><span class="wz-label">Spectrum</span></div>
+  <!-- Step 9: Output domain -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(9)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(9);}"><div class="wz-num">9</div><span class="wz-label">Output Domain</span></div>
+  <!-- Step 10: Output options -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(10)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(10);}"><div class="wz-num">10</div><span class="wz-label">Output Options</span></div>
+  <!-- Step 11: Final review and submission -->
+  <div class="wz-step" role="button" tabindex="0" onclick="wizClick(11)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();wizClick(11);}"><div class="wz-num">11</div><span class="wz-label">Review &amp; Submit</span></div>
 </div>
 <div class="layout">
 <div class="main-col">
@@ -655,13 +657,379 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     STEP 2 — CALCULATION MODE  (panel-2)
+     Added: 2026-02-21
+
+     PURPOSE:
+       This panel implements the two top-level architectural choices that
+       shape the entire AMPS run configuration:
+
+       (A) CALCULATION TARGET — what to compute:
+           • CUTOFF_RIGIDITY: backward-trace to find geomagnetic cutoff.
+             No source spectrum needed.  Fastest mode.
+           • FLUX: forward-inject particles from boundary with a source
+             spectrum to compute differential/integral flux.
+           • BOTH: cutoff rigidity first, then flux (full pipeline).
+
+       (B) FIELD EVALUATION METHOD — how background fields are evaluated:
+           • GRIDLESS (Analytic): Tsyganenko models called per particle
+             step.  No electric field.  No MHD.  Standard for cutoff Rc.
+           • GRID_3D (Interpolation): fields pre-computed on a 3-D
+             Cartesian grid.  Supports MHD + E-field.  Configurable
+             Nx/Ny/Nz and spatial extent.
+
+     CASCADING CONSTRAINTS (enforced by js/02a-calcmode.js):
+       - GRIDLESS → MHD cards (BATSRUS, GAMERA) disabled in Step 4.
+       - GRIDLESS → E-field step (Step 6) skipped during navigation.
+       - FLUX → cutoff parameters section (C) hidden.
+       - GRID_3D → all models and E-field available.
+
+     AMPS_PARAM.in KEYWORDS AFFECTED:
+       #CALCULATION_MODE
+       CALC_TARGET            = CUTOFF_RIGIDITY | FLUX | BOTH
+       FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
+       GRID_NX / NY / NZ      (only when GRID_3D)
+       GRID_XMIN..ZMAX        (only when GRID_3D)
+       #CUTOFF_RIGIDITY       (only when target ≠ FLUX)
+       CUTOFF_EMIN / EMAX / MAX_PARTICLES / NENERGY
+
+     HOW IT WORKS:
+       - User clicks on a target card → setCalcQuantity(target, this)
+         is triggered.  Updates S.calcQuantity, toggles card styling,
+         shows/hides Section C, refreshes sidebar.
+       - User clicks on a method card → setFieldMethod(method, this)
+         is triggered.  Updates S.fieldMethod, toggles card styling,
+         shows/hides gridless-info or grid3d-config, calls
+         applyFieldMethodConstraints() for downstream effects.
+       - Grid dimension/extent inputs call gridParamChange() on change.
+       - Cutoff parameter inputs call cutoffParamChange() on change.
+       All functions defined in js/02a-calcmode.js.
+
+     DOM STRUCTURE:
+       panel-2
+       └─ s-calcmode (sect)
+          ├─ sect-hd (collapsible header)
+          └─ sect-body
+             ├─ Section A: Calculation Target (3 opt-cards)
+             │  └─ kw-calc-target keyword preview
+             ├─ Section B: Field Evaluation Method (2 bnd-cards)
+             │  ├─ gridless-info banner (shown when GRIDLESS)
+             │  ├─ grid3d-config form (shown when GRID_3D)
+             │  │  ├─ Nx/Ny/Nz inputs
+             │  │  ├─ Xmin..Zmax extent inputs
+             │  │  └─ memory + grid-points estimate
+             │  └─ kw-field-method keyword preview
+             └─ Section C: Cutoff Rigidity Parameters
+                ├─ Emin / Emax inputs
+                ├─ Max particles / Nenergy inputs
+                ├─ visual energy-range bar
+                └─ keyword preview strip
+
+     EXTENSIBILITY:
+       To add a new calculation target (e.g. PITCH_ANGLE_DISTRIBUTION):
+         1. Add a new opt-card below in Section A.
+         2. Add the new keyword to S.calcQuantity enum in js/01-state.js.
+         3. Handle the new target in setCalcQuantity() in js/02a-calcmode.js.
+         4. Add the new #section to buildReview() in js/08-review.js.
+         5. Add a validation check in buildValidation().
+     ═══════════════════════════════════════════════════════════════════════════ -->
 <div id="panel-2" class="step-panel">
+<div class="sect" id="s-calcmode">
+  <div class="sect-hd" onclick="toggleSection('s-calcmode')">
+    <div class="sect-icon" style="background:rgba(139,111,247,.15)">&#128300;</div>
+    <div><div class="sect-title">Calculation Mode</div>
+    <div style="font-size:11px;color:var(--text-dim)">Select what to calculate and how background fields are evaluated. Maps to <code style="font-size:10px;">#CALCULATION_MODE</code> in AMPS_PARAM.in.</div></div>
+    <span class="sect-sub"><span class="tag tag-new">Step 2</span></span>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="sect-body">
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECTION A — CALCULATION TARGET
+         Three mutually exclusive cards.  onclick calls setCalcQuantity()
+         which updates S.calcQuantity, toggles the .sel class on cards,
+         shows/hides Section C (cutoff params), and refreshes sidebar.
+
+         AMPS_PARAM.in keyword: CALC_TARGET = CUTOFF_RIGIDITY | FLUX | BOTH
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="subsection" style="margin-bottom:18px;">
+      <div class="subsection-title">A — Calculation Target</div>
+      <div class="infobox info-blue" style="margin-bottom:12px;">
+        <b>Cutoff Rigidity:</b> traces particles backward from each observation point to determine the minimum rigidity
+        (momentum per charge) that can reach that location through the geomagnetic field.
+        <br><b>Flux:</b> computes differential and/or integral particle flux at observation points by
+        injecting particles from the outer boundary with a specified source spectrum.
+        <br><b>Both:</b> performs cutoff rigidity calculation first, then uses those cutoffs in the flux evaluation.
+      </div>
+      <div class="frow c3" id="calc-target-cards">
+        <div class="opt-card sel" id="calc-cutoff-card" onclick="setCalcQuantity('CUTOFF_RIGIDITY',this)">
+          <div class="opt-icon" style="font-size:28px;">&#128200;</div>
+          <div class="opt-label">Cutoff Rigidity</div>
+          <div class="opt-desc">Geomagnetic cutoff rigidity at each observation point. Backward-tracing in energy space.</div>
+          <div class="opt-badge" style="background:rgba(45,212,160,.15);color:var(--green);">Fast &middot; No spectrum needed</div>
+        </div>
+        <div class="opt-card" id="calc-flux-card" onclick="setCalcQuantity('FLUX',this)">
+          <div class="opt-icon" style="font-size:28px;">&#127774;</div>
+          <div class="opt-label">Particle Flux</div>
+          <div class="opt-desc">Differential/integral flux of SEP or GCR at observation points. Requires source spectrum.</div>
+          <div class="opt-badge" style="background:rgba(255,154,60,.15);color:var(--orange);">Requires spectrum definition</div>
+        </div>
+        <div class="opt-card" id="calc-both-card" onclick="setCalcQuantity('BOTH',this)">
+          <div class="opt-icon" style="font-size:28px;">&#128202;</div>
+          <div class="opt-label">Both</div>
+          <div class="opt-desc">Cutoff rigidity + particle flux. Full pipeline: cutoff scan followed by flux evaluation with spectrum.</div>
+          <div class="opt-badge" style="background:rgba(139,111,247,.15);color:var(--purple);">Complete &middot; Highest compute cost</div>
+        </div>
+      </div>
+      <!-- Keyword preview -->
+      <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;display:inline-block;">
+        <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+        <span class="kw-key">CALC_TARGET</span>
+        <span class="kw-val" id="kw-calc-target">CUTOFF_RIGIDITY</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECTION B — FIELD EVALUATION METHOD
+         Two mutually exclusive cards.  onclick calls setFieldMethod()
+         which updates S.fieldMethod, toggles .sel class, shows/hides
+         gridless-info or grid3d-config, and calls
+         applyFieldMethodConstraints() for cascading effects on Steps 4/6.
+
+         GRIDLESS (Analytic):
+           - Tsyganenko models evaluated analytically per particle step.
+           - No electric field (E = 0).  No MHD models (BATSRUS/GAMERA).
+           - Standard for geomagnetic cutoff rigidity calculations.
+           - AMPS_PARAM.in: FIELD_EVAL_METHOD = GRIDLESS
+
+         GRID_3D (Interpolation):
+           - B and E pre-computed on regular Cartesian grid in GSM.
+           - Tri-linearly interpolated to each particle position.
+           - Supports ALL field models including MHD output.
+           - Electric field (corotation + convection) available.
+           - User configures Nx/Ny/Nz and spatial extent.
+           - AMPS_PARAM.in: FIELD_EVAL_METHOD = GRID_3D
+             plus GRID_NX/NY/NZ and GRID_XMIN..ZMAX keywords.
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="subsection" style="margin-bottom:18px;">
+      <div class="subsection-title">B — Field Evaluation Method</div>
+      <div class="infobox info-blue" style="margin-bottom:12px;">
+        Choose how the background magnetic (and optionally electric) field is evaluated at each particle position during tracing.
+      </div>
+      <div class="frow c2" id="field-method-cards">
+        <div class="bnd-card sel" id="fm-gridless-card" onclick="setFieldMethod('GRIDLESS',this)" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="font-size:28px;">&#128268;</div>
+            <div>
+              <div class="bnd-label" style="font-size:14px;font-weight:600;">Gridless (Analytic)</div>
+              <div style="font-size:11px;color:var(--green);font-weight:500;">Recommended for cutoff rigidity</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">
+            The magnetic field is computed <b>analytically</b> at each particle position using the selected
+            Tsyganenko-family model (TS05, TS04, T96, T01, TS07D, TA15). No spatial grid is involved.
+            <br><br>
+            <b>Restrictions:</b>
+          </div>
+          <ul style="font-size:11px;color:var(--text-dim);margin:6px 0 0 16px;line-height:1.7;">
+            <li>Only Tsyganenko empirical models — MHD fields (BATSRUS, GAMERA) are <b>not available</b></li>
+            <li>Electric field is <b>not included</b> (pure magnetic tracing)</li>
+            <li>Best suited for <b>cutoff rigidity</b> where E-field effect is small</li>
+          </ul>
+          <div class="opt-badge" style="background:rgba(45,212,160,.15);color:var(--green);margin-top:10px;">Fast &middot; No grid overhead</div>
+        </div>
+        <div class="bnd-card" id="fm-grid3d-card" onclick="setFieldMethod('GRID_3D',this)" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="font-size:28px;">&#127922;</div>
+            <div>
+              <div class="bnd-label" style="font-size:14px;font-weight:600;">3-D Interpolation Grid</div>
+              <div style="font-size:11px;color:var(--accent-bright);font-weight:500;">Required for MHD &amp; electric-field runs</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">
+            Background B and E fields are pre-computed on a regular 3-D Cartesian grid (GSM), then
+            <b>tri-linearly interpolated</b> to each particle position. This allows:
+          </div>
+          <ul style="font-size:11px;color:var(--text-dim);margin:6px 0 0 16px;line-height:1.7;">
+            <li>All field models including <b>BATSRUS and GAMERA</b> MHD output</li>
+            <li>Electric field (corotation + convection) <b>included</b></li>
+            <li>Better for <b>flux calculations</b> where drift physics matters</li>
+          </ul>
+          <div class="opt-badge" style="background:rgba(26,136,212,.15);color:var(--accent-bright);margin-top:10px;">Full physics &middot; Higher memory</div>
+        </div>
+      </div>
+
+      <!-- Gridless info banner (shown when GRIDLESS selected) -->
+      <div id="gridless-info" class="infobox info-green" style="margin-top:12px;">
+        <b>Gridless mode:</b> The E-Field step will be skipped (electric field is excluded).
+        Only Tsyganenko empirical B-field models are available. This is the standard approach
+        for computing geomagnetic cutoff rigidity.
+      </div>
+
+      <!-- Grid-3D configuration (shown when GRID_3D selected) -->
+      <div id="grid3d-config" style="display:none;margin-top:14px;">
+        <div class="infobox info-blue" style="margin-bottom:10px;">
+          <b>3-D grid configuration:</b> The grid defines the volume over which B and E fields are pre-computed.
+          Resolution trades off accuracy against memory. A typical 100×100×60 grid uses ~230 MB.
+        </div>
+        <div class="frow c3">
+          <div class="field"><label>Grid Nx <span style="font-size:10px;color:var(--text-dim)">(X cells)</span></label>
+            <input id="grid-nx" type="number" value="100" min="20" max="500" step="10" onchange="gridParamChange()"/>
+          </div>
+          <div class="field"><label>Grid Ny <span style="font-size:10px;color:var(--text-dim)">(Y cells)</span></label>
+            <input id="grid-ny" type="number" value="100" min="20" max="500" step="10" onchange="gridParamChange()"/>
+          </div>
+          <div class="field"><label>Grid Nz <span style="font-size:10px;color:var(--text-dim)">(Z cells)</span></label>
+            <input id="grid-nz" type="number" value="60" min="20" max="300" step="10" onchange="gridParamChange()"/>
+          </div>
+        </div>
+        <div class="frow c3">
+          <div class="field"><label>X range [R<sub>E</sub>]</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="grid-xmin" type="number" value="-60" step="5" style="width:70px;" onchange="gridParamChange()"/>
+              <span style="color:var(--text-dim);">to</span>
+              <input id="grid-xmax" type="number" value="15" step="5" style="width:70px;" onchange="gridParamChange()"/>
+            </div>
+          </div>
+          <div class="field"><label>Y range [R<sub>E</sub>]</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="grid-ymin" type="number" value="-25" step="5" style="width:70px;" onchange="gridParamChange()"/>
+              <span style="color:var(--text-dim);">to</span>
+              <input id="grid-ymax" type="number" value="25" step="5" style="width:70px;" onchange="gridParamChange()"/>
+            </div>
+          </div>
+          <div class="field"><label>Z range [R<sub>E</sub>]</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="grid-zmin" type="number" value="-20" step="5" style="width:70px;" onchange="gridParamChange()"/>
+              <span style="color:var(--text-dim);">to</span>
+              <input id="grid-zmax" type="number" value="20" step="5" style="width:70px;" onchange="gridParamChange()"/>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">
+          Est. memory: <b id="grid-mem-est" style="color:var(--orange);">~230 MB</b>
+          &middot; Grid points: <span id="grid-points-est">600,000</span>
+        </div>
+        <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;display:inline-block;">
+          <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+          <span class="kw-key">GRID_NX</span> <span class="kw-val" id="kw-grid-nx">100</span>
+          <span class="kw-key" style="margin-left:8px;">GRID_NY</span> <span class="kw-val" id="kw-grid-ny">100</span>
+          <span class="kw-key" style="margin-left:8px;">GRID_NZ</span> <span class="kw-val" id="kw-grid-nz">60</span>
+        </div>
+      </div>
+
+      <!-- Field method keyword preview -->
+      <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;display:inline-block;">
+        <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+        <span class="kw-key">FIELD_EVAL_METHOD</span>
+        <span class="kw-val" id="kw-field-method">GRIDLESS</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECTION C — CUTOFF RIGIDITY PARAMETERS
+         Visible only when S.calcQuantity ≠ 'FLUX' (i.e. when cutoff
+         rigidity calculation is part of the run).  Hidden by
+         setCalcQuantity() when FLUX is selected.
+
+         Parameters control the backward-tracing cutoff scan:
+           Emin / Emax:       Energy range [MeV/n] for the scan.
+           Max particles:     Total test particles injected per
+                              observation point across all energy bins.
+           Nenergy:           Number of log-spaced energy bins in
+                              [Emin, Emax].
+
+         At each observation point and each energy bin, AMPS injects
+         (MaxParticles / Nenergy) particles isotropically.  Each is
+         traced backward through the geomagnetic field to determine
+         if it reaches the outer boundary (allowed) or not (forbidden).
+         The cutoff rigidity Rc is the allowed/forbidden transition.
+
+         Input onchange handlers call cutoffParamChange() which syncs
+         values to S, updates keyword previews, and refreshes the
+         visual energy-range bar.
+
+         AMPS_PARAM.in keywords:
+           #CUTOFF_RIGIDITY
+           CUTOFF_EMIN            = <float> MeV/n
+           CUTOFF_EMAX            = <float> MeV/n
+           CUTOFF_MAX_PARTICLES   = <int>
+           CUTOFF_NENERGY         = <int>
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="subsection" id="cutoff-params-section">
+      <div class="subsection-title">C — Cutoff Rigidity Parameters</div>
+      <div class="infobox info-blue" style="margin-bottom:12px;">
+        Configure the energy range and particle budget for the backward-tracing cutoff scan.
+        At each observation point, AMPS injects test particles across the energy range and traces
+        them backward to determine which rigidities are <b>allowed</b> (reach outer boundary)
+        vs. <b>forbidden</b> (trapped or absorbed). The cutoff is the boundary between these.
+      </div>
+      <div class="frow c2">
+        <div class="field"><label>Minimum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="cutoff-emin" type="number" value="1.0" min="0.01" max="100" step="0.1" onchange="cutoffParamChange()"/>
+          <div class="hint">Lower bound of energy scan. Typical: 1 MeV/n for SEP; 0.1 MeV/n for detailed penumbra.</div>
+        </div>
+        <div class="field"><label>Maximum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="cutoff-emax" type="number" value="1000" min="10" max="100000" step="10" onchange="cutoffParamChange()"/>
+          <div class="hint">Upper bound. Must exceed the expected cutoff. Typical: 1000 MeV/n for most geolocations.</div>
+        </div>
+      </div>
+      <div class="frow c2">
+        <div class="field"><label>Max Particles per Point <span style="font-size:10px;color:var(--text-dim)">(total injected)</span></label>
+          <input id="cutoff-max-particles" type="number" value="500" min="50" max="50000" step="50" onchange="cutoffParamChange()"/>
+          <div class="hint">Total test particles injected from each observation point across the full energy range.
+            More particles = finer penumbra resolution but longer runtime. Typical: 200–2000.</div>
+        </div>
+        <div class="field"><label>Number of Energy Bins</label>
+          <input id="cutoff-nenergy" type="number" value="50" min="10" max="500" step="5" onchange="cutoffParamChange()"/>
+          <div class="hint">Energy bins spanning [E<sub>min</sub>, E<sub>max</sub>] in log-space.
+            At each bin, particles are injected isotropically. Typical: 50–100.</div>
+        </div>
+      </div>
+
+      <!-- Visual: energy scan range bar -->
+      <div style="margin-top:12px;padding:12px 14px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">
+          <b style="color:var(--accent-bright);">Energy Scan Range</b>
+          &nbsp;&middot;&nbsp;
+          <span id="cutoff-range-label">1.0 – 1000.0 MeV/n</span>
+          &nbsp;&middot;&nbsp;
+          <span id="cutoff-bins-label">50 bins (log-spaced)</span>
+          &nbsp;&middot;&nbsp;
+          <span id="cutoff-particles-label">500 particles/point</span>
+        </div>
+        <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(45,212,160,.08),rgba(26,136,212,.15),rgba(139,111,247,.15));border-radius:4px;overflow:hidden;">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
+            <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);" id="cutoff-emin-bar">1.0 MeV/n</span>
+            <span style="font-size:9px;color:var(--text-dim);">← log-spaced bins →</span>
+            <span style="font-size:10px;color:var(--purple);font-family:var(--font-mono);" id="cutoff-emax-bar">1000 MeV/n</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Keyword preview for cutoff params -->
+      <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;">
+        <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+        <div><span class="kw-key">CUTOFF_EMIN</span>         <span class="kw-val" id="kw-cutoff-emin">1.0</span>       <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">CUTOFF_EMAX</span>         <span class="kw-val" id="kw-cutoff-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">CUTOFF_MAX_PARTICLES</span> <span class="kw-val" id="kw-cutoff-maxp">500</span></div>
+        <div><span class="kw-key">CUTOFF_NENERGY</span>      <span class="kw-val" id="kw-cutoff-nen">50</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+
+<div id="panel-3" class="step-panel">
 <div class="sect" id="s-particle">
   <div class="sect-hd" onclick="toggleSection('s-particle')">
     <div class="sect-icon" style="background:rgba(56,192,255,.12)">&#9883;</div>
     <div><div class="sect-title">Particle Species &amp; Charge State</div>
     <div style="font-size:11px;color:var(--text-dim)">Sets SPECIES, CHARGE, MASS_AMU in AMPS_PARAM.in. One species per run.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 2</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 3</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -990,13 +1358,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-3" class="step-panel">
+<div id="panel-4" class="step-panel">
 <div class="sect" id="s-bgfield">
   <div class="sect-hd" onclick="toggleSection('s-bgfield')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#129522;</div>
     <div><div class="sect-title">Background Magnetic Field — Model &amp; Driving Parameters</div>
     <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05/TS04 support storm-time reconstruction; T96/T01 provide robust baseline; TS07D uses time-dependent coefficients; TA15 includes GOES total-B.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 3</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 4</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1342,13 +1710,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-4" class="step-panel">
+<div id="panel-5" class="step-panel">
 <div class="sect" id="s-boundary">
   <div class="sect-hd" onclick="toggleSection('s-boundary')">
     <div class="sect-icon" style="background:rgba(139,111,247,.15)">&#128754;</div>
     <div><div class="sect-title">Simulation Domain Boundary</div>
     <div style="font-size:11px;color:var(--text-dim)">Outer boundary where particles are injected and escape. Maps to #DOMAIN_BOUNDARY in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">NEW &middot; Step 4</span></span>
+    <span class="sect-sub"><span class="tag tag-new">NEW &middot; Step 5</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -1608,7 +1976,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
      Handles: corotation E (always available), convection E models
      (Volland-Stern or Weimer), live SVG schematic, KW preview.
 ══════════════════════════════════════════════════════════════════ -->
-<div id="panel-5" class="step-panel">
+<div id="panel-6" class="step-panel">
 <div class="sect" id="s-efield">
   <div class="sect-hd" onclick="toggleSection('s-efield')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">⚡</div>
@@ -1619,10 +1987,35 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         Maps to <code style="font-size:10px;">#ELECTRIC_FIELD</code> in AMPS_PARAM.in.
       </div>
     </div>
-    <span class="sect-sub"><span class="tag tag-new">NEW · Step 5</span></span>
+    <span class="sect-sub"><span class="tag tag-new">NEW · Step 6</span></span>
     <span class="chevron">▾</span>
   </div>
   <div class="sect-body">
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         GRIDLESS-MODE OVERLAY (added 2026-02-21)
+         Shown at the top of the E-field panel when S.fieldMethod is
+         'GRIDLESS' (set in Step 2).  Visibility is toggled by
+         applyFieldMethodConstraints() in js/02a-calcmode.js.
+
+         In gridless mode, the electric field is physically excluded:
+         no corotation E, no convection E.  The overlay explains this
+         and directs the user to Step 2 if they want to switch to
+         3-D grid mode.
+
+         Note: the user can still navigate to Step 6 by clicking
+         the wizard strip directly (the goStep() skip only applies
+         to forward/backward navigation).  This overlay prevents
+         confusion in that case.
+    ══════════════════════════════════════════════════════════════════ -->
+    <div id="efield-gridless-overlay" class="infobox info-orange" style="display:none;margin-bottom:14px;text-align:center;padding:20px;">
+      <div style="font-size:28px;margin-bottom:8px;">&#128268;</div>
+      <b>Electric Field is excluded in Gridless mode</b><br>
+      <span style="font-size:12px;">You selected <b>Gridless (Analytic)</b> field evaluation in Step 2.
+      In this mode, only the magnetic field is traced — no electric field is applied.
+      This is the standard approach for cutoff rigidity calculations.<br>
+      To enable electric fields, switch to <b>3-D Grid</b> mode in Step 2.</span>
+    </div>
 
         <div class="infobox info-blue">
       <b>Why electric fields matter:</b> Particle drift depends on the <b>E×B</b> electric drift, so the choice of E-field strongly affects access and cutoffs during storms.
@@ -1896,13 +2289,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div><!-- /sect -->
 </div><!-- /panel-5 -->
 
-<div id="panel-6" class="step-panel">
+<div id="panel-7" class="step-panel">
 <div class="sect" id="s-temporal">
   <div class="sect-hd" onclick="toggleSection('s-temporal')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#8987;</div>
     <div><div class="sect-title">Temporal Variability of the Background Field</div>
     <div style="font-size:11px;color:var(--text-dim)">How TS05 parameters evolve during the simulation. Maps to TEMPORAL_MODE in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 6</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 7</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -2106,13 +2499,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-7" class="step-panel">
+<div id="panel-8" class="step-panel">
 <div class="sect" id="s-spectrum">
   <div class="sect-hd" onclick="toggleSection('s-spectrum')">
     <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128202;</div>
     <div><div class="sect-title">Particle Source Spectrum / Boundary Condition</div>
     <div style="font-size:11px;color:var(--text-dim)">SEP energy spectrum injected at the outer boundary. Maps to #SPECTRUM in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 7</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 8</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -2235,13 +2628,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-8" class="step-panel">
+<div id="panel-9" class="step-panel">
 <div class="sect" id="s-output">
   <div class="sect-hd" onclick="toggleSection('s-output')">
     <div class="sect-icon" style="background:rgba(45,212,160,.12)">&#128205;</div>
     <div><div class="sect-title">Output Domain &#8212; Where to Compute Flux &amp; Cutoff Rigidity</div>
     <div style="font-size:11px;color:var(--text-dim)">Mode A: individual points &middot; Mode B: spacecraft trajectory &middot; Mode C: spherical shells</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 8</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 9</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -2335,13 +2728,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-9" class="step-panel">
+<div id="panel-10" class="step-panel">
 <div class="sect" id="s-out-opts">
   <div class="sect-hd" onclick="toggleSection('s-out-opts')">
     <div class="sect-icon" style="background:rgba(26,136,212,.15)">&#9881;</div>
     <div><div class="sect-title">Output Options &#8212; Flux Type, Energy Bins, File Format</div>
     <div style="font-size:11px;color:var(--text-dim)">Maps to #OUTPUT_OPTIONS and ENERGY_BINS in AMPS_PARAM.in.</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 9</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 10</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -2415,13 +2808,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </div>
 
 
-<div id="panel-10" class="step-panel">
+<div id="panel-11" class="step-panel">
 <div class="sect" id="s-review">
   <div class="sect-hd" onclick="toggleSection('s-review')">
     <div class="sect-icon" style="background:rgba(45,212,160,.15)">&#128203;</div>
     <div><div class="sect-title">Review &amp; Submit</div>
     <div style="font-size:11px;color:var(--text-dim)">Final validation, AMPS_PARAM.in preview, file manifest, submission</div></div>
-    <span class="sect-sub"><span class="tag tag-new">Step 10</span></span>
+    <span class="sect-sub"><span class="tag tag-new">Step 11</span></span>
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
@@ -2458,6 +2851,12 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <div class="progress"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     <div style="font-size:10px;color:var(--text-dim);text-align:right;margin-bottom:8px;"><span id="progress-pct">0%</span> complete</div>
     <div class="sb-row"><div class="sb-k">Run name</div><div class="sb-v o" id="sb-run-name">(not set)</div></div>
+    <!-- Sidebar rows for Step 2: Calculation Mode (added 2026-02-21).
+         sb-calc-target:  shows CUTOFF RIGIDITY / PARTICLE FLUX / CUTOFF + FLUX.
+         sb-field-method: shows Gridless (analytic) or 3-D Grid.
+         Both are updated by updateSidebar() in js/08-review.js. -->
+    <div class="sb-row"><div class="sb-k">Calc target</div><div class="sb-v g" id="sb-calc-target">CUTOFF RIGIDITY</div></div>
+    <div class="sb-row"><div class="sb-k">Field method</div><div class="sb-v g" id="sb-field-method">Gridless</div></div>
     <div class="sb-row"><div class="sb-k">Species</div><div class="sb-v g" id="sb-species">H+ proton</div></div>
     <div class="sb-row"><div class="sb-k">Field model</div><div class="sb-v g" id="sb-field-model">TS05</div></div>
     <div class="sb-row"><div class="sb-k">Boundary</div><div class="sb-v g" id="sb-boundary">Shue 1998</div></div>
@@ -2525,6 +2924,11 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 <script src="js/01-state.js"></script>
 <!-- 2. Wizard navigation (depends on: state) -->
 <script src="js/02-wizard.js"></script>
+<!-- 2a. Calculation mode — Step 2: target (cutoff/flux/both) + field
+     evaluation method (gridless/grid_3d) + cutoff params + grid config.
+     Also implements constraint propagation to Steps 4 (B-field) and 6 (E-field).
+     (depends on: state, wizard) -->
+<script src="js/02a-calcmode.js"></script>
 <!-- 3. Run info, particle, background field (depends on: state, wizard) -->
 <script src="js/03-bgfield.js"></script>
 <!-- 4. Domain boundary + SVG diagrams (depends on: state) -->
