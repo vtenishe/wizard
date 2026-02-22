@@ -1,3 +1,81 @@
+/* ── 3g. STEP 7 SPECTRUM ───────────────────────────────────────── */
+function setSpec(type,card){
+  S.specType=type;
+  document.querySelectorAll('.spec-card').forEach(c=>c.classList.remove('sel'));
+  if(card) card.classList.add('sel');
+  ['pl-form','plc-form','lis-form','band-form','table-form'].forEach(id=>{
+    const m={'pl-form':'POWER_LAW','plc-form':'POWER_LAW_CUTOFF','lis-form':'LIS_FORCE_FIELD','band-form':'BAND','table-form':'TABLE'};
+    const el=$(id); if(el) el.style.display=m[id]===type?'block':'none';
+  });
+  drawSpec();
+}
+function drawSpec(){
+  S.specJ0=parseFloat($('spec-j0')?.value)||S.specJ0;
+  S.specGamma=parseFloat($('spec-gamma')?.value)||S.specGamma;
+  S.specE0=parseFloat($('spec-e0')?.value)||S.specE0;
+  S.specEmin=parseFloat($('spec-emin')?.value)||S.specEmin;
+  S.specEmax=parseFloat($('spec-emax')?.value)||S.specEmax;
+  S.specEc=parseFloat($('spec-ec')?.value)||S.specEc;
+  S.specPhi=parseFloat($('spec-phi')?.value)||S.specPhi;
+  S.specLisJ0=parseFloat($('lis-j0')?.value)||S.specLisJ0;
+  S.specLisGamma=parseFloat($('lis-gamma')?.value)||S.specLisGamma;
+  const canvas=$('spec-canvas'); if(!canvas) return;
+  const W=canvas.parentElement.clientWidth||400, H=160;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#060e1c'; ctx.fillRect(0,0,W,H);
+  const emin=Math.max(0.1,S.specEmin), emax=Math.min(1e5,S.specEmax);
+  const lemin=Math.log10(emin), lemax=Math.log10(emax);
+  const ljmin=-2, ljmax=8, pad=28;
+  ctx.strokeStyle='#0d2040'; ctx.lineWidth=0.5;
+  for(let le=Math.ceil(lemin);le<=Math.floor(lemax);le++){
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    ctx.beginPath(); ctx.moveTo(x,5); ctx.lineTo(x,H-18); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText('10^'+le,x-8,H-4);
+  }
+  for(let lj=ljmin;lj<=ljmax;lj+=2){
+    const y=H-18-((lj-ljmin)/(ljmax-ljmin))*(H-22);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-8,y); ctx.stroke();
+    ctx.fillStyle='#2a4060'; ctx.font='7px IBM Plex Mono'; ctx.fillText('10^'+lj,1,y+3);
+  }
+  ctx.strokeStyle='#38c0ff'; ctx.lineWidth=2; ctx.beginPath();
+  let started=false;
+  for(let i=0;i<=300;i++){
+    const le=lemin+(i/300)*(lemax-lemin), E=Math.pow(10,le);
+    let J;
+    if(S.specType==='POWER_LAW') {
+      J=S.specJ0*Math.pow(E/(S.specE0||10),-(S.specGamma||3.5));
+    } else if(S.specType==='POWER_LAW_CUTOFF') {
+      const j0=parseFloat($('plc-j0')?.value)||S.specJ0;
+      const gamma=parseFloat($('plc-gamma')?.value)||S.specGamma;
+      const e0=parseFloat($('plc-e0')?.value)||S.specE0;
+      const ec=S.specEc||500;
+      J=j0*Math.pow(E/e0,-gamma)*Math.exp(-E/ec);
+    } else if(S.specType==='LIS_FORCE_FIELD') {
+      const jLis=S.specLisJ0||10000;
+      const gammaLis=S.specLisGamma||2.7;
+      const e0=parseFloat($('lis-e0')?.value)||S.specE0;
+      const phi=S.specPhi||550;
+      const M=938.272;
+      const Ephi=E+phi;
+      const Esq=E*E, Ephisq=Ephi*Ephi;
+      const Jlis_at_Ephi=jLis*Math.pow(Ephi/e0,-gammaLis);
+      J=Jlis_at_Ephi*(Esq+2*E*M)/(Ephisq+2*Ephi*M);
+    } else if(S.specType==='BAND'){
+      const g1=parseFloat($('band-gamma1')?.value)||3.5, g2=parseFloat($('band-gamma2')?.value)||1.5;
+      const e0=parseFloat($('band-e0')?.value)||10, Eb=(g1-g2)*e0;
+      J=E<Eb?S.specJ0*Math.pow(E/e0,-g1)*Math.exp(-E/e0):S.specJ0*Math.pow((g1-g2),g1-g2)*Math.exp(g2-g1)*Math.pow(E/e0,-g2);
+    } else break;
+    const lJ=Math.log10(Math.max(1e-4,J));
+    const x=((le-lemin)/(lemax-lemin))*(W-pad-10)+pad;
+    const y=H-18-((lJ-ljmin)/(ljmax-ljmin))*(H-22);
+    if(!started){ ctx.moveTo(x,Math.max(5,Math.min(H-18,y))); started=true; }
+    else ctx.lineTo(x,Math.max(5,Math.min(H-18,y)));
+  }
+  ctx.stroke();
+}
+
 /* ── 3h. STEP 7 OUTPUT DOMAIN ────────────────────────────────────── */
 function setMode(m,card){
   S.outputMode=m;
