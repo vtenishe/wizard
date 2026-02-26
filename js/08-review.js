@@ -48,7 +48,7 @@ LAST UPDATED: 2026-02-21
          GRID_NX/NY/NZ + extents — only when fieldMethod === 'GRID_3D'
 
      CUTOFF_RIGIDITY SECTION (added 2026-02-21):
-       Emitted only when S.calcQuantity is CUTOFF_RIGIDITY or BOTH.
+       Emitted only when S.calcQuantity is CUTOFF_RIGIDITY.
        Contains:
          CUTOFF_EMIN, CUTOFF_EMAX, CUTOFF_MAX_PARTICLES, CUTOFF_NENERGY
 
@@ -166,7 +166,7 @@ PI_EMAIL               ${S.piEmail||'unknown@unknown.edu'}
 SCIENCE_GOAL           ${$('science-goal')?.value||'custom'}
 
 ! ── Calculation mode (Step 2) ──────────────────────────────────
-! CALC_TARGET: what the run computes (cutoff rigidity, flux, or both).
+! CALC_TARGET: what the run computes (cutoff rigidity or flux).
 ! FIELD_EVAL_METHOD: how B/E are evaluated (analytic vs grid interpolation).
 ! GRID_* keywords are only emitted when FIELD_EVAL_METHOD = GRID_3D.
 #CALCULATION_MODE
@@ -187,9 +187,9 @@ GRID_ZMIN              ${f(S.gridZmin,1)}
 GRID_ZMAX              ${f(S.gridZmax,1)}`:'',
 
 /* ── Conditional: cutoff rigidity parameters ──
- *  Emitted when CALC_TARGET is CUTOFF_RIGIDITY or BOTH.
+ *  Emitted when CALC_TARGET is CUTOFF_RIGIDITY.
  *  Omitted for FLUX and DENSITY_3D (no cutoff computation). */
-(S.calcQuantity==='CUTOFF_RIGIDITY'||S.calcQuantity==='BOTH')?`
+(S.calcQuantity==='CUTOFF_RIGIDITY')?`
 ! ── Cutoff rigidity scan (Step 2, Section C) ───────────────────
 ! Energy range and particle budget for backward-tracing cutoff search.
 #CUTOFF_RIGIDITY
@@ -426,10 +426,10 @@ function buildValidation(){
      *  a grid, but gridless was selected).
      *  The DENSITY_3D checks ensure grid mode is active and that the
      *  density energy range is valid. */
-    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','FLUX','BOTH','DENSITY_3D'].includes(S.calcQuantity)},
+    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','FLUX','DENSITY_3D'].includes(S.calcQuantity)},
     {l:'Field method selected',  ok:['GRIDLESS','GRID_3D'].includes(S.fieldMethod)},
-    {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'&&S.calcQuantity!=='BOTH'||(S.cutoffEmin<S.cutoffEmax)},
-    {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'&&S.calcQuantity!=='BOTH'||(S.cutoffMaxParticles>=50)},
+    {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffEmin<S.cutoffEmax)},
+    {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxParticles>=50)},
     {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
     {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
     {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
@@ -492,7 +492,6 @@ function updateSidebar(){
   const prettyCalcTarget = {
     CUTOFF_RIGIDITY: 'CUTOFF RIGIDITY',
     FLUX: 'PARTICLE FLUX',
-    BOTH: 'CUTOFF + FLUX',
     DENSITY_3D: '3-D ION DENSITY'
   };
   set('sb-calc-target', prettyCalcTarget[S.calcQuantity] || S.calcQuantity, 'g');

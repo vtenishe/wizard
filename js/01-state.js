@@ -130,7 +130,7 @@ const S = {
    *
    *  AMPS_PARAM.in keywords affected:
    *    #CALCULATION_MODE
-   *    CALC_TARGET            = CUTOFF_RIGIDITY | FLUX | BOTH
+   *    CALC_TARGET            = CUTOFF_RIGIDITY | FLUX
    *    FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
    *    (plus GRID_NX/NY/NZ/XMIN..ZMAX when GRID_3D)
    *    #CUTOFF_RIGIDITY       (emitted only when target ≠ FLUX)
@@ -139,11 +139,10 @@ const S = {
    *    CUTOFF_NENERGY         = <int>
    * ───────────────────────────────────────────────────────────────────── */
 
-  /*  What to calculate: cutoff rigidity only, particle flux only, or both.
+  /*  What to calculate: cutoff rigidity only or particle flux only.
    *  CUTOFF_RIGIDITY: backward-trace to find geomagnetic cutoff.
-   *  FLUX:            forward-inject from boundary with source spectrum.
-   *  BOTH:            cutoff first, then flux (full pipeline). */
-  calcQuantity: 'CUTOFF_RIGIDITY',  // 'CUTOFF_RIGIDITY' | 'FLUX' | 'BOTH'
+   *  FLUX:            forward-inject from boundary with source spectrum. */
+  calcQuantity: 'CUTOFF_RIGIDITY',  // 'CUTOFF_RIGIDITY' | 'FLUX'
 
   /*  How the background B (and optionally E) field is evaluated at
    *  each particle position during Lorentz-force integration.

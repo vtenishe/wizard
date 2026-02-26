@@ -685,7 +685,6 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
              No source spectrum needed.  Fastest mode.
            • FLUX: forward-inject particles from boundary with a source
              spectrum to compute differential/integral flux.
-           • BOTH: cutoff rigidity first, then flux (full pipeline).
 
        (B) FIELD EVALUATION METHOD — how background fields are evaluated:
            • GRIDLESS (Analytic): Tsyganenko models called per particle
@@ -702,7 +701,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
      AMPS_PARAM.in KEYWORDS AFFECTED:
        #CALCULATION_MODE
-       CALC_TARGET            = CUTOFF_RIGIDITY | FLUX | BOTH
+       CALC_TARGET            = CUTOFF_RIGIDITY | FLUX
        FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
        GRID_NX / NY / NZ      (only when GRID_3D)
        GRID_XMIN..ZMAX        (only when GRID_3D)
@@ -766,7 +765,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
          which updates S.calcQuantity, toggles the .sel class on cards,
          shows/hides Section C (cutoff params), and refreshes sidebar.
 
-         AMPS_PARAM.in keyword: CALC_TARGET = CUTOFF_RIGIDITY | FLUX | BOTH
+         AMPS_PARAM.in keyword: CALC_TARGET = CUTOFF_RIGIDITY | FLUX
     ══════════════════════════════════════════════════════════════════ -->
     <div class="subsection" style="margin-bottom:18px;">
       <div class="subsection-title">A — Calculation Target</div>
@@ -775,7 +774,6 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         (momentum per charge) that can reach that location through the geomagnetic field.
         <br><b>Flux:</b> computes differential and/or integral particle flux at observation points by
         injecting particles from the outer boundary with a specified source spectrum.
-        <br><b>Both:</b> performs cutoff rigidity calculation first, then uses those cutoffs in the flux evaluation.
         <br><b>3-D Ion Density:</b> forward-models particle transport in geospace, sampling energy-resolved ion density
         on the simulation grid. Each energy bin produces a separate 3-D density field.
       </div>
@@ -791,12 +789,6 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <div class="opt-label">Particle Flux</div>
           <div class="opt-desc">Differential/integral flux of SEP or GCR at observation points. Requires source spectrum.</div>
           <div class="opt-badge" style="background:rgba(255,154,60,.15);color:var(--orange);">Requires spectrum definition</div>
-        </div>
-        <div class="opt-card" id="calc-both-card" onclick="setCalcQuantity('BOTH',this)">
-          <div class="opt-icon" style="font-size:28px;">&#128202;</div>
-          <div class="opt-label">Both</div>
-          <div class="opt-desc">Cutoff rigidity + particle flux. Full pipeline: cutoff scan followed by flux evaluation with spectrum.</div>
-          <div class="opt-badge" style="background:rgba(139,111,247,.15);color:var(--purple);">Complete &middot; Highest compute cost</div>
         </div>
         <!-- ── 4th card: 3-D Ion Density (forward modeling) ──
              Forward-models particle transport in 3-D geospace.
@@ -3510,7 +3502,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 <script src="js/01-state.js"></script>
 <!-- 2. Wizard navigation (depends on: state) -->
 <script src="js/02-wizard.js"></script>
-<!-- 2a. Calculation mode — Step 2: target (cutoff/flux/both) + field
+<!-- 2a. Calculation mode — Step 2: target (cutoff/flux) + field
      evaluation method (gridless/grid_3d) + cutoff params + grid config.
      Also implements constraint propagation to Steps 4 (B-field) and 6 (E-field).
      (depends on: state, wizard) -->

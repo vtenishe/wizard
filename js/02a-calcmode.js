@@ -75,10 +75,6 @@ LAST UPDATED: 2026-02-21
       requires a complete spectrum definition and is more expensive than
       a cutoff-only run.
 
-   3. BOTH
-      Performs cutoff rigidity first (to identify the penumbra region),
-      then uses that information to optimize the flux calculation.
-
    ─── FIELD EVALUATION METHODS ─────────────────────────────────────────
 
    The second architectural choice is how the background magnetic (and
@@ -125,7 +121,7 @@ LAST UPDATED: 2026-02-21
 
      setCalcQuantity(target, card)
        Set the calculation target to one of: 'CUTOFF_RIGIDITY', 'FLUX',
-       or 'BOTH'.  Updates the card selection visuals, shows/hides the
+       or 'DENSITY_3D'.  Updates the card selection visuals, shows/hides the
        cutoff parameters panel (Section C), and refreshes the sidebar.
 
      setFieldMethod(method, card)
@@ -168,7 +164,6 @@ LAST UPDATED: 2026-02-21
        calc-target-cards         — container for calculation target cards
        calc-cutoff-card          — CUTOFF_RIGIDITY card
        calc-flux-card            — FLUX card
-       calc-both-card            — BOTH card
        field-method-cards        — container for field method cards
        fm-gridless-card          — GRIDLESS card
        fm-grid3d-card            — GRID_3D card
@@ -207,7 +202,7 @@ LAST UPDATED: 2026-02-21
    ─── CHANGELOG ────────────────────────────────────────────────────────
 
      2026-02-21  Initial implementation (new Step 2).
-       • Three-card calc target selector (CUTOFF_RIGIDITY / FLUX / BOTH).
+       • Calc target selector (CUTOFF_RIGIDITY / FLUX / DENSITY_3D).
        • Two-card field method selector (GRIDLESS / GRID_3D).
        • Cutoff rigidity parameter panel (Emin, Emax, MaxParticles,
          Nenergy) with live keyword preview and visual energy bar.
@@ -231,12 +226,12 @@ LAST UPDATED: 2026-02-21
  *   • Whether the #CUTOFF_RIGIDITY block is emitted in the param file.
  *   • Whether Section C (cutoff parameters) is visible in the wizard.
  *   • Whether Section D (density parameters) is visible in the wizard.
- *   • Whether the Spectrum step (Step 8) is mandatory — FLUX, BOTH,
- *     and DENSITY_3D require a source spectrum; CUTOFF_RIGIDITY does not.
+ *   • Whether the Spectrum step (Step 8) is mandatory — FLUX and
+ *     DENSITY_3D require a source spectrum; CUTOFF_RIGIDITY does not.
  *   • Whether the 3-D grid is required — DENSITY_3D forces GRID_3D
  *     because density is sampled on the simulation grid.
  *
- * @param {'CUTOFF_RIGIDITY'|'FLUX'|'BOTH'|'DENSITY_3D'} target
+ * @param {'CUTOFF_RIGIDITY'|'FLUX'|'DENSITY_3D'} target
  * @param {HTMLElement} card — the clicked opt-card element (for styling)
  */
 function setCalcQuantity(target, card) {
@@ -257,11 +252,11 @@ function setCalcQuantity(target, card) {
   if (kw) kw.textContent = target;
 
   /* ── 4. Show/hide Section C: Cutoff Rigidity Parameters ──
-   *  Shown for CUTOFF_RIGIDITY and BOTH (cutoff scan is part of the run).
+   *  Shown for CUTOFF_RIGIDITY (cutoff scan is part of the run).
    *  Hidden for FLUX and DENSITY_3D (no cutoff computation). */
   const cutSec = $('cutoff-params-section');
   if (cutSec) {
-    const needsCutoff = (target === 'CUTOFF_RIGIDITY' || target === 'BOTH');
+    const needsCutoff = (target === 'CUTOFF_RIGIDITY');
     cutSec.style.display = needsCutoff ? '' : 'none';
   }
 
