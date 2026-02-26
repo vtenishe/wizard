@@ -215,6 +215,7 @@ const S = {
   t96By:     0.0,
   t96Bz:     2.0,
   t96Tilt:   0.0,
+  t96Epoch:  '2017-09-10T16:00',
   // T01 driver set:
   t01Dst:  -20.0,
   t01Pdyn:   2.0,

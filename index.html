@@ -294,16 +294,17 @@ MAINTAINER NOTE
                     <p><strong>Reference:</strong> Tsyganenko, N. A., &amp; Sitnov, M. I. (2005). &quot;Modeling the dynamics of the inner magnetosphere during strong geomagnetic storms.&quot; <em>J. Geophys. Res.</em>, 110(A3), A03208. doi:10.1029/2004JA010798</p>
 </div>
 
-                  <div class="model-section">
+                                    <div class="model-section">
                     <h5>T96 (Tsyganenko 1996)</h5>
-                    <p><strong>Type:</strong> Widely-used empirical model with dipole tilt dependence.</p>
-                    <p><strong>Driving Parameters:</strong> Dst, Pdyn, IMF By, Bz, dipole tilt angle.</p>
-                    <p><strong>Strengths:</strong> Computationally efficient, good for statistical studies.</p>
-                    <p><strong>Limitations:</strong> Less accurate during extreme storms compared to TS05.</p>
-                    <p><strong>Reference:</strong> Tsyganenko, N. A. (1995). "Modeling the Earth's magnetospheric magnetic field confined within a realistic magnetopause." <em>J. Geophys. Res.</em>, 100(A4), 5599-5612. (Updated in 1996)</p>
+                    <p><strong>Type:</strong> Fast data-based external field model with explicit dipole-tilt dependence and a realistic magnetopause.</p>
+                    <p><strong>Drivers (as in the reference implementation T96_01):</strong> solar-wind dynamic pressure <b>Pdyn</b>, <b>Dst</b>, IMF <b>By</b> and <b>Bz</b> (GSM), and dipole <b>tilt</b>.</p>
+                    <p><strong>Recommended parameter ranges (fit domain):</strong> Pdyn ≈ 0.5–10 nPa, Dst ≈ −100…+20 nT, and By/Bz ≈ −10…+10 nT. Outside these ranges the model is extrapolated—use caution.</p>
+                    <p><strong>Boundary note:</strong> In this release, magnetopause size depends on <b>Pdyn only</b> (no explicit IMF dependence in the boundary size/shape).</p>
+                    <p><strong>Use cases:</strong> quick cutoff sweeps, statistical studies, and baseline comparisons against storm-time models (TS05/TA15).</p>
+                    <p><strong>References:</strong> Tsyganenko (1995/1996) and Tsyganenko &amp; Stern (1996); see the site PDF “Magnetic field models” for details.</p>
                   </div>
 
-                  <div class="model-section">
+<div class="model-section">
                     <h5>T01 (Tsyganenko 2001)</h5>
                     <p><strong>Type:</strong> Storm-time model with substorm dynamics.</p>
                     <p><strong>Driving Parameters:</strong> Similar to T96, plus substorm indices.</p>
@@ -1658,31 +1659,74 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
     <!-- ── T96 form: Dst + Pdyn + IMF By/Bz + dipole tilt ── -->
     <div id="t96-form" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T96 Driving Parameters</div>
-      <div class="infobox info-blue" style="margin-bottom:10px;">
-        Typical examples (order-of-magnitude): <b>quiet</b> Dst≈0 to −20 nT, Pdyn≈1–3 nPa, IMF Bz≈0 to +5 nT;
-        <b>storm</b> Dst&lt;−100 nT, Pdyn≈5–15 nPa, IMF Bz≈−10 to −25 nT. (Refs: NOAA SWPC Dst/storm levels; NASA OMNIWeb typical solar-wind values.)
+      <div id="t96-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T96 Driving Parameters</div>
+
+    <div class="infobox info-orange">
+      <b>Example presets:</b> <span style="color:var(--text-dim)">quiet</span> (Dst≈−10 nT, Pdyn≈2 nPa, Bz≈+2 nT, By≈0 nT, tilt≈0°) and
+      <span style="color:var(--text-dim)">storm</span> (Dst≈−120 nT, Pdyn≈8 nPa, Bz≈−15 nT, By≈+5 nT, tilt≈0°).
+      Use OMNI/CCMC iSWA values for event runs.
+    </div>
+    <div class="frow c4">
+      <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+        <input id="t96-dst" type="number" value="-20" step="1" min="-600" max="50" class="valid" oninput="t96Change()"/>
+        <div id="t96-dst-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+        <div class="hint">Ring current proxy (Dst). Recommended fit domain: −100…+20 nT.</div>
       </div>
-      <div class="frow c4">
-        <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t96-dst" type="number" value="-20" step="1" min="-600" max="50" oninput="t96Change()"/>
-        </div>
-        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
-          <input id="t96-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="t96Change()"/>
-        </div>
-        <div class="field"><label>IMF By <span class="unit">[nT]</span></label>
-          <input id="t96-by" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="t96Change()"/>
-        </div>
-        <div class="field"><label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t96-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="t96Change()"/>
-        </div>
+
+      <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+        <input id="t96-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" class="valid" oninput="t96Change()"/>
+        <div id="t96-pdyn-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+        <div class="hint">Solar-wind dynamic pressure. Controls magnetopause standoff distance.</div>
       </div>
-      <div class="frow c4">
-        <div class="field"><label>Dipole tilt <span class="unit">[deg]</span></label>
-          <input id="t96-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" oninput="t96Change()"/>
-          <div class="hint">If unknown, leave 0; future option: compute from epoch/IGRF.</div>
-        </div>
+
+      <div class="field"><label>IMF Bz <span class="unit">[nT GSM]</span> <span class="req">*</span></label>
+        <input id="t96-bz" type="number" value="2.0" step="0.1" min="-50" max="20" class="valid" oninput="t96Change()"/>
+        <div id="t96-bz-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+        <div class="hint">Negative = southward = reconnection onset.</div>
       </div>
+
+      <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
+        <input id="t96-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="t96Change()"/>
+        <div class="hint">Snapshot timestamp for STEADY_STATE mode.</div>
+      </div>
+    </div>
+    <div class="frow c4">
+      <div class="field"><label>IMF By <span class="unit">[nT]</span> <span class="opt">opt</span></label>
+        <input id="t96-by" type="number" value="0.0" step="0.1" min="-40" max="40" class="valid" oninput="t96Change()"/>
+        <div id="t96-by-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+        <div class="hint">Dawn–dusk asymmetry. Set 0 if unknown.</div>
+      </div>
+
+      <div class="field"><label>Dipole tilt <span class="unit">[deg]</span> <span class="opt">opt</span></label>
+        <input id="t96-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" class="valid" oninput="t96Change()"/>
+        <div id="t96-tilt-status" class="field-note" style="color:var(--green);">&#10003; OK</div>
+        <div class="hint">Geodipole tilt angle. If unknown, leave 0°.</div>
+      </div>
+    </div>
+
+      <details class="infobox info-blue" style="margin-top:10px;">
+        <summary style="cursor:pointer;"><b>Advanced:</b> load presets or paste an OMNI record line (Dst, Pdyn, By, Bz)</summary>
+        <div style="margin-top:8px; font-size:12px; color:var(--text-dim); line-height:1.35;">
+          Use a preset to quickly populate typical quiet or storm-time values, or paste a whitespace-separated record with
+          <code>Dst</code> [nT], <code>Pdyn</code> [nPa], <code>IMF By</code> [nT], <code>IMF Bz</code> [nT], <code>Tilt</code> [deg].
+          You can also copy the shared scalars (Dst, Pdyn, By, Bz) directly from any TS05 values already entered.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="t96PresetQuiet()">Preset: Quiet</button>
+          <button class="btn" type="button" onclick="t96PresetStorm()">Preset: Storm</button>
+          <button class="btn" type="button" onclick="t96CopyFromTs05()">Copy from TS05 scalars</button>
+          <span id="t96-status" style="margin-left:auto;font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <textarea id="t96-omni-line" style="width:100%;height:90px;margin-top:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:11px;" placeholder="DST  PDYN  BY  BZ  TILT   (whitespace-separated, e.g.: -120 8.0 5.0 -15.0 0.0)"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="parseT96OmniLine()">Parse record → T96 inputs</button>
+          <span id="t96-omni-status" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          Parsed values: <b>Dst</b>=<span id="t96-dst-read">—</span> nT, <b>Pdyn</b>=<span id="t96-pdyn-read">—</span> nPa, <b>By</b>=<span id="t96-by-read">—</span> nT, <b>Bz</b>=<span id="t96-bz-read">—</span> nT, <b>Tilt</b>=<span id="t96-tilt-read">—</span>°.
+        </div>
+      </details>
+
     </div><!-- /t96-form -->
 
     <!-- ── T01 form: similar driver set (quiet/storm coefficient sets) ── -->
@@ -1802,7 +1846,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <!-- ── AMPS_PARAM.in keyword preview (all models) ── -->
     <div class="kw-strip" id="ts05-kw-preview">
 <span class="kw-section">#BACKGROUND_FIELD</span>
-<span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment">! Tsyganenko &amp; Sitnov (2005)</span>
+<span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment" id="kv-field-model-comment">! Tsyganenko &amp; Sitnov (2005)</span>
 <!-- TS05/TS04 rows — hidden when other model selected -->
 <span class="ts05-kw-row"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-dst">-142.0</span>    <span class="kw-comment">! nT ring current index</span>
 </span><span class="ts05-kw-row"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa dynamic pressure</span>
@@ -1820,12 +1864,14 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W4</span>             <span class="kw-val" id="kv-ts05-w4">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
 </span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W5</span>             <span class="kw-val" id="kv-ts05-w5">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
 </span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W6</span>             <span class="kw-val" id="kv-ts05-w6">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
-<!-- T96/T01 rows — hidden unless T96 or T01 selected -->
-<span class="t96-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t96-dst">-20.0</span>    <span class="kw-comment">! nT</span>
-</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t96-pdyn">2.00</span>     <span class="kw-comment">! nPa</span>
-</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-t96-by">0.00</span>     <span class="kw-comment">! nT</span>
-</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t96-bz">2.00</span>     <span class="kw-comment">! nT</span>
-</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-t96-tilt">0.0</span>      <span class="kw-comment">! deg</span>
+</span>
+<!-- T96 rows — hidden unless T96 selected -->
+<span class="t96-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t96-dst">-20.0</span>    <span class="kw-comment">! nT ring current index</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t96-pdyn">2.00</span>     <span class="kw-comment">! nPa dynamic pressure</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t96-bz">2.00</span>     <span class="kw-comment">! nT GSM southward component</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-t96-by">0.00</span>     <span class="kw-comment">! nT dawn-dusk component</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-t96-tilt">0.0</span>      <span class="kw-comment">! deg dipole tilt angle</span>
+</span><span class="t96-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>          <span class="kw-val" id="kv-t96-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
 </span>
 <span class="t01-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t01-dst">-20.0</span>    <span class="kw-comment">! nT</span>
 </span><span class="t01-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t01-pdyn">2.00</span>     <span class="kw-comment">! nPa</span>
@@ -1846,7 +1892,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 <!-- MHD rows — hidden unless BATSRUS/GAMERA selected -->
 <span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_FILE</span>        <span class="kw-val" id="kv-mhd-file">(upload required)</span>
 </span><span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_INTERP</span>      <span class="kw-val" id="kv-mhd-interp">LINEAR</span>   <span class="kw-comment">! LINEAR | CUBIC</span>
-</span><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span></div>
+</span></div>
   </div>
 </div>
 </div>

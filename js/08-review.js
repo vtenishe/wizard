@@ -251,6 +251,9 @@ EPOCH                  ${S.epoch}  ! UTC snapshot
 ! TS05_W5                ${S.ts05W5==null?'':Number(S.ts05W5).toFixed(2)}
 ! TS05_W6                ${S.ts05W6==null?'':Number(S.ts05W6).toFixed(2)}
 
+! T96_TILT_DEG           ${Number(S.t96Tilt||0).toFixed(1)}
+! T01_TILT_DEG           ${Number(S.t01Tilt||0).toFixed(1)}
+
 #DOMAIN_BOUNDARY
 BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
 S.boundaryType==='BOX'?`DOMAIN_X_MAX           ${f(S.boxXmax,1)}         ! RE dayside

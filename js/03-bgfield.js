@@ -727,6 +727,20 @@ function selectFieldModel(model) {
   const kv = $('kv-field-model');
   if (kv) kv.textContent = model;
 
+  // Update model comment
+  const commentMap = {
+    TS05: '! Tsyganenko & Sitnov (2005)',
+    TS04: '! Tsyganenko & Sitnov (2004)',
+    T96:  '! Tsyganenko (1996)',
+    T01:  '! Tsyganenko (2001)',
+    TS07D:'! Tsyganenko & Sitnov (2007D)',
+    TA15: '! Tsyganenko & Andreeva (2015)',
+    BATSRUS:'! MHD (Block-Adaptive Tree)',
+    GAMERA: '! MHD (Grid Agnostic)',
+  };
+  const cmt = $('kv-field-model-comment');
+  if (cmt) cmt.textContent = commentMap[model] || '! field model';
+
   // Shue boundary auto-compute depends on TS05 Bz/Pdyn — recompute
   bndShueUpdate();
 
@@ -735,18 +749,180 @@ function selectFieldModel(model) {
 
 /* t96Change — called on T96 input change */
 function t96Change(){
-  S.t96Dst  = parseFloat($('t96-dst')?.value)  || S.t96Dst;
-  S.t96Pdyn = parseFloat($('t96-pdyn')?.value) || S.t96Pdyn;
-  S.t96By   = parseFloat($('t96-by')?.value)   || S.t96By;
-  S.t96Bz   = parseFloat($('t96-bz')?.value)   || S.t96Bz;
-  S.t96Tilt = parseFloat($('t96-tilt')?.value) || S.t96Tilt;
+  // Read UI → state (model-specific)
+  S.t96Dst  = parseFloat($('t96-dst')?.value)  ?? S.t96Dst;
+  S.t96Pdyn = parseFloat($('t96-pdyn')?.value) ?? S.t96Pdyn;
+  S.t96By   = parseFloat($('t96-by')?.value)   ?? S.t96By;
+  S.t96Bz   = parseFloat($('t96-bz')?.value)   ?? S.t96Bz;
+  S.t96Tilt = parseFloat($('t96-tilt')?.value) ?? S.t96Tilt;
+  S.t96Epoch = $('t96-epoch')?.value || S.t96Epoch;
+
+
+  // Keep the generated AMPS_PARAM.in stable: map T96 reduced driver set → generic fields.
+  // (Backends can ignore irrelevant fields.)
+  if (S.fieldModel === 'T96') {
+    S.dst  = Number.isFinite(S.t96Dst)  ? S.t96Dst  : S.dst;
+    S.pdyn = Number.isFinite(S.t96Pdyn) ? S.t96Pdyn : S.pdyn;
+    S.by   = Number.isFinite(S.t96By)   ? S.t96By   : S.by;
+    S.bz   = Number.isFinite(S.t96Bz)   ? S.t96Bz   : S.bz;
+  }
+
+  // Keyword preview
   const set=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
   set('kv-t96-dst',  Number(S.t96Dst).toFixed(1));
   set('kv-t96-pdyn', Number(S.t96Pdyn).toFixed(2));
   set('kv-t96-by',   Number(S.t96By).toFixed(2));
   set('kv-t96-bz',   Number(S.t96Bz).toFixed(2));
   set('kv-t96-tilt', Number(S.t96Tilt).toFixed(1));
+  // keep global epoch preview consistent
+  if (S.fieldModel === 'T96' && S.t96Epoch) { const e=$('kv-epoch'); if(e) e.textContent = S.t96Epoch; }
+  set('kv-t96-epoch', S.t96Epoch || '');
+
+  validateT96();
   updateSidebar();
+}
+
+/* validateT96 — range guidance + UI feedback (warn vs out-of-range) */
+function validateT96(){
+  // Guidance ranges summarized from the reference implementation notes (T96_01.FOR):
+  //   Pdyn: 0.5–10 nPa, Dst: −100…+20 nT, IMF By/Bz: −10…+10 nT.
+  // UI also enforces broader hard limits to prevent typos.
+  const R = {
+    dst:  { ok:[-100, 20],  hard:[-600, 50],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    pdyn: { ok:[0.5,  10],  hard:[0.1,  30],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    by:   { ok:[-10,  10],  hard:[-40,  40],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    bz:   { ok:[-10,  10],  hard:[-50,  20],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    tilt: { ok:[-35,  35],  hard:[-35,  35],  msgOk:'\u2713 OK',               msgWarn:'\u26A0 Check',                  msgBad:'\u2717 Out-of-range' }
+  };
+
+  const fields = [
+    ['t96-dst',  'dst',  't96-dst-status'],
+    ['t96-pdyn', 'pdyn', 't96-pdyn-status'],
+    ['t96-by',   'by',   't96-by-status'],
+    ['t96-bz',   'bz',   't96-bz-status'],
+    ['t96-tilt', 'tilt', 't96-tilt-status']
+  ];
+
+  let anyWarn = false, anyBad = false;
+
+  for (const [id,k,statusId] of fields){
+    const el = $(id);
+    const st = $(statusId);
+    if(!el) continue;
+
+    const v = parseFloat(el.value);
+    // Reset classes
+    el.classList.remove('valid','warn','bad','error');
+
+    if(!Number.isFinite(v)){
+      if(st){ st.textContent = ''; st.style.color='var(--text-muted)'; }
+      continue;
+    }
+
+    const ok0 = R[k].ok[0], ok1 = R[k].ok[1];
+    const h0  = R[k].hard[0], h1 = R[k].hard[1];
+
+    if(v < h0 || v > h1){
+      el.classList.add('bad');
+      anyBad = true;
+      if(st){ st.textContent = R[k].msgBad; st.style.color='var(--red)'; }
+    } else if(v < ok0 || v > ok1){
+      el.classList.add('warn');
+      anyWarn = true;
+      if(st){ st.textContent = R[k].msgWarn; st.style.color='var(--orange)'; }
+    } else {
+      el.classList.add('valid');
+      if(st){ st.textContent = R[k].msgOk; st.style.color='var(--green)'; }
+    }
+  }
+
+  const st = $('t96-status');
+  if(st){
+    if(anyBad){
+      st.textContent = 'Out-of-range: expect unreliable/extrapolated results.';
+      st.style.color = 'var(--red)';
+    } else if(anyWarn){
+      st.textContent = 'Outside recommended range: use caution (extrapolation).';
+      st.style.color = 'var(--yellow)';
+    } else {
+      st.textContent = 'Within recommended range.';
+      st.style.color = 'var(--green)';
+    }
+  }
+}
+
+/* Presets + convenience actions */
+function t96PresetQuiet(){
+  const setv=(id,v)=>{const e=$(id); if(e){ e.value=String(v); }};
+  setv('t96-dst',  -10);
+  setv('t96-pdyn',  2.0);
+  setv('t96-by',    0.0);
+  setv('t96-bz',    2.0);
+  setv('t96-tilt',  0.0);
+  t96Change();
+}
+function t96PresetStorm(){
+  const setv=(id,v)=>{const e=$(id); if(e){ e.value=String(v); }};
+  setv('t96-dst',  -120);
+  setv('t96-pdyn',   8.0);
+  setv('t96-by',     5.0);
+  setv('t96-bz',   -15.0);
+  setv('t96-tilt',   0.0);
+  t96Change();
+}
+function t96CopyFromTs05(){
+  // If user already has TS05 scalars filled, reuse Dst/Pdyn/By/Bz as a quick way to compare models.
+  const setv=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)){ e.value=String(v); }};
+  setv('t96-dst',  S.dst);
+  setv('t96-pdyn', S.pdyn);
+  setv('t96-by',   S.by);
+  setv('t96-bz',   S.bz);
+  t96Change();
+}
+
+/* parseT96OmniLine — parse a whitespace-separated T96 record:
+   DST  PDYN  BY  BZ  TILT
+   Units: Dst[nT], Pdyn[nPa], By[nT], Bz[nT], Tilt[deg].
+*/
+function parseT96OmniLine(){
+  const box = $('t96-omni-line');
+  const st  = $('t96-omni-status');
+  const setText=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  if(!box){ if(st) st.textContent='(no input box found)'; return; }
+  const raw=(box.value||'').trim();
+  if(!raw){ if(st){ st.textContent='Paste a record line first.'; st.style.color='var(--orange)'; } return; }
+
+  const toks=raw.split(/\s+/);
+  if(toks.length<4){
+    if(st){ st.textContent=`Too few columns: got ${toks.length}, expected at least 4 (Dst Pdyn By Bz [Tilt]).`; st.style.color='var(--red)'; }
+    return;
+  }
+  try{
+    const f=(k)=>parseFloat(toks[k]);
+    const dst=f(0), pdyn=f(1), by=f(2), bz=f(3);
+    const tilt=(toks.length>=5) ? f(4) : 0.0;
+
+    // Push into UI fields
+    const setv=(id,v)=>{const e=$(id); if(e){ e.value=String(v); }};
+    setv('t96-dst',  dst);
+    setv('t96-pdyn', pdyn);
+    setv('t96-by',   by);
+    setv('t96-bz',   bz);
+    setv('t96-tilt', tilt);
+
+    // Status readout
+    setText('t96-dst-read',  dst.toFixed(1));
+    setText('t96-pdyn-read', pdyn.toFixed(2));
+    setText('t96-by-read',   by.toFixed(2));
+    setText('t96-bz-read',   bz.toFixed(2));
+    setText('t96-tilt-read', tilt.toFixed(1));
+
+    if(st){ st.textContent='Parsed OK.'; st.style.color='var(--green)'; }
+
+    t96Change();
+  }catch(e){
+    if(st){ st.textContent='Parse failed: '+(e&&e.message?e.message:String(e)); st.style.color='var(--red)'; }
+  }
 }
 
 /* t01Change — called on T01 input change */
