@@ -536,6 +536,30 @@ function updateRigidity() {
 }
 
 /* ── 3d. STEP 3 TS05 ─────────────────────────────────────────────── */
+/* ── TS05 quick presets — populate form fields with order-of-magnitude values ── */
+function ts05PresetQuiet(){
+  const setv=(id,v)=>{const e=$(id); if(e) e.value=String(v);};
+  setv('ts05-dst',  -10);
+  setv('ts05-pdyn',  2.0);
+  setv('ts05-bz',    2.0);
+  setv('ts05-vx',   -400);
+  setv('ts05-nsw',   5.0);
+  setv('ts05-by',    0.0);
+  setv('ts05-bx',    0.0);
+  ts05Change();
+}
+function ts05PresetStorm(){
+  const setv=(id,v)=>{const e=$(id); if(e) e.value=String(v);};
+  setv('ts05-dst',  -150);
+  setv('ts05-pdyn',  8.0);
+  setv('ts05-bz',   -20.0);
+  setv('ts05-vx',   -700);
+  setv('ts05-nsw',   15.0);
+  setv('ts05-by',    3.2);
+  setv('ts05-bx',    0.0);
+  ts05Change();
+}
+
 function ts05Change(){
   const v = k => parseFloat($(k)?.value)||0;
   S.dst=v('ts05-dst'); S.pdyn=v('ts05-pdyn'); S.bz=v('ts05-bz');
