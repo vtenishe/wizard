@@ -927,19 +927,188 @@ function parseT96OmniLine(){
 
 /* t01Change — called on T01 input change */
 function t01Change(){
-  S.t01Dst  = parseFloat($('t01-dst')?.value)  || S.t01Dst;
-  S.t01Pdyn = parseFloat($('t01-pdyn')?.value) || S.t01Pdyn;
-  S.t01By   = parseFloat($('t01-by')?.value)   || S.t01By;
-  S.t01Bz   = parseFloat($('t01-bz')?.value)   || S.t01Bz;
-  S.t01Tilt = parseFloat($('t01-tilt')?.value) || S.t01Tilt;
+  // Read UI → state (model-specific)
+  S.t01Dst  = parseFloat($('t01-dst')?.value)  ?? S.t01Dst;
+  S.t01Pdyn = parseFloat($('t01-pdyn')?.value) ?? S.t01Pdyn;
+  S.t01By   = parseFloat($('t01-by')?.value)   ?? S.t01By;
+  S.t01Bz   = parseFloat($('t01-bz')?.value)   ?? S.t01Bz;
+  S.t01Tilt = parseFloat($('t01-tilt')?.value) ?? S.t01Tilt;
+  S.t01G1   = parseFloat($('t01-g1')?.value)   ?? S.t01G1;
+  S.t01G2   = parseFloat($('t01-g2')?.value)   ?? S.t01G2;
+  S.t01Epoch = $('t01-epoch')?.value || S.t01Epoch;
+
+  // Mirror the shared driver set into generic keys when this model is active,
+  // so downstream steps (boundary, E-field) can stay model-agnostic.
+  if (S.fieldModel === 'T01') {
+    S.dst  = Number.isFinite(S.t01Dst)  ? S.t01Dst  : S.dst;
+    S.pdyn = Number.isFinite(S.t01Pdyn) ? S.t01Pdyn : S.pdyn;
+    S.by   = Number.isFinite(S.t01By)   ? S.t01By   : S.by;
+    S.bz   = Number.isFinite(S.t01Bz)   ? S.t01Bz   : S.bz;
+    if (S.t01Epoch) S.epoch = S.t01Epoch;
+  }
+
+  // Keyword preview
   const set=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
   set('kv-t01-dst',  Number(S.t01Dst).toFixed(1));
   set('kv-t01-pdyn', Number(S.t01Pdyn).toFixed(2));
   set('kv-t01-by',   Number(S.t01By).toFixed(2));
   set('kv-t01-bz',   Number(S.t01Bz).toFixed(2));
   set('kv-t01-tilt', Number(S.t01Tilt).toFixed(1));
+  set('kv-t01-g1',   Number(S.t01G1).toFixed(1));
+  set('kv-t01-g2',   Number(S.t01G2).toFixed(1));
+  set('kv-t01-epoch', S.t01Epoch || '');
+
+  // keep global epoch preview consistent
+  if (S.fieldModel === 'T01' && S.t01Epoch) { const e=$('kv-epoch'); if(e) e.textContent = S.t01Epoch; }
+
+  validateT01();
   updateSidebar();
 }
+
+/* validateT01 — driver range checks
+   Notes:
+     - T01 uses G1/G2 coupling/history indices (computed from ~1-hour averages).
+       In the original parameterization, G2 is scaled to be O(0..10) for commonly
+       observed conditions, but example storm events can yield larger values.
+*/
+function validateT01(){
+  const R = {
+    dst:  { ok:[-100, 20],  hard:[-600, 50],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    pdyn: { ok:[0.5,  10],  hard:[0.1,  30],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    by:   { ok:[-10,  10],  hard:[-40,  40],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    bz:   { ok:[-10,  10],  hard:[-50,  20],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 Outside recommended range', msgBad:'\u2717 Out-of-range' },
+    tilt: { ok:[-35,  35],  hard:[-90,  90],  msgOk:'\u2713 OK',                 msgWarn:'\u26A0 Large tilt',           msgBad:'\u2717 Out-of-range' },
+    g1:   { ok:[0,    10],  hard:[0,    60],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 High (storm-time)',    msgBad:'\u2717 Out-of-range' },
+    g2:   { ok:[0,    10],  hard:[0,    60],  msgOk:'\u2713 Within normal range', msgWarn:'\u26A0 High (storm-time)',    msgBad:'\u2717 Out-of-range' },
+  };
+
+  const check=(id,key)=>{
+    const inp=$(id), st=$(id+'-status');
+    if(!inp||!st) return true;
+    const v=parseFloat(inp.value);
+    if(!Number.isFinite(v)){
+      inp.classList.remove('valid','warn','bad');
+      st.textContent='\u26A0 Enter a number';
+      st.style.color='var(--orange)';
+      return false;
+    }
+    const [ok0,ok1]=R[key].ok, [h0,h1]=R[key].hard;
+    let cls='valid', msg=R[key].msgOk, col='var(--green)';
+    if(v<h0 || v>h1){ cls='bad'; msg=R[key].msgBad; col='var(--red)'; }
+    else if(v<ok0 || v>ok1){ cls='warn'; msg=R[key].msgWarn; col='var(--orange)'; }
+    inp.classList.remove('valid','warn','bad'); inp.classList.add(cls);
+    st.textContent=msg; st.style.color=col;
+    return cls!=='bad';
+  };
+
+  const ok =
+    check('t01-dst','dst') &
+    check('t01-pdyn','pdyn') &
+    check('t01-by','by') &
+    check('t01-bz','bz') &
+    check('t01-tilt','tilt') &
+    check('t01-g1','g1') &
+    check('t01-g2','g2');
+
+  const banner=$('t01-status');
+  if(banner){
+    banner.textContent = ok ? '\u2713 Inputs look OK' : '\u26A0 Check highlighted fields';
+    banner.style.color = ok ? 'var(--green)' : 'var(--orange)';
+  }
+}
+
+/* Presets */
+function t01PresetQuiet(){
+  const setv=(id,v)=>{const e=$(id); if(e) e.value=String(v);};
+  setv('t01-dst', 0.0);
+  setv('t01-pdyn', 2.0);
+  setv('t01-by', 0.0);
+  setv('t01-bz', 5.0);
+  setv('t01-tilt', 0.0);
+  setv('t01-g1', 0.0);
+  setv('t01-g2', 0.0);
+  t01Change();
+}
+function t01PresetStorm(){
+  const setv=(id,v)=>{const e=$(id); if(e) e.value=String(v);};
+  setv('t01-dst', -120.0);
+  setv('t01-pdyn', 8.0);
+  setv('t01-by', 2.0);
+  setv('t01-bz', -10.0);
+  setv('t01-tilt', 0.0);
+  setv('t01-g1', 20.0);
+  setv('t01-g2', 20.0);
+  t01Change();
+}
+
+/* Convenience: copy shared scalars from TS05 → T01 (for quick A/B comparisons) */
+function t01CopyFromTs05(){
+  const setv=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)) e.value=String(v);};
+  setv('t01-dst',  S.dst);
+  setv('t01-pdyn', S.pdyn);
+  setv('t01-by',   S.by);
+  setv('t01-bz',   S.bz);
+  t01Change();
+}
+
+/* parseT01OmniLine — parse a pasted text record into T01 inputs
+   Expected: PDYN DST BY BZ G1 G2 TILT_DEG [EPOCH]
+*/
+function parseT01OmniLine(){
+  const box=$('t01-omni-line');
+  const st=$('t01-omni-status');
+  const setText=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
+
+  if(!box){ if(st) st.textContent='(no input box found)'; return; }
+  const raw=(box.value||'').trim();
+  if(!raw){
+    if(st){ st.textContent='Paste a record line first.'; st.style.color='var(--orange)'; }
+    return;
+  }
+  const toks=raw.split(/\s+/);
+  const MIN=7;
+  if(toks.length<MIN){
+    if(st){
+      st.textContent=`Too few columns: got ${toks.length}, expected at least ${MIN}.`;
+      st.style.color='var(--red)';
+    }
+    return;
+  }
+
+  try{
+    const f=(k)=>parseFloat(toks[k]);
+    const pdyn=f(0), dst=f(1), by=f(2), bz=f(3), g1=f(4), g2=f(5), tilt=f(6);
+    const epoch = (toks.length>=8 && /T\d\d:\d\d/.test(toks[7])) ? toks[7] : '';
+
+    const setv=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)) e.value=String(v);};
+    setv('t01-pdyn', pdyn);
+    setv('t01-dst',  dst);
+    setv('t01-by',   by);
+    setv('t01-bz',   bz);
+    setv('t01-g1',   g1);
+    setv('t01-g2',   g2);
+    setv('t01-tilt', tilt);
+    if(epoch && $('t01-epoch')) $('t01-epoch').value = epoch;
+
+    setText('t01-pdyn-read', Number(pdyn).toFixed(2));
+    setText('t01-dst-read',  Number(dst).toFixed(1));
+    setText('t01-by-read',   Number(by).toFixed(2));
+    setText('t01-bz-read',   Number(bz).toFixed(2));
+    setText('t01-g1-read',   Number(g1).toFixed(1));
+    setText('t01-g2-read',   Number(g2).toFixed(1));
+    setText('t01-tilt-read', Number(tilt).toFixed(1));
+    setText('t01-epoch-read', epoch || '—');
+
+    if(st){ st.textContent='Parsed OK.'; st.style.color='var(--green)'; }
+    t01Change();
+  }catch(err){
+    if(st){
+      st.textContent='Parse error: '+(err?.message||String(err));
+      st.style.color='var(--red)';
+    }
+  }
+}
+
 
 /* ts07dChange — coefficient source + epoch */
 function ts07dChange(){

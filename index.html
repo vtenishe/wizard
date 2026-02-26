@@ -208,6 +208,9 @@ MAINTAINER NOTE
             <div class="help-detail-panel">
               <ul>
                 <li><a href="doc/electric_field_models.pdf">Electric field models: corotation, Volland–Stern, Weimer, and inductive dB/dt</a></li>
+
+                <li><a href="doc/tsyganenko2002_t01_paper1.pdf">T01 model (Paper 1): mathematical structure (Tsyganenko 2002)</a></li>
+                <li><a href="doc/tsyganenko2002_t01_paper2.pdf">T01 model (Paper 2): parameterization &amp; fitting (Tsyganenko 2002)</a></li>
                 <li><a href="doc/magnetic_field_models.pdf">Magnetic field models: T96/T15, IGRF, and MHD-driven fields</a></li>
               </ul>
             </div>
@@ -305,13 +308,12 @@ MAINTAINER NOTE
                   </div>
 
 <div class="model-section">
-                    <h5>T01 (Tsyganenko 2001)</h5>
-                    <p><strong>Type:</strong> Storm-time model with substorm dynamics.</p>
-                    <p><strong>Driving Parameters:</strong> Similar to T96, plus substorm indices.</p>
-                    <p><strong>Reference:</strong> Tsyganenko, N. A. (2002). "A model of the near magnetosphere with a dawn-dusk asymmetry: 1. Mathematical structure." <em>J. Geophys. Res.</em>, 107(A8), 1179. doi:10.1029/2001JA000219</p>
-                  </div>
-
-                  <div class="model-section">
+  <h5>T01 (Tsyganenko 2002; often labeled “T01”)</h5>
+  <p><strong>Type:</strong> Empirical near-magnetosphere model that improves storm-time realism, including strong dawn–dusk asymmetry and a partial ring current.</p>
+  <p><strong>Inputs:</strong> Dst, solar-wind dynamic pressure <em>Pdyn</em>, IMF <em>By</em>/<em>Bz</em>, dipole tilt, and two coupling/history indices <strong>G1</strong> and <strong>G2</strong> (computed from ~1-hour averages of solar-wind / southward IMF conditions).</p>
+  <p><strong>When to use:</strong> storm-time cutoff/flux studies when you want a lightweight empirical alternative to TS05/TA15 but with more physics than T96.</p>
+  <p><strong>References:</strong> Tsyganenko (2002) Paper 1 (model structure) and Paper 2 (parameterization, including definitions of G1/G2 and example event values).</p>
+</div><div class="model-section">
                     <h5>TS07D (Tsyganenko 2007 Data-Based)</h5>
                     <p><strong>Type:</strong> Data-assimilative model with time-dependent coefficients.</p>
                     <p><strong>Inputs:</strong> Pre-computed coefficient files from OMNI database or user upload.</p>
@@ -1730,31 +1732,112 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     </div><!-- /t96-form -->
 
     <!-- ── T01 form: similar driver set (quiet/storm coefficient sets) ── -->
+        <!-- ── T01 form: Dst + Pdyn + IMF By/Bz + tilt + IMF-related indices G1/G2 ── -->
     <div id="t01-form" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T01 Driving Parameters</div>
-      <div class="infobox info-blue" style="margin-bottom:10px;">
-        T01 commonly uses the same core solar-wind/IMF driver set as T96 (Dst, Pdyn, By/Bz, tilt) with updated current-system parameterization.
-        Select the appropriate coefficient set (quiet/storm) in the backend; UI uses the same inputs.
+      <div id="t01-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">T01 Driving Parameters</div>
+
+      <div class="infobox info-orange">
+        <b>Example presets:</b>
+        <span style="color:var(--text-dim)">quiet</span>
+          (Dst≈0 nT, Pdyn≈2 nPa, Bz≈+5 nT, By≈0 nT, G1≈0, G2≈0, tilt≈0°) and
+        <span style="color:var(--text-dim)">storm</span>
+          (Dst≈−120 nT, Pdyn≈8 nPa, Bz≈−10 nT, By≈+2 nT, G1≈20, G2≈20, tilt≈0°).
+        <div style="margin-top:6px;color:var(--text-dim);font-size:12px;line-height:1.35;">
+          <b>Note:</b> T01 uses two IMF/solar-wind history indices (<b>G1</b>, <b>G2</b>) defined from
+          averages over the preceding ~1 hour (see the docs links below).
+        </div>
       </div>
+
       <div class="frow c4">
-        <div class="field"><label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t01-dst" type="number" value="-20" step="1" min="-600" max="50" oninput="t01Change()"/>
+        <div class="field">
+          <label>Dst <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t01-dst" type="number" value="-20" step="1" min="-600" max="50" class="valid" oninput="t01Change()"/>
+          <div id="t01-dst-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Geomagnetic disturbance index (SYM-H/Dst). Used to scale ring current and inner tail terms.</div>
         </div>
-        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
-          <input id="t01-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="t01Change()"/>
+
+        <div class="field">
+          <label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="t01-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" class="valid" oninput="t01Change()"/>
+          <div id="t01-pdyn-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Solar-wind dynamic pressure. Controls magnetopause size and scaling of current systems.</div>
         </div>
-        <div class="field"><label>IMF By <span class="unit">[nT]</span></label>
-          <input id="t01-by" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="t01Change()"/>
+
+        <div class="field">
+          <label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="t01-bz" type="number" value="2.0" step="0.1" min="-50" max="20" class="valid" oninput="t01Change()"/>
+          <div id="t01-bz-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">IMF GSM southward component. Together with V determines Bs used in the G1/G2 history indices.</div>
         </div>
-        <div class="field"><label>IMF Bz <span class="unit">[nT]</span> <span class="req">*</span></label>
-          <input id="t01-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="t01Change()"/>
+
+        <div class="field">
+          <label>IMF By <span class="unit">[nT]</span></label>
+          <input id="t01-by" type="number" value="0.0" step="0.1" min="-40" max="40" class="valid" oninput="t01Change()"/>
+          <div id="t01-by-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">IMF dawn-dusk component. Affects azimuthal asymmetries and coupling terms.</div>
         </div>
       </div>
+
       <div class="frow c4">
-        <div class="field"><label>Dipole tilt <span class="unit">[deg]</span></label>
-          <input id="t01-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" oninput="t01Change()"/>
+        <div class="field">
+          <label>Dipole tilt <span class="unit">[deg]</span></label>
+          <input id="t01-tilt" type="number" value="0.0" step="0.5" min="-35" max="35" class="valid" oninput="t01Change()"/>
+          <div id="t01-tilt-status" class="field-note" style="color:var(--green);">&#10003; OK</div>
+          <div class="hint">Geodipole tilt angle. (Backend converts to radians where required.)</div>
+        </div>
+
+        <div class="field">
+          <label>G1 <span class="unit">[—]</span> <span class="req">*</span></label>
+          <input id="t01-g1" type="number" value="0.0" step="0.1" min="0" max="60" class="valid" oninput="t01Change()"/>
+          <div id="t01-g1-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">IMF-related history index (1-hour average). Typical range ~0–10 (can be larger in strong events).</div>
+        </div>
+
+        <div class="field">
+          <label>G2 <span class="unit">[—]</span> <span class="req">*</span></label>
+          <input id="t01-g2" type="number" value="0.0" step="0.1" min="0" max="60" class="valid" oninput="t01Change()"/>
+          <div id="t01-g2-status" class="field-note" style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">IMF/solar-wind coupling index (1-hour average; depends on V and southward IMF Bs).</div>
+        </div>
+
+        <div class="field">
+          <label>Epoch <span class="unit">[UTC]</span></label>
+          <input id="t01-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="t01Change()"/>
+          <div class="hint">Snapshot timestamp for STEADY_STATE mode.</div>
         </div>
       </div>
+
+      <details class="infobox info-blue" style="margin-top:10px;">
+        <summary style="cursor:pointer;">
+          <b>Advanced:</b> load presets, copy shared scalars, or paste a record
+        </summary>
+
+        <div style="margin-top:8px; font-size:12px; color:var(--text-dim); line-height:1.35;">
+          Paste a whitespace-separated record in the form:
+          <code>PDYN DST BY BZ G1 G2 TILT_DEG [EPOCH]</code>.
+          If <code>EPOCH</code> is included, it should be ISO-like (e.g. <code>2017-09-10T16:00</code>).
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="t01PresetQuiet()">Preset: quiet</button>
+          <button class="btn" type="button" onclick="t01PresetStorm()">Preset: storm</button>
+          <button class="btn" type="button" onclick="t01CopyFromTs05()">Copy Dst/Pdyn/By/Bz from TS05</button>
+          <span id="t01-status" style="margin-left:auto;font-size:11px;color:var(--text-dim);"></span>
+        </div>
+
+        <textarea id="t01-omni-line" class="mono" rows="2" style="width:100%;margin-top:10px;"
+          placeholder="PDYN DST BY BZ G1 G2 TILT_DEG [EPOCH]"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="parseT01OmniLine()">Parse record → T01 inputs</button>
+          <span id="t01-omni-status" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          Parsed: PDYN=<span id="t01-pdyn-read">—</span>, DST=<span id="t01-dst-read">—</span>, BY=<span id="t01-by-read">—</span>, BZ=<span id="t01-bz-read">—</span>,
+          G1=<span id="t01-g1-read">—</span>, G2=<span id="t01-g2-read">—</span>, TILT=<span id="t01-tilt-read">—</span> deg,
+          EPOCH=<span id="t01-epoch-read">—</span>.
+        </div>
+      </details>
+
     </div><!-- /t01-form -->
 
     <!-- ── TS07D form: coefficient source (file vs OMNI) ── -->
@@ -1879,6 +1962,10 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </span><span class="t01-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-t01-bz">2.00</span>     <span class="kw-comment">! nT</span>
 </span><span class="t01-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-t01-tilt">0.0</span>      <span class="kw-comment">! deg</span>
 </span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">G1</span>              <span class="kw-val" id="kv-t01-g1">0.0</span>      <span class="kw-comment">! IMF-history index (1h avg)</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">G2</span>              <span class="kw-val" id="kv-t01-g2">0.0</span>      <span class="kw-comment">! SW/IMF coupling index (1h avg)</span>
+</span><span class="t01-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-t01-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
+
 <!-- TS07D rows — hidden unless TS07D selected -->
 <span class="ts07d-kw-row" style="display:none;"><span class="kw-key">COEFF_SOURCE</span>   <span class="kw-val" id="kv-ts07d-source">omni</span>
 </span><span class="ts07d-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-ts07d-epoch">2017-09-10T16:00</span>

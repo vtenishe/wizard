@@ -222,6 +222,9 @@ const S = {
   t01By:     0.0,
   t01Bz:     2.0,
   t01Tilt:   0.0,
+  t01G1:     0.0,
+  t01G2:     0.0,
+  t01Epoch:  '2017-09-10T16:00',
   // TS07D coefficients:
   ts07dSource: 'omni',
   ts07dEpoch:  '2017-09-10T16:00',
