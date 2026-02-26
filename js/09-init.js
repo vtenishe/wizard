@@ -73,7 +73,7 @@ function init() {
   if(S.fieldModel==='TS05' || S.fieldModel==='TS04'){ if(typeof ts05Change==='function') ts05Change(); }
   else if(S.fieldModel==='T96'){ if(typeof t96Change==='function') t96Change(); }
   else if(S.fieldModel==='T01'){ if(typeof t01Change==='function') t01Change(); }
-  else if(S.fieldModel==='TS07D'){ if(typeof ts07dChange==='function') ts07dChange(); }
+  else if(S.fieldModel==='TA16RBF'){ if(typeof ta16Change==='function') ta16Change(); }
   else if(S.fieldModel==='TA15'){ if(typeof ta15Change==='function') ta15Change(); }
   else { if(typeof ts05Change==='function') ts05Change(); }
 

@@ -89,7 +89,7 @@ LAST UPDATED: 2026-02-21
     standard Tsyganenko-family naming used by CCMC, GEOPACK and common wrappers.
 
   What was updated:
-    - Normalized the Step 3 model list to: TS05, TS04, T96, T01, TS07D, TA15
+    - Normalized the Step 3 model list to: TS05, TS04, T96, T01, TA15, TA16RBF
       plus file-driven MHD backgrounds: BATSRUS, GAMERA.
     - Added dedicated state keys for model-specific drivers:
         * t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
@@ -230,9 +230,25 @@ const S = {
   t01G1:     0.0,
   t01G2:     0.0,
   t01Epoch:  '2017-09-10T16:00',
-  // TS07D coefficients:
-  ts07dSource: 'omni',
-  ts07dEpoch:  '2017-09-10T16:00',
+  // TA16RBF drivers (Tsyganenko & Andreeva 2016, RBF model):
+  // Official OMNI-style set + SymHc (see Data_format_ta16_rbf.txt).
+  ta16Bx:     0.0,
+  ta16By:     0.0,
+  ta16Bz:     2.0,
+  ta16Vx:  -450.0,
+  ta16Vy:     0.0,
+  ta16Vz:     0.0,
+  ta16Np:     5.0,
+  ta16Temp: 200000.0,   // K
+  ta16SymH: -20.0,      // nT
+  ta16ImfFlag: 1,
+  ta16SwFlag:  1,
+  ta16TiltRad: 0.0,     // radians (GSW)
+  ta16Pdyn:    2.0,     // nPa
+  ta16Nidx:    0.25,
+  ta16Bidx:    0.25,
+  ta16SymHc:  -20.0,    // nT (30-min centered sliding avg)
+  ta16Epoch:  '2017-09-10T16:00',
   // TA15 ("T15") drivers: solar wind + coupling indices + GOES total-B (site UI):
   // TA15 defaults roughly correspond to a quiet/moderate OMNI snapshot.
   ta15Bx:     0.0,

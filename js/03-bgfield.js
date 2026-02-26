@@ -48,14 +48,16 @@ LAST UPDATED: 2026-02-21
              Similar driver set; coefficient-set selection in backend.
              FIELD_MODEL = T01
 
-     TS07D — Tsyganenko & Sitnov (2007D) time-dependent coefficients.
-             Typically provided as yearly coefficient files.
-             FIELD_MODEL = TS07D
-
      TA15  — Tsyganenko & Andreeva (2015).
-             Most complete empirical model; additionally requires
-             GOES geostationary total-B (|B| ≥ 50 nT typical).
+             Forecasting-oriented empirical model driven by OMNI-style
+             solar wind/IMF + indices.
              FIELD_MODEL = TA15
+
+     TA16RBF — Tsyganenko & Andreeva (2016).
+              Empirical RBF model of the near magnetosphere, driven by
+              interplanetary and ground-based drivers (Pdyn, SYM-H,
+              Newell N-index, IMF By, etc.).
+              FIELD_MODEL = TA16RBF
 
      BATSRUS — Block-Adaptive Tree Solar-wind Roe Upwind Scheme
                (Powell et al. 1999).  Upload 3-D CCMC run output (.cdf / .h5).
@@ -77,8 +79,8 @@ LAST UPDATED: 2026-02-21
      ts05Change()            — sync TS05/TS04 inputs → S + update KW
      t96Change()             — sync T96 inputs → S
      t01Change()             — sync T01 inputs → S
-     ts07dChange()           — sync TS07D coefficient inputs → S
      ta15Change()            — sync TA15 inputs → S
+     ta16Change()            — sync TA16RBF inputs → S
      mhdChange()             — sync MHD file-upload inputs → S
      validateTs05()          — flag out-of-range TS05 parameter inputs
      updateKwPreview()       — refresh AMPS_PARAM.in keyword-preview strip
@@ -91,7 +93,7 @@ LAST UPDATED: 2026-02-21
 
   Summary of modifications in this file:
     1) Normalized the empirical field-model list to a standard Tsyganenko-family
-       set used by CCMC/GEOPACK toolchains: TS05, TS04, T96, T01, TS07D, TA15.
+       set used by CCMC/GEOPACK toolchains: TS05, TS04, T96, T01, TA15, TA16RBF.
        Retained file-driven MHD options: BATSRUS and GAMERA.
 
     2) Implemented model-specific driver forms + state synchronization:
@@ -100,9 +102,8 @@ LAST UPDATED: 2026-02-21
          steps for boundary auto-compute (Shue) and E-field auto modes (Weimer).
        - T96/T01 use the common reduced driver set (Dst, Pdyn, IMF By/Bz,
          dipole tilt) to support robust parameter studies.
-       - TS07D is coefficient-driven; UI selects coefficient source (OMNI-backed
-         vs uploaded file) + epoch.
-       - TA15 adds GOES geostationary |B| as an additional required input.
+       - TA15 uses OMNI-style solar wind/IMF + indices.
+       - TA16RBF uses OMNI-style drivers plus SymHc; see Data_format_ta16_rbf.txt.
 
     3) Added validation + user guidance:
        - Range checks for Dst/Pdyn/Bz flag values outside typical usage.
@@ -682,7 +683,7 @@ function selectFieldModel(model) {
   if (card) card.classList.add('sel');
 
   // ── Show/hide model-specific driving-parameter forms ──
-  const forms = { ts05: 'ts05-form', t96: 't96-form', t01: 't01-form', ts07d: 'ts07d-form', ta15: 'ta15-form', mhd: 'mhd-form' };
+  const forms = { ts05: 'ts05-form', t96: 't96-form', t01: 't01-form', ta15: 'ta15-form', ta16: 'ta16-form', mhd: 'mhd-form' };
   Object.values(forms).forEach(id => {
     const el = $(id);
     if (el) el.style.display = 'none';
@@ -692,8 +693,8 @@ function selectFieldModel(model) {
 
   const isT96  = (model === 'T96');
   const isT01  = (model === 'T01');
-  const isTS07D= (model === 'TS07D');
   const isTA15 = (model === 'TA15');
+  const isTA16 = (model === 'TA16RBF');
 
   if (isTs05) {
     $('ts05-form').style.display = 'block';
@@ -705,10 +706,10 @@ function selectFieldModel(model) {
     $('t96-form').style.display = 'block';
   } else if (isT01) {
     $('t01-form').style.display = 'block';
-  } else if (isTS07D) {
-    $('ts07d-form').style.display = 'block';
   } else if (isTA15) {
     $('ta15-form').style.display = 'block';
+  } else if (isTA16) {
+    $('ta16-form').style.display = 'block';
   } else if (isMhd) {
     $('mhd-form').style.display = 'block';
     const lbl = $('mhd-model-label');
@@ -719,8 +720,8 @@ function selectFieldModel(model) {
   document.querySelectorAll('.ts05-kw-row').forEach(r => r.style.display = isTs05 ? '' : 'none');
   document.querySelectorAll('.t96-kw-row').forEach(r  => r.style.display = model==='T96'  ? '' : 'none');
   document.querySelectorAll('.t01-kw-row').forEach(r  => r.style.display = model==='T01'  ? '' : 'none');
-  document.querySelectorAll('.ts07d-kw-row').forEach(r=> r.style.display = model==='TS07D'? '' : 'none');
   document.querySelectorAll('.ta15-kw-row').forEach(r => r.style.display = model==='TA15' ? '' : 'none');
+  document.querySelectorAll('.ta16-kw-row').forEach(r => r.style.display = model==='TA16RBF' ? '' : 'none');
   document.querySelectorAll('.mhd-kw-row').forEach(r  => r.style.display = isMhd ? '' : 'none');
 
   // ── Update field-model value in KW strip ──
@@ -733,8 +734,8 @@ function selectFieldModel(model) {
     TS04: '! Tsyganenko & Sitnov (2004)',
     T96:  '! Tsyganenko (1996)',
     T01:  '! Tsyganenko (2001)',
-    TS07D:'! Tsyganenko & Sitnov (2007D)',
     TA15: '! Tsyganenko & Andreeva (2015)',
+    TA16RBF: '! Tsyganenko & Andreeva (2016)',
     BATSRUS:'! MHD (Block-Adaptive Tree)',
     GAMERA: '! MHD (Grid Agnostic)',
   };
@@ -1110,16 +1111,240 @@ function parseT01OmniLine(){
 }
 
 
-/* ts07dChange — coefficient source + epoch */
-function ts07dChange(){
-  S.ts07dSource = $('ts07d-source')?.value || S.ts07dSource;
-  S.ts07dEpoch  = $('ts07d-epoch')?.value  || S.ts07dEpoch;
-  const dz = $('ts07d-dropzone');
-  if(dz) dz.style.display = (S.ts07dSource==='file') ? 'block' : 'none';
+/* ta16Change — TA16RBF official OMNI-style inputs (see doc/ta16_data_format.txt)
+ *  Layout (see Data_format_ta16_rbf.txt):
+ *  YEAR DOY HOUR MIN  Bx By Bz  Vx Vy Vz  Np  T  Sym-H  IMFflag SWflag  Tilt(rad)  Pdyn  N-index  B-index  SymHc
+ */
+function ta16Change(){
+  S.ta16Bx      = parseFloat($('ta16-bx')?.value)      || S.ta16Bx;
+  S.ta16By      = parseFloat($('ta16-by')?.value)      || S.ta16By;
+  S.ta16Bz      = parseFloat($('ta16-bz')?.value)      || S.ta16Bz;
+  S.ta16Vx      = parseFloat($('ta16-vx')?.value)      || S.ta16Vx;
+  S.ta16Vy      = parseFloat($('ta16-vy')?.value)      || S.ta16Vy;
+  S.ta16Vz      = parseFloat($('ta16-vz')?.value)      || S.ta16Vz;
+  S.ta16Np      = parseFloat($('ta16-np')?.value)      || S.ta16Np;
+  S.ta16Temp    = parseFloat($('ta16-temp')?.value)    || S.ta16Temp;
+  S.ta16SymH    = parseFloat($('ta16-symh')?.value)    || S.ta16SymH;
+  S.ta16ImfFlag = parseInt($('ta16-imfflag')?.value,10) || S.ta16ImfFlag;
+  S.ta16SwFlag  = parseInt($('ta16-swflag')?.value,10)  || S.ta16SwFlag;
+  S.ta16TiltRad = parseFloat($('ta16-tilt')?.value)     || S.ta16TiltRad;
+  S.ta16Pdyn    = parseFloat($('ta16-pdyn')?.value)     || S.ta16Pdyn;
+  S.ta16Nidx    = parseFloat($('ta16-nidx')?.value)     || S.ta16Nidx;
+  S.ta16Bidx    = parseFloat($('ta16-bidx')?.value)     || S.ta16Bidx;
+  S.ta16SymHc   = parseFloat($('ta16-symhc')?.value)    || S.ta16SymHc;
+  S.ta16Epoch   = $('ta16-epoch')?.value || S.ta16Epoch;
+
   const set=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
-  set('kv-ts07d-source', S.ts07dSource);
-  set('kv-ts07d-epoch',  S.ts07dEpoch);
+  set('kv-ta16-bx',      Number(S.ta16Bx).toFixed(2));
+  set('kv-ta16-by',      Number(S.ta16By).toFixed(2));
+  set('kv-ta16-bz',      Number(S.ta16Bz).toFixed(2));
+  set('kv-ta16-vx',      Number(S.ta16Vx).toFixed(1));
+  set('kv-ta16-vy',      Number(S.ta16Vy).toFixed(1));
+  set('kv-ta16-vz',      Number(S.ta16Vz).toFixed(1));
+  set('kv-ta16-np',      Number(S.ta16Np).toFixed(2));
+  set('kv-ta16-temp',    String(Math.round(S.ta16Temp)));
+  set('kv-ta16-symh',    Number(S.ta16SymH).toFixed(1));
+  set('kv-ta16-imfflag', String(S.ta16ImfFlag));
+  set('kv-ta16-swflag',  String(S.ta16SwFlag));
+  set('kv-ta16-tilt',    Number(S.ta16TiltRad).toFixed(4));
+  set('kv-ta16-pdyn',    Number(S.ta16Pdyn).toFixed(2));
+  set('kv-ta16-nidx',    Number(S.ta16Nidx).toFixed(4));
+  set('kv-ta16-bidx',    Number(S.ta16Bidx).toFixed(4));
+  set('kv-ta16-symhc',   Number(S.ta16SymHc).toFixed(1));
+  set('kv-ta16-epoch',   S.ta16Epoch || '');
+
+  if (S.fieldModel === 'TA16RBF') {
+    // keep shared driver keys in sync for downstream steps
+    S.pdyn = Number.isFinite(S.ta16Pdyn) ? S.ta16Pdyn : S.pdyn;
+    S.by   = Number.isFinite(S.ta16By)   ? S.ta16By   : S.by;
+    S.bz   = Number.isFinite(S.ta16Bz)   ? S.ta16Bz   : S.bz;
+    S.vx   = Number.isFinite(S.ta16Vx)   ? S.ta16Vx   : S.vx;
+    S.nsw  = Number.isFinite(S.ta16Np)   ? S.ta16Np   : S.nsw;
+    S.dst  = Number.isFinite(S.ta16SymH) ? S.ta16SymH : S.dst;
+    if (S.ta16Epoch) S.epoch = S.ta16Epoch;
+  }
+
+  if (S.fieldModel === 'TA16RBF' && S.ta16Epoch) { const e=$('kv-epoch'); if(e) e.textContent = S.ta16Epoch; }
+
+  validateTA16();
+  bndShueUpdate();
   updateSidebar();
+}
+
+function validateTA16(){
+  // Reuse TA15 sanity ranges; SymHc has the same hard bounds as Sym-H.
+  const R = {
+    symh:  { ok:[-200, 20], hard:[-600, 100], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    symhc: { ok:[-200, 20], hard:[-600, 100], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    pdyn:  { ok:[0.5,  10], hard:[0.1,  30],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    bx:    { ok:[-10,  10], hard:[-40,  40],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    by:    { ok:[-10,  10], hard:[-40,  40],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    bz:    { ok:[-10,  10], hard:[-50,  20],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    tilt:  { ok:[-0.6, 0.6], hard:[-1.0, 1.0],msgOk:'\u2713 OK', msgWarn:'\u26A0 Check',   msgBad:'\u2717 Out-of-range' },
+    vx:    { ok:[-800,-250], hard:[-1200,0],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    vy:    { ok:[-100,100],  hard:[-300,300], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    vz:    { ok:[-100,100],  hard:[-300,300], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    np:    { ok:[0.5, 20],   hard:[0.1,100],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    temp:  { ok:[1e4, 1e6],  hard:[1e3,5e6],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    nidx:  { ok:[0.05, 1.5], hard:[0.0, 5.0], msgOk:'\u2713 Typical', msgWarn:'\u26A0 Rare', msgBad:'\u2717 Out-of-range' },
+    bidx:  { ok:[0.05, 1.5], hard:[0.0, 5.0], msgOk:'\u2713 Typical', msgWarn:'\u26A0 Rare', msgBad:'\u2717 Out-of-range' }
+  };
+  const fields = [
+    ['ta16-symh',  'symh',  'ta16-symh-status'],
+    ['ta16-symhc', 'symhc', 'ta16-symhc-status'],
+    ['ta16-pdyn',  'pdyn',  'ta16-pdyn-status'],
+    ['ta16-bx',    'bx',    'ta16-bx-status'],
+    ['ta16-by',    'by',    'ta16-by-status'],
+    ['ta16-bz',    'bz',    'ta16-bz-status'],
+    ['ta16-tilt',  'tilt',  'ta16-tilt-status'],
+    ['ta16-vx',    'vx',    'ta16-vx-status'],
+    ['ta16-vy',    'vy',    'ta16-vy-status'],
+    ['ta16-vz',    'vz',    'ta16-vz-status'],
+    ['ta16-np',    'np',    'ta16-np-status'],
+    ['ta16-temp',  'temp',  'ta16-temp-status'],
+    ['ta16-nidx',  'nidx',  'ta16-nidx-status'],
+    ['ta16-bidx',  'bidx',  'ta16-bidx-status']
+  ];
+  for(const [id,k,statusId] of fields){
+    const el=$(id); const st=$(statusId);
+    if(!el) continue;
+    const v=parseFloat(el.value);
+    el.classList.remove('valid','warn','bad','error');
+    if(!Number.isFinite(v)){
+      if(st){ st.textContent=''; st.style.color='var(--text-muted)'; }
+      continue;
+    }
+    const [okLo, okHi]=R[k].ok;
+    const [hardLo, hardHi]=R[k].hard;
+    if(v<hardLo || v>hardHi){
+      el.classList.add('bad');
+      if(st){ st.textContent=R[k].msgBad; st.style.color='var(--red)'; }
+    } else if(v<okLo || v>okHi){
+      el.classList.add('warn');
+      if(st){ st.textContent=R[k].msgWarn; st.style.color='var(--orange)'; }
+    } else {
+      el.classList.add('valid');
+      if(st){ st.textContent=R[k].msgOk; st.style.color='var(--green)'; }
+    }
+  }
+}
+
+function ta16Preset(which){
+  const setV=(id,v)=>{const e=$(id); if(e) e.value=v;};
+  if(which==='quiet'){
+    setV('ta16-symh',  -10);
+    setV('ta16-symhc', -10);
+    setV('ta16-pdyn',  2.0);
+    setV('ta16-bx',    0.0);
+    setV('ta16-by',    0.0);
+    setV('ta16-bz',    2.0);
+    setV('ta16-tilt',  0.0000);
+    setV('ta16-vx',   -450);
+    setV('ta16-vy',      0);
+    setV('ta16-vz',      0);
+    setV('ta16-np',    5.0);
+    setV('ta16-temp', 200000);
+    if($('ta16-imfflag')) $('ta16-imfflag').value='1';
+    if($('ta16-swflag'))  $('ta16-swflag').value='1';
+    setV('ta16-nidx',  0.25);
+    setV('ta16-bidx',  0.25);
+  } else if(which==='storm'){
+    setV('ta16-symh',  -120);
+    setV('ta16-symhc', -120);
+    setV('ta16-pdyn',   6.0);
+    setV('ta16-bx',     0.0);
+    setV('ta16-by',     5.0);
+    setV('ta16-bz',   -15.0);
+    setV('ta16-tilt',   0.3000);
+    setV('ta16-vx',   -700);
+    setV('ta16-vy',     20);
+    setV('ta16-vz',     10);
+    setV('ta16-np',    15.0);
+    setV('ta16-temp', 500000);
+    if($('ta16-imfflag')) $('ta16-imfflag').value='1';
+    if($('ta16-swflag'))  $('ta16-swflag').value='1';
+    setV('ta16-nidx',   1.0);
+    setV('ta16-bidx',   1.0);
+  }
+  ta16Change();
+}
+
+function ta16CopyFromTs05(){
+  const setV=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)) e.value=v;};
+  setV('ta16-pdyn', S.pdyn);
+  setV('ta16-bx',   S.bx);
+  setV('ta16-by',   S.by);
+  setV('ta16-bz',   S.bz);
+  setV('ta16-vx',   S.vx);
+  setV('ta16-np',   S.nsw);
+  if(Number.isFinite(S.dst)){
+    setV('ta16-symh',  S.dst);
+    setV('ta16-symhc', S.dst);
+  }
+  if(S.epoch && $('ta16-epoch')) $('ta16-epoch').value = S.epoch;
+  ta16Change();
+}
+
+function parseTa16OmniLine(){
+  const txt = $('ta16-omni-line')?.value || '';
+  const st  = $('ta16-parse-status');
+  try{
+    const line = txt.trim();
+    if(!line) throw new Error('Empty input.');
+    const a = line.split(/\s+/);
+    if(a.length < 20) throw new Error(`Expected >=20 columns, got ${a.length}.`);
+
+    const year = parseInt(a[0],10);
+    const doy  = parseInt(a[1],10);
+    const hh   = parseInt(a[2],10);
+    const mm   = parseInt(a[3],10);
+
+    const bx   = parseFloat(a[4]);
+    const by   = parseFloat(a[5]);
+    const bz   = parseFloat(a[6]);
+    const vx   = parseFloat(a[7]);
+    const vy   = parseFloat(a[8]);
+    const vz   = parseFloat(a[9]);
+    const np   = parseFloat(a[10]);
+    const temp = parseFloat(a[11]);
+    const symh = parseFloat(a[12]);
+    const imff = parseInt(a[13],10);
+    const swf  = parseInt(a[14],10);
+    const tilt = parseFloat(a[15]);
+    const pdyn = parseFloat(a[16]);
+    const nidx = parseFloat(a[17]);
+    const bidx = parseFloat(a[18]);
+    const symhc= parseFloat(a[19]);
+
+    if(![year,doy,hh,mm].every(Number.isFinite)) throw new Error('Bad date/time columns.');
+
+    // DOY → YYYY-MM-DD (UTC) minimal conversion
+    const date = new Date(Date.UTC(year,0,1,0,0,0));
+    date.setUTCDate(date.getUTCDate() + (doy-1));
+    date.setUTCHours(hh);
+    date.setUTCMinutes(mm);
+    const pad=(x)=>String(x).padStart(2,'0');
+    const iso = `${date.getUTCFullYear()}-${pad(date.getUTCMonth()+1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+
+    const setV=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)) e.value=String(v);};
+    if($('ta16-epoch') && iso) $('ta16-epoch').value = iso;
+    setV('ta16-bx', bx); setV('ta16-by', by); setV('ta16-bz', bz);
+    setV('ta16-vx', vx); setV('ta16-vy', vy); setV('ta16-vz', vz);
+    setV('ta16-np', np); setV('ta16-temp', temp);
+    setV('ta16-symh', symh); setV('ta16-symhc', symhc);
+    if($('ta16-imfflag')) $('ta16-imfflag').value = String(imff);
+    if($('ta16-swflag'))  $('ta16-swflag').value  = String(swf);
+    setV('ta16-tilt', tilt);
+    setV('ta16-pdyn', pdyn);
+    setV('ta16-nidx', nidx);
+    setV('ta16-bidx', bidx);
+
+    setText('ta16-epoch-read', iso || '—');
+    if(st){ st.textContent='Parsed OK.'; st.style.color='var(--green)'; }
+    ta16Change();
+  }catch(err){
+    if(st){ st.textContent='Parse error: '+(err?.message||String(err)); st.style.color='var(--red)'; }
+  }
 }
 
 /* ta15Change — TA15 ("T15") official OMNI-style inputs (see doc/ta15_data_format.txt) */

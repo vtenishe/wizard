@@ -55,12 +55,12 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
 ADDITIONAL UPDATES (2026-02-20): "Bkg B-Field" correctness + documentation
 - Replaced placeholder/legacy field-model labels with a consistent set of
   Tsyganenko-family external-field options that match typical CCMC/GEOPACK
-  naming: TS05, TS04, T96, T01, TS07D, TA15.
+  naming: TS05, TS04, T96, T01, TA15, TA16RBF.
 - Preserved physics-based background-field workflows via uploaded MHD output:
   BATSRUS and GAMERA.
 - Implemented model-specific "Driving Parameters" forms that reflect how each
   model is normally driven (scalar drivers for T96/T01; coefficient selection
-  for TS07D).
+  for TA16RBF).
 - Added example quiet/storm presets (order-of-magnitude) in the TS05/TS04
   driving-parameter section to guide users and improve reproducibility.
 
@@ -215,6 +215,11 @@ MAINTAINER NOTE
 
                 <li><a href="doc/tsyganenko2015_ta15.pdf">TA15 model: forecasting magnetosphere driven by optimal SW coupling (Tsyganenko &amp; Andreeva 2015)</a></li>
                 <li><a href="doc/ta15_data_format.txt">TA15 OMNI-style record format (columns &amp; units)</a></li>
+
+                <li><a href="doc/tsyganenko2016_ta16rbf.pdf">TA16RBF model: empirical RBF magnetosphere driven by interplanetary &amp; ground-based drivers (Tsyganenko &amp; Andreeva 2016)</a></li>
+                <li><a href="doc/ta16_model_description.pdf">TA16RBF model description (official model page PDF)</a></li>
+                <li><a href="doc/ta16_data_format.txt">TA16RBF OMNI-style record format (columns &amp; units)</a></li>
+                <li><a href="doc/ta16_example_1997_omni.dat.txt">TA16RBF example driver file (1997 excerpt)</a></li>
                 <li><a href="doc/magnetic_field_models.pdf">Magnetic field models: T96/T15, IGRF, and MHD-driven fields</a></li>
               </ul>
             </div>
@@ -318,11 +323,12 @@ MAINTAINER NOTE
   <p><strong>When to use:</strong> storm-time cutoff/flux studies when you want a lightweight empirical alternative to TS05/TA15 but with more physics than T96.</p>
   <p><strong>References:</strong> Tsyganenko (2002) Paper 1 (model structure) and Paper 2 (parameterization, including definitions of G1/G2 and example event values).</p>
 </div><div class="model-section">
-                    <h5>TS07D (Tsyganenko 2007 Data-Based)</h5>
-                    <p><strong>Type:</strong> Data-assimilative model with time-dependent coefficients.</p>
-                    <p><strong>Inputs:</strong> Pre-computed coefficient files from OMNI database or user upload.</p>
-                    <p><strong>Advantage:</strong> Best accuracy for historical event reconstruction.</p>
-                    <p><strong>Reference:</strong> Tsyganenko, N. A., & Sitnov, M. I. (2007). "Magnetospheric configurations from a high-resolution data-based magnetic field model." <em>J. Geophys. Res.</em>, 112(A6), A06225. doi:10.1029/2007JA012260</p>
+                    <h5>TA16RBF (Tsyganenko &amp; Andreeva 2016)</h5>
+                    <p><strong>Type:</strong> Empirical <b>radial basis function (RBF)</b> model built directly from large multi-mission magnetometer data (1995–2015), with no fixed “module” geometry assumptions.</p>
+                    <p><strong>Primary drivers:</strong> solar-wind ram pressure <b>Pdyn</b>, <b>SYM‑H</b>, <b>N-index</b> (Newell coupling), and IMF <b>By</b>, plus dipole <b>tilt</b>. The official driver files use OMNI-style 5‑min cadence with <b>30‑min trailing averages</b> for IMF and indices, and include <b>SymHc</b> (centered 30‑min sliding average).</p>
+                    <p><strong>Why it matters:</strong> Compared to modular Tsyganenko models, the RBF approach can represent finer spatial structure and improves global fit metrics when driven by routine interplanetary/ground observables.</p>
+                    <p><strong>Docs:</strong> see the TA16RBF paper PDF, the official “TA16RBF model description” PDF, and the “TA16RBF record format” file in the Docs menu for the exact input column order/units.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A., &amp; Andreeva, V. A. (2016), <em>JGR Space Physics</em>, 121, 10,786–10,802. doi:10.1002/2016JA023217</p>
                   </div>
 
                                     <div class="model-section">
@@ -850,7 +856,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           </div>
           <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">
             The magnetic field is computed <b>analytically</b> at each particle position using the selected
-            Tsyganenko-family model (TS05, TS04, T96, T01, TS07D, TA15). No spatial grid is involved.
+            Tsyganenko-family model (TS05, TS04, T96, T01, TA15, TA16RBF). No spatial grid is involved.
             <br><br>
             <b>Restrictions:</b>
           </div>
@@ -1488,7 +1494,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
   <div class="sect-hd" onclick="toggleSection('s-bgfield')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#129522;</div>
     <div><div class="sect-title">Background Magnetic Field — Model &amp; Driving Parameters</div>
-    <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05/TS04 support storm-time reconstruction; T96/T01 provide robust baseline; TS07D uses time-dependent coefficients; TA15 uses OMNI-style drivers (Bx/By/Bz, Vx/Vy/Vz, Np, T, Sym-H, flags, tilt, Pdyn, N/B indices).</div></div>
+    <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05/TS04 support storm-time reconstruction; T96/T01 provide robust baseline; TA15 uses OMNI-style drivers; TA16RBF adds SymHc (centered 30‑min sliding average) to an OMNI-style driver set.</div></div>
     <span class="sect-sub"><span class="tag tag-new">Step 4</span></span>
     <span class="chevron">&#9660;</span>
   </div>
@@ -1503,7 +1509,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
            TS04   Tsyganenko & Sitnov 2004   — storm-time empirical
            T96    Tsyganenko 1996            — Dst/Pdyn/By/Bz/tilt baseline
            T01    Tsyganenko 2001            — 2001 coefficient family
-           TS07D  Tsyganenko & Sitnov 2007D  — time-dependent coefficients
+           TA16RBF  Tsyganenko &amp; Andreeva 2016  — empirical RBF model
            TA15   Tsyganenko & Andreeva 2015 — forecasting model (OMNI-style drivers)
 
          MHD simulation output — interpolated onto particle grid:
@@ -1551,15 +1557,15 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
     </div>
 
-    <!-- Row 3: TS07D | TA15 -->
+    <!-- Row 3: TA16RBF | TA15 -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
 
-      <!-- TS07D: time-dependent coefficient family -->
-      <div class="model-sel-card" id="msc-ts07d" onclick="selectFieldModel('TS07D')">
-        <div class="msc-icon">⏱️</div>
-        <div class="msc-title">TS07D — Time Dependent</div>
-        <div class="msc-sub">Tsyganenko &amp; Sitnov (2007D). Time-dependent empirical field model using precomputed coefficient sets (commonly distributed as yearly files). Intended for event reconstructions with evolving storm-time current systems.</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS07D</code></div>
+      <!-- TA16RBF: empirical RBF model (TA16) -->
+      <div class="model-sel-card" id="msc-ta16rbf" onclick="selectFieldModel('TA16RBF')">
+        <div class="msc-icon">🧩</div>
+        <div class="msc-title">TA16RBF — RBF Empirical <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
+        <div class="msc-sub">Tsyganenko &amp; Andreeva (2016). Empirical radial-basis-function (RBF) model driven by interplanetary and ground-based drivers (Pdyn, SYM‑H, Newell N‑index, IMF By, etc.). Uses OMNI-style record inputs plus SymHc (centered 30‑min sliding average).</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TA16RBF</code></div>
       </div>
 
       <!-- TA15: Tsyganenko & Andreeva 2015 — advanced empirical model -->
@@ -1847,29 +1853,129 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
     </div><!-- /t01-form -->
 
-    <!-- ── TS07D form: coefficient source (file vs OMNI) ── -->
-    <div id="ts07d-form" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TS07D Coefficient Inputs</div>
-      <div class="infobox info-orange" style="margin-bottom:10px;">
-        TS07D is time-dependent and typically distributed as yearly coefficient files. Select a coefficient source below.
+    <!-- ── TA16RBF form: official OMNI-style inputs + SymHc ── -->
+    <div id="ta16-form" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TA16RBF (TA16) Driving Parameters</div>
+
+      <div class="infobox info-blue" style="margin-bottom:10px;">
+        <b>Official TA16RBF inputs (see Docs → TA16RBF record format):</b>
+        YEAR/DOY/HOUR/MIN, IMF <b>Bx/By/Bz</b> (GSW; 30‑min trailing average), SW <b>Vx/Vy/Vz</b> (GSE), <b>Np</b>, <b>T</b>, <b>Sym‑H</b>, flags (<b>IMF</b>, <b>SW</b>), dipole <b>Tilt</b> (<b>radians</b>, GSW), <b>Pdyn</b>, <b>N‑index</b>/<b>B‑index</b> (30‑min trailing averages), and <b>SymHc</b> (centered 30‑min sliding average).
       </div>
+
+      <div class="infobox info-orange" style="margin-bottom:10px;">
+        <b>Example starting points:</b>
+        <button class="btn" type="button" onclick="ta16Preset('quiet')">Quiet</button>
+        <button class="btn" type="button" onclick="ta16Preset('storm')">Storm</button>
+        <button class="btn" type="button" onclick="ta16CopyFromTs05()">Copy shared scalars from TS05</button>
+        <span style="margin-left:8px;color:var(--text-dim);font-size:11px;">(order-of-magnitude presets)</span>
+      </div>
+
+      <!-- Row 1: time + indices -->
       <div class="frow c4">
-        <div class="field"><label>Coefficient source</label>
-          <select id="ts07d-source" oninput="ts07dChange()">
-            <option value="omni" selected>OMNI-derived (CCMC backend)</option>
-            <option value="file">Upload TS07D coefficient file</option>
+        <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
+          <input id="ta16-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="ta16Change()"/>
+          <div class="hint">Used for snapshot labeling &amp; OMNI-style parsing.</div>
+        </div>
+        <div class="field"><label>Sym‑H <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="ta16-symh" type="number" value="-20" step="1" min="-600" max="100" oninput="ta16Change()"/>
+          <div class="status" id="ta16-symh-status"></div>
+        </div>
+        <div class="field"><label>SymHc <span class="unit">[nT]</span> <span class="req">*</span></label>
+          <input id="ta16-symhc" type="number" value="-20" step="1" min="-600" max="100" oninput="ta16Change()"/>
+          <div class="status" id="ta16-symhc-status"></div>
+          <div class="hint">Centered 30‑min sliding average (see TA16 record format).</div>
+        </div>
+        <div class="field"><label>Pdyn <span class="unit">[nPa]</span> <span class="req">*</span></label>
+          <input id="ta16-pdyn" type="number" value="2.0" step="0.1" min="0.1" max="30" oninput="ta16Change()"/>
+          <div class="status" id="ta16-pdyn-status"></div>
+        </div>
+      </div>
+
+      <!-- Row 2: IMF -->
+      <div class="frow c4">
+        <div class="field"><label>IMF Bx <span class="unit">[nT GSW]</span> <span class="req">*</span></label>
+          <input id="ta16-bx" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="ta16Change()"/>
+          <div class="status" id="ta16-bx-status"></div>
+        </div>
+        <div class="field"><label>IMF By <span class="unit">[nT GSW]</span> <span class="req">*</span></label>
+          <input id="ta16-by" type="number" value="0.0" step="0.1" min="-40" max="40" oninput="ta16Change()"/>
+          <div class="status" id="ta16-by-status"></div>
+        </div>
+        <div class="field"><label>IMF Bz <span class="unit">[nT GSW]</span> <span class="req">*</span></label>
+          <input id="ta16-bz" type="number" value="2.0" step="0.1" min="-50" max="20" oninput="ta16Change()"/>
+          <div class="status" id="ta16-bz-status"></div>
+        </div>
+        <div class="field"><label>Tilt <span class="unit">[rad]</span> <span class="req">*</span></label>
+          <input id="ta16-tilt" type="number" value="0.0000" step="0.0001" min="-1" max="1" oninput="ta16Change()"/>
+          <div class="status" id="ta16-tilt-status"></div>
+        </div>
+      </div>
+
+      <!-- Row 3: solar wind + indices -->
+      <div class="frow c4">
+        <div class="field"><label>SW Vx <span class="unit">[km/s GSE]</span> <span class="req">*</span></label>
+          <input id="ta16-vx" type="number" value="-450" step="1" min="-1200" max="0" oninput="ta16Change()"/>
+          <div class="status" id="ta16-vx-status"></div>
+        </div>
+        <div class="field"><label>SW Vy <span class="unit">[km/s GSE]</span></label>
+          <input id="ta16-vy" type="number" value="0" step="1" min="-300" max="300" oninput="ta16Change()"/>
+          <div class="status" id="ta16-vy-status"></div>
+        </div>
+        <div class="field"><label>SW Vz <span class="unit">[km/s GSE]</span></label>
+          <input id="ta16-vz" type="number" value="0" step="1" min="-300" max="300" oninput="ta16Change()"/>
+          <div class="status" id="ta16-vz-status"></div>
+        </div>
+        <div class="field"><label>Np <span class="unit">[cm<sup>-3</sup>]</span> <span class="req">*</span></label>
+          <input id="ta16-np" type="number" value="5.0" step="0.1" min="0.1" max="100" oninput="ta16Change()"/>
+          <div class="status" id="ta16-np-status"></div>
+        </div>
+      </div>
+
+      <div class="frow c4">
+        <div class="field"><label>SW T <span class="unit">[K]</span> <span class="req">*</span></label>
+          <input id="ta16-temp" type="number" value="200000" step="1000" min="1000" max="5000000" oninput="ta16Change()"/>
+          <div class="status" id="ta16-temp-status"></div>
+        </div>
+        <div class="field"><label>IMF flag</label>
+          <select id="ta16-imfflag" oninput="ta16Change()">
+            <option value="1" selected>1 — measured</option>
+            <option value="2">2 — interpolated</option>
           </select>
         </div>
-        <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
-          <input id="ts07d-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="ts07dChange()"/>
+        <div class="field"><label>SW flag</label>
+          <select id="ta16-swflag" oninput="ta16Change()">
+            <option value="1" selected>1 — measured</option>
+            <option value="2">2 — interpolated</option>
+          </select>
+        </div>
+        <div class="field"><label>N‑index / B‑index <span class="unit">[ ]</span> <span class="req">*</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><input id="ta16-nidx" type="number" value="0.25" step="0.0001" min="0" max="5" oninput="ta16Change()"/>
+              <div class="status" id="ta16-nidx-status"></div></div>
+            <div><input id="ta16-bidx" type="number" value="0.25" step="0.0001" min="0" max="5" oninput="ta16Change()"/>
+              <div class="status" id="ta16-bidx-status"></div></div>
+          </div>
+          <div class="hint">30‑min trailing averages (see TA16 record format).</div>
         </div>
       </div>
-      <div class="dropzone" id="ts07d-dropzone" onclick="this.classList.toggle('loaded')" style="margin-top:10px;display:none;">
-        <div class="dz-icon">📂</div>
-        <div class="dz-primary">Drop TS07D coefficient file here or click to browse</div>
-        <div class="dz-sub">.dat · .txt · max 200 MB</div>
-      </div>
-    </div><!-- /ts07d-form -->
+
+      <details class="infobox info-blue" style="margin-top:12px;">
+        <summary><b>Advanced:</b> Paste one TA16RBF driver record (OMNI-style)</summary>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+          Paste a single whitespace-delimited record in the official order:
+          <code>YEAR DOY HOUR MIN BX BY BZ VX VY VZ Np T SymH IMFflag SWflag TILT(rad) Pdyn N_INDEX B_INDEX SymHc</code>.
+        </div>
+        <textarea id="ta16-omni-line" class="mono" rows="3" style="width:100%;margin-top:10px;"
+          placeholder="YEAR DOY HOUR MIN  BX BY BZ  VX VY VZ  Np  T  SymH  IMFflag SWflag  TILT(rad)  Pdyn  N_INDEX  B_INDEX  SymHc"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="parseTa16OmniLine()">Parse record → TA16RBF inputs</button>
+          <span id="ta16-parse-status" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          Parsed epoch: <span id="ta16-epoch-read">—</span>
+        </div>
+      </details>
+    </div><!-- /ta16-form -->
 
         <!-- ── TA15 / T15 form: official OMNI-style inputs ── -->
     <div id="ta15-form" style="display:none;">
@@ -2076,9 +2182,24 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </span><span class="t01-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-t01-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
 </span>
 
-<!-- TS07D rows — hidden unless TS07D selected -->
-<span class="ts07d-kw-row" style="display:none;"><span class="kw-key">COEFF_SOURCE</span>   <span class="kw-val" id="kv-ts07d-source">omni</span>
-</span><span class="ts07d-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-ts07d-epoch">2017-09-10T16:00</span>
+<!-- TA16RBF rows — hidden unless TA16RBF selected -->
+<span class="ta16-kw-row" style="display:none;"><span class="kw-key">IMF_BX</span>          <span class="kw-val" id="kv-ta16-bx">0.0</span>      <span class="kw-comment">! nT (GSW; 30-min trail)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-ta16-by">0.0</span>      <span class="kw-comment">! nT (GSW; 30-min trail)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-ta16-bz">2.0</span>      <span class="kw-comment">! nT (GSW; 30-min trail)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_VX</span>           <span class="kw-val" id="kv-ta16-vx">-450.0</span>   <span class="kw-comment">! km/s (GSE)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_VY</span>           <span class="kw-val" id="kv-ta16-vy">0.0</span>      <span class="kw-comment">! km/s (GSE)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_VZ</span>           <span class="kw-val" id="kv-ta16-vz">0.0</span>      <span class="kw-comment">! km/s (GSE)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_NP</span>           <span class="kw-val" id="kv-ta16-np">5.00</span>     <span class="kw-comment">! cm^-3 proton density</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_T</span>            <span class="kw-val" id="kv-ta16-temp">200000</span>  <span class="kw-comment">! K proton temperature</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SYMH</span>            <span class="kw-val" id="kv-ta16-symh">-20.0</span>   <span class="kw-comment">! nT</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">IMF_FLAG</span>        <span class="kw-val" id="kv-ta16-imfflag">1</span>      <span class="kw-comment">! 1 measured | 2 interpolated</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SW_FLAG</span>         <span class="kw-val" id="kv-ta16-swflag">1</span>       <span class="kw-comment">! 1 measured | 2 interpolated</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">TILT</span>            <span class="kw-val" id="kv-ta16-tilt">0.0000</span> <span class="kw-comment">! rad (GSW)</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-ta16-pdyn">2.0</span>     <span class="kw-comment">! nPa</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">N_INDEX</span>         <span class="kw-val" id="kv-ta16-nidx">0.25</span>    <span class="kw-comment">! 30-min trailing avg</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">B_INDEX</span>         <span class="kw-val" id="kv-ta16-bidx">0.25</span>    <span class="kw-comment">! 30-min trailing avg</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">SYMHc</span>           <span class="kw-val" id="kv-ta16-symhc">-20.0</span>   <span class="kw-comment">! centered 30-min sliding avg</span>
+</span><span class="ta16-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>           <span class="kw-val" id="kv-ta16-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
 </span>
 <!-- TA15 rows — hidden unless TA15 selected -->
 <span class="ta15-kw-row" style="display:none;"><span class="kw-key">IMF_BX</span>          <span class="kw-val" id="kv-ta15-bx">0.0</span>      <span class="kw-comment">! nT (GSW; 30-min trail)</span>

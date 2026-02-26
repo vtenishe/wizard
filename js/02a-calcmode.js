@@ -87,12 +87,12 @@ LAST UPDATED: 2026-02-21
 
    A. GRIDLESS  (analytic evaluation)
       The selected Tsyganenko empirical model (TS05, TS04, T96, T01,
-      TS07D, or TA15) is called analytically for every particle position
+      TA16RBF, or TA15) is called analytically for every particle position
       via the GEOPACK library.  This is the standard approach for
       geomagnetic cutoff rigidity:
         – Extremely accurate: no interpolation error.
         – Moderate speed: the Tsyganenko model call itself is the
-          bottleneck (especially TS07D with its large coefficient set).
+          bottleneck (especially RBF models with large coefficient sets).
         – No electric field: the corotation and convection E are
           excluded because they would require spatial derivatives
           (∇Φ) that are expensive to compute analytically at every step.

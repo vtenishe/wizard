@@ -257,6 +257,43 @@ EPOCH                  ${S.epoch}  ! UTC snapshot
 ! T01_G2                 ${Number(S.t01G2||0).toFixed(1)}
 ! T01_EPOCH              ${S.t01Epoch||''}
 
+! TA15 (optional full driver set; official OMNI-style inputs)
+! TA15_BX_GSW            ${Number(S.ta15Bx||0).toFixed(2)}
+! TA15_BY_GSW            ${Number(S.ta15By||0).toFixed(2)}
+! TA15_BZ_GSW            ${Number(S.ta15Bz||0).toFixed(2)}
+! TA15_VX_GSE            ${Number(S.ta15Vx||0).toFixed(1)}
+! TA15_VY_GSE            ${Number(S.ta15Vy||0).toFixed(1)}
+! TA15_VZ_GSE            ${Number(S.ta15Vz||0).toFixed(1)}
+! TA15_NP                ${Number(S.ta15Np||0).toFixed(2)}
+! TA15_T_K               ${Math.round(Number(S.ta15Temp||0))}
+! TA15_SYMH              ${Number(S.ta15SymH||0).toFixed(1)}
+! TA15_IMF_FLAG          ${S.ta15ImfFlag==null?'':S.ta15ImfFlag}
+! TA15_SW_FLAG           ${S.ta15SwFlag==null?'':S.ta15SwFlag}
+! TA15_TILT_RAD          ${Number(S.ta15TiltRad||0).toFixed(4)}
+! TA15_PDYN              ${Number(S.ta15Pdyn||0).toFixed(2)}
+! TA15_N_INDEX           ${Number(S.ta15Nidx||0).toFixed(4)}
+! TA15_B_INDEX           ${Number(S.ta15Bidx||0).toFixed(4)}
+! TA15_EPOCH             ${S.ta15Epoch||''}
+
+! TA16RBF (optional full driver set; TA16 OMNI-style inputs + SymHc)
+! TA16_BX_GSW            ${Number(S.ta16Bx||0).toFixed(2)}
+! TA16_BY_GSW            ${Number(S.ta16By||0).toFixed(2)}
+! TA16_BZ_GSW            ${Number(S.ta16Bz||0).toFixed(2)}
+! TA16_VX_GSE            ${Number(S.ta16Vx||0).toFixed(1)}
+! TA16_VY_GSE            ${Number(S.ta16Vy||0).toFixed(1)}
+! TA16_VZ_GSE            ${Number(S.ta16Vz||0).toFixed(1)}
+! TA16_NP                ${Number(S.ta16Np||0).toFixed(2)}
+! TA16_T_K               ${Math.round(Number(S.ta16Temp||0))}
+! TA16_SYMH              ${Number(S.ta16SymH||0).toFixed(1)}
+! TA16_IMF_FLAG          ${S.ta16ImfFlag==null?'':S.ta16ImfFlag}
+! TA16_SW_FLAG           ${S.ta16SwFlag==null?'':S.ta16SwFlag}
+! TA16_TILT_RAD          ${Number(S.ta16TiltRad||0).toFixed(4)}
+! TA16_PDYN              ${Number(S.ta16Pdyn||0).toFixed(2)}
+! TA16_N_INDEX           ${Number(S.ta16Nidx||0).toFixed(4)}
+! TA16_B_INDEX           ${Number(S.ta16Bidx||0).toFixed(4)}
+! TA16_SYMHC             ${Number(S.ta16SymHc||0).toFixed(1)}
+! TA16_EPOCH             ${S.ta16Epoch||''}
+
 #DOMAIN_BOUNDARY
 BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
 S.boundaryType==='BOX'?`DOMAIN_X_MAX           ${f(S.boxXmax,1)}         ! RE dayside
@@ -474,6 +511,7 @@ function updateSidebar(){
     T95M: 'T95m (modified Tsyganenko 1995)',
     T15:  'T15 (legacy label)',
     TA15: 'TA15 (Tsyganenko & Andreeva 2015)',
+    TA16RBF: 'TA16RBF (Tsyganenko & Andreeva 2016)',
     BATSRUS: 'BATSRUS (MHD input)',
     GAMERA:  'GAMERA (MHD input)'
   };
