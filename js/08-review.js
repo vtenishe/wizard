@@ -472,7 +472,8 @@ function updateSidebar(){
     T04S: 'T04s (Tsyganenko 2004 storm)',
     T96:  'T96 (Tsyganenko 1996)',
     T95M: 'T95m (modified Tsyganenko 1995)',
-    T15:  'T15 (Tsyganenko 2015)',
+    T15:  'T15 (legacy label)',
+    TA15: 'TA15 (Tsyganenko & Andreeva 2015)',
     BATSRUS: 'BATSRUS (MHD input)',
     GAMERA:  'GAMERA (MHD input)'
   };

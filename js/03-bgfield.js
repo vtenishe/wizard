@@ -1122,19 +1122,262 @@ function ts07dChange(){
   updateSidebar();
 }
 
-/* ta15Change — GOES B + solar wind + Dst */
+/* ta15Change — TA15 ("T15") official OMNI-style inputs (see doc/ta15_data_format.txt) */
 function ta15Change(){
-  S.ta15Dst  = parseFloat($('ta15-dst')?.value)  || S.ta15Dst;
-  S.ta15Pdyn = parseFloat($('ta15-pdyn')?.value) || S.ta15Pdyn;
-  S.ta15Bz   = parseFloat($('ta15-bz')?.value)   || S.ta15Bz;
-  S.ta15Goes = parseFloat($('ta15-goes')?.value) || S.ta15Goes;
+  S.ta15Bx     = parseFloat($('ta15-bx')?.value)     || S.ta15Bx;
+  S.ta15By     = parseFloat($('ta15-by')?.value)     || S.ta15By;
+  S.ta15Bz     = parseFloat($('ta15-bz')?.value)     || S.ta15Bz;
+  S.ta15Vx     = parseFloat($('ta15-vx')?.value)     || S.ta15Vx;
+  S.ta15Vy     = parseFloat($('ta15-vy')?.value)     || S.ta15Vy;
+  S.ta15Vz     = parseFloat($('ta15-vz')?.value)     || S.ta15Vz;
+  S.ta15Np     = parseFloat($('ta15-np')?.value)     || S.ta15Np;
+  S.ta15Temp   = parseFloat($('ta15-temp')?.value)   || S.ta15Temp;
+  S.ta15SymH   = parseFloat($('ta15-symh')?.value)   || S.ta15SymH;
+  S.ta15ImfFlag= parseInt($('ta15-imfflag')?.value,10) || S.ta15ImfFlag;
+  S.ta15SwFlag = parseInt($('ta15-swflag')?.value,10)  || S.ta15SwFlag;
+  S.ta15TiltRad= parseFloat($('ta15-tilt')?.value)     || S.ta15TiltRad;
+  S.ta15Pdyn   = parseFloat($('ta15-pdyn')?.value)   || S.ta15Pdyn;
+  S.ta15Nidx   = parseFloat($('ta15-nidx')?.value)   || S.ta15Nidx;
+  S.ta15Bidx   = parseFloat($('ta15-bidx')?.value)   || S.ta15Bidx;
+  S.ta15Epoch  = $('ta15-epoch')?.value || S.ta15Epoch;
+
   const set=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
-  set('kv-ta15-dst',  Number(S.ta15Dst).toFixed(1));
-  set('kv-ta15-pdyn', Number(S.ta15Pdyn).toFixed(2));
-  set('kv-ta15-bz',   Number(S.ta15Bz).toFixed(2));
-  set('kv-ta15-goes', Number(S.ta15Goes).toFixed(1));
+  set('kv-ta15-bx',     Number(S.ta15Bx).toFixed(2));
+  set('kv-ta15-by',     Number(S.ta15By).toFixed(2));
+  set('kv-ta15-bz',     Number(S.ta15Bz).toFixed(2));
+  set('kv-ta15-vx',     Number(S.ta15Vx).toFixed(1));
+  set('kv-ta15-vy',     Number(S.ta15Vy).toFixed(1));
+  set('kv-ta15-vz',     Number(S.ta15Vz).toFixed(1));
+  set('kv-ta15-np',     Number(S.ta15Np).toFixed(2));
+  set('kv-ta15-temp',   String(Math.round(S.ta15Temp)));
+  set('kv-ta15-symh',   Number(S.ta15SymH).toFixed(1));
+  set('kv-ta15-imfflag', String(S.ta15ImfFlag));
+  set('kv-ta15-swflag',  String(S.ta15SwFlag));
+  set('kv-ta15-tilt',   Number(S.ta15TiltRad).toFixed(4));
+  set('kv-ta15-pdyn',   Number(S.ta15Pdyn).toFixed(2));
+  set('kv-ta15-nidx',   Number(S.ta15Nidx).toFixed(4));
+  set('kv-ta15-bidx',   Number(S.ta15Bidx).toFixed(4));
+  set('kv-ta15-epoch',  S.ta15Epoch || '');
+
+  // Mirror the shared driver set into generic keys when this model is active,
+  // so downstream steps (boundary, E-field, AMPS_PARAM writer) remain model-agnostic.
+  if (S.fieldModel === 'TA15') {
+    // Keep shared, model-agnostic driver keys in sync
+    S.pdyn = Number.isFinite(S.ta15Pdyn) ? S.ta15Pdyn : S.pdyn;
+    S.by   = Number.isFinite(S.ta15By)   ? S.ta15By   : S.by;
+    S.bz   = Number.isFinite(S.ta15Bz)   ? S.ta15Bz   : S.bz;
+    S.vx   = Number.isFinite(S.ta15Vx)   ? S.ta15Vx   : S.vx;
+    S.nsw  = Number.isFinite(S.ta15Np)   ? S.ta15Np   : S.nsw;
+    S.dst  = Number.isFinite(S.ta15SymH) ? S.ta15SymH : S.dst; // Sym-H proxy
+    if (S.ta15Epoch) S.epoch = S.ta15Epoch;
+  }
+
+  // keep global epoch preview consistent
+  if (S.fieldModel === 'TA15' && S.ta15Epoch) { const e=$('kv-epoch'); if(e) e.textContent = S.ta15Epoch; }
+
+  validateTA15();
   bndShueUpdate();
   updateSidebar();
+}
+
+/* validateTA15 — range guidance + UI feedback (warn vs out-of-range)
+ *  Ranges here are practical "sanity" ranges for user inputs, not strict fit limits.
+ *  TA15 was built from 1995–2013 OMNI/spacecraft data; typical N-index ~0.1–1.5. */
+function validateTA15(){
+  const R = {
+    symh: { ok:[-200, 20], hard:[-600, 100], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    pdyn: { ok:[0.5,  10], hard:[0.1,  30],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    bx:   { ok:[-10,  10], hard:[-40,  40],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    by:   { ok:[-10,  10], hard:[-40,  40],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    bz:   { ok:[-10,  10], hard:[-50,  20],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    tilt: { ok:[-0.6, 0.6], hard:[-1.0, 1.0],msgOk:'\u2713 OK', msgWarn:'\u26A0 Check',   msgBad:'\u2717 Out-of-range' },
+    vx:   { ok:[-800,-250], hard:[-1200,0],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    vy:   { ok:[-100,100],  hard:[-300,300], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    vz:   { ok:[-100,100],  hard:[-300,300], msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    np:   { ok:[0.5, 20],   hard:[0.1,100],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    temp: { ok:[1e4, 1e6],  hard:[1e3,5e6],  msgOk:'\u2713 OK', msgWarn:'\u26A0 Unusual', msgBad:'\u2717 Out-of-range' },
+    nidx: { ok:[0.05, 1.5], hard:[0.0, 5.0], msgOk:'\u2713 Typical', msgWarn:'\u26A0 Rare', msgBad:'\u2717 Out-of-range' },
+    bidx: { ok:[0.05, 1.5], hard:[0.0, 5.0], msgOk:'\u2713 Typical', msgWarn:'\u26A0 Rare', msgBad:'\u2717 Out-of-range' }
+  };
+
+  const fields = [
+    ['ta15-symh', 'symh', 'ta15-symh-status'],
+    ['ta15-pdyn', 'pdyn', 'ta15-pdyn-status'],
+    ['ta15-bx',   'bx',   'ta15-bx-status'],
+    ['ta15-by',   'by',   'ta15-by-status'],
+    ['ta15-bz',   'bz',   'ta15-bz-status'],
+    ['ta15-tilt', 'tilt', 'ta15-tilt-status'],
+    ['ta15-vx',   'vx',   'ta15-vx-status'],
+    ['ta15-vy',   'vy',   'ta15-vy-status'],
+    ['ta15-vz',   'vz',   'ta15-vz-status'],
+    ['ta15-np',   'np',   'ta15-np-status'],
+    ['ta15-temp', 'temp', 'ta15-temp-status'],
+    ['ta15-nidx', 'nidx', 'ta15-nidx-status'],
+    ['ta15-bidx', 'bidx', 'ta15-bidx-status']
+  ];
+
+  for (const [id,k,statusId] of fields){
+    const el = $(id);
+    const st = $(statusId);
+    if(!el) continue;
+
+    const v = parseFloat(el.value);
+    el.classList.remove('valid','warn','bad','error');
+
+    if(!Number.isFinite(v)){
+      if(st){ st.textContent = ''; st.style.color='var(--text-muted)'; }
+      continue;
+    }
+
+    const [okLo, okHi]     = R[k].ok;
+    const [hardLo, hardHi] = R[k].hard;
+
+    if(v < hardLo || v > hardHi){
+      el.classList.add('bad');
+      if(st){ st.textContent = R[k].msgBad; st.style.color='var(--red)'; }
+    } else if (v < okLo || v > okHi){
+      el.classList.add('warn');
+      if(st){ st.textContent = R[k].msgWarn; st.style.color='var(--orange)'; }
+    } else {
+      el.classList.add('valid');
+      if(st){ st.textContent = R[k].msgOk; st.style.color='var(--green)'; }
+    }
+  }
+}
+
+/* ta15Preset — quick presets for TA15 */
+function ta15Preset(which){
+  if(which==='quiet'){
+    const setV=(id,v)=>{const e=$(id); if(e) e.value=v;};
+    setV('ta15-symh', -10);
+    setV('ta15-pdyn',  2.0);
+    setV('ta15-bx',    0.0);
+    setV('ta15-by',    0.0);
+    setV('ta15-bz',    2.0);
+    setV('ta15-tilt',  0.0000);
+    setV('ta15-vx',   -450);
+    setV('ta15-vy',      0);
+    setV('ta15-vz',      0);
+    setV('ta15-np',    5.0);
+    setV('ta15-temp', 200000);
+    if($('ta15-imfflag')) $('ta15-imfflag').value='1';
+    if($('ta15-swflag'))  $('ta15-swflag').value='1';
+    setV('ta15-nidx',  0.25);
+    setV('ta15-bidx',  0.25);
+  } else if(which==='storm'){
+    const setV=(id,v)=>{const e=$(id); if(e) e.value=v;};
+    setV('ta15-symh', -120);
+    setV('ta15-pdyn',   6.0);
+    setV('ta15-bx',     0.0);
+    setV('ta15-by',     5.0);
+    setV('ta15-bz',   -15.0);
+    setV('ta15-tilt',   0.3000);
+    setV('ta15-vx',   -700);
+    setV('ta15-vy',     20);
+    setV('ta15-vz',     10);
+    setV('ta15-np',    15.0);
+    setV('ta15-temp', 500000);
+    if($('ta15-imfflag')) $('ta15-imfflag').value='1';
+    if($('ta15-swflag'))  $('ta15-swflag').value='1';
+    setV('ta15-nidx',   1.0);
+    setV('ta15-bidx',   1.0);
+  }
+  ta15Change();
+}
+
+/* ta15CopyFromTs05 — copy shared scalars if TS05 already filled */
+function ta15CopyFromTs05(){
+  const setV=(id,v)=>{const e=$(id); if(e && Number.isFinite(v)) e.value=v;};
+  setV('ta15-pdyn', S.pdyn);
+  setV('ta15-bx',   S.bx);
+  setV('ta15-by',   S.by);
+  setV('ta15-bz',   S.bz);
+  setV('ta15-vx',   S.vx);
+  setV('ta15-np',   S.nsw);
+  if(S.epoch && $('ta15-epoch')) $('ta15-epoch').value = S.epoch;
+  ta15Change();
+}
+
+/* parseTa15OmniLine — parse one TA15 OMNI-style 5-min record into UI fields
+ *  Supported layout (see ta15_data_format.txt):
+ *  YEAR DOY HOUR MIN  <Bx> <By> <Bz>  Vx Vy Vz  Np  T  Sym-H  IMFflag SWflag  Tilt(rad)  Pdyn  N-index  B-index
+ *  We fill the full official TA15 driver set.
+ */
+function parseTa15OmniLine(){
+  const txt = $('ta15-omni-line')?.value || '';
+  const st  = $('ta15-parse-status');
+  try{
+    const line = txt.trim();
+    if(!line) throw new Error('Empty input.');
+
+    // split by whitespace
+    const a = line.split(/\s+/);
+    if(a.length < 19) throw new Error(`Expected >=19 columns, got ${a.length}.`);
+
+    const year = parseInt(a[0],10);
+    const doy  = parseInt(a[1],10);
+    const hh   = parseInt(a[2],10);
+    const mm   = parseInt(a[3],10);
+
+    const bx   = parseFloat(a[4]);
+    const by   = parseFloat(a[5]);
+    const bz   = parseFloat(a[6]);
+    const vx   = parseFloat(a[7]);
+    const vy   = parseFloat(a[8]);
+    const vz   = parseFloat(a[9]);
+    const np   = parseFloat(a[10]);
+    const temp = parseFloat(a[11]);
+    const symh = parseFloat(a[12]);
+    const imfflag = parseInt(a[13],10);
+    const swflag  = parseInt(a[14],10);
+    const tiltRad = parseFloat(a[15]);
+    const pdyn = parseFloat(a[16]);
+    const nidx = parseFloat(a[17]);
+    const bidx = parseFloat(a[18]);
+
+    if(![year,doy,hh,mm].every(Number.isFinite)) throw new Error('Bad date/time columns.');
+    if(![bx,by,bz,vx,vy,vz,np,temp,symh,tiltRad,pdyn,nidx,bidx].every(Number.isFinite)) throw new Error('Bad numeric columns.');
+    if(!Number.isFinite(imfflag) || !Number.isFinite(swflag)) throw new Error('Bad flag columns.');
+
+    // DOY → YYYY-MM-DD (UTC) minimal conversion
+    const date = new Date(Date.UTC(year,0,1,0,0,0));
+    date.setUTCDate(date.getUTCDate() + (doy-1));
+    date.setUTCHours(hh);
+    date.setUTCMinutes(mm);
+
+    const pad=(x)=>String(x).padStart(2,'0');
+    const epoch = `${date.getUTCFullYear()}-${pad(date.getUTCMonth()+1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+
+    // fill inputs
+    const setV=(id,v)=>{const e=$(id); if(e) e.value=v;};
+    setV('ta15-epoch', epoch);
+    setV('ta15-bx',    bx);
+    setV('ta15-by',    by);
+    setV('ta15-bz',    bz);
+    setV('ta15-vx',    vx);
+    setV('ta15-vy',    vy);
+    setV('ta15-vz',    vz);
+    setV('ta15-np',    np);
+    setV('ta15-temp',  temp);
+    setV('ta15-symh',  symh);
+    if($('ta15-imfflag')) $('ta15-imfflag').value = String(imfflag);
+    if($('ta15-swflag'))  $('ta15-swflag').value  = String(swflag);
+    setV('ta15-tilt',  tiltRad);
+    setV('ta15-pdyn',  pdyn);
+    setV('ta15-nidx',  nidx);
+    setV('ta15-bidx',  bidx);
+
+    // parsed epoch label
+    const er=$('ta15-epoch-read'); if(er) er.textContent = epoch;
+
+    if(st){ st.textContent='Parsed OK.'; st.style.color='var(--green)'; }
+    ta15Change();
+  }catch(err){
+    if(st){
+      st.textContent='Parse error: '+(err?.message||String(err));
+      st.style.color='var(--red)';
+    }
+  }
 }
 
 /* mhdChange — called on MHD interpolation setting change */

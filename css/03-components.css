@@ -230,7 +230,12 @@ LAST UPDATED: 2026-02-21
 .progress-fill{height:4px;border-radius:2px;background:var(--accent);transition:width .35s ease;}
 
 /* KEYWORD STRIP (AMPS_PARAM.in preview) */
-.kw-strip{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.85;overflow-x:auto;white-space:pre;}
+.kw-strip{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.85;overflow-x:auto;white-space:normal;}
+/* Render each keyword row as its own line.
+   Keep whitespace *within* each row (for column alignment), but do not
+   preserve whitespace *between* rows; otherwise hidden rows leave blank lines. */
+.kw-strip > span{display:block;white-space:pre;}
+.kw-strip .ts05-kw-row,.kw-strip .t96-kw-row,.kw-strip .t01-kw-row,.kw-strip .ts07d-kw-row,.kw-strip .ta15-kw-row{display:block;white-space:pre;}
 .kw-strip .kw-section{color:var(--accent-bright);}
 .kw-strip .kw-key{color:var(--text);}
 .kw-strip .kw-val{color:#fff;}

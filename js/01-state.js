@@ -58,7 +58,10 @@ LAST UPDATED: 2026-02-21
                        t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
                        t01Dst/t01Pdyn/t01By/t01Bz/t01Tilt
                        ts07dSource/ts07dEpoch
-                       ta15Dst/ta15Pdyn/ta15Bz/ta15Goes
+                       TA15 official inputs follow t15_Data_format.txt:
+                       ta15Bx/ta15By/ta15Bz, ta15Vx/ta15Vy/ta15Vz, ta15Np, ta15Temp,
+                       ta15SymH, ta15ImfFlag, ta15SwFlag, ta15TiltRad, ta15Pdyn,
+                       ta15Nidx, ta15Bidx, ta15Epoch
      Domain boundary   boundaryType, shueMode
                        boxXmax/Xmin/Ymax/Ymin/Zmax/Zmin/Rinner
                        shueR0, shueAlpha, xtail, shueRinner
@@ -92,7 +95,9 @@ LAST UPDATED: 2026-02-21
         * t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
         * t01Dst/t01Pdyn/t01By/t01Bz/t01Tilt
         * ts07dSource/ts07dEpoch (coefficients are time-dependent)
-        * ta15Dst/ta15Pdyn/ta15Bz/ta15Goes (TA15 uses GOES |B|)
+        * TA15 (Tsyganenko & Andreeva 2015) uses OMNI-style inputs (see doc/ta15_data_format.txt):
+          Bx/By/Bz (GSW, 30-min trailing avg), Vx/Vy/Vz (GSE), Np, T, Sym-H, IMF flag, SW flag,
+          tilt (radians, GSW), Pdyn, and coupling indices N-index and B-index (30-min trailing avg).
     - Chose defaults consistent with a well-known storm case (Sep 2017) for
       TS05, and quiet-ish baseline defaults for T96/T01/TA15 fields.
 
@@ -228,11 +233,24 @@ const S = {
   // TS07D coefficients:
   ts07dSource: 'omni',
   ts07dEpoch:  '2017-09-10T16:00',
-  // TA15 extra drivers (GOES total-B in addition to standard set):
-  ta15Dst:  -20.0,
-  ta15Pdyn:  2.0,
-  ta15Bz:    2.0,
-  ta15Goes: 120.0,
+  // TA15 ("T15") drivers: solar wind + coupling indices + GOES total-B (site UI):
+  // TA15 defaults roughly correspond to a quiet/moderate OMNI snapshot.
+  ta15Bx:     0.0,
+  ta15By:     0.0,
+  ta15Bz:     2.0,
+  ta15Vx:  -450.0,
+  ta15Vy:     0.0,
+  ta15Vz:     0.0,
+  ta15Np:     5.0,
+  ta15Temp: 200000.0,   // K
+  ta15SymH: -20.0,      // nT
+  ta15ImfFlag: 1,
+  ta15SwFlag:  1,
+  ta15TiltRad: 0.0,     // radians (official)
+  ta15Pdyn:    2.0,     // nPa
+  ta15Nidx:    0.25,
+  ta15Bidx:    0.25,
+  ta15Epoch:  '2017-09-10T16:00',
 
   /* ── Step 4 · Domain boundary ──────────────────────────────────────── */
   boundaryType: 'SHUE',     // 'BOX' or 'SHUE'
