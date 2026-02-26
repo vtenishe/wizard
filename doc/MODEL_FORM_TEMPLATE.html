@@ -1,0 +1,830 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║       AMPS FIELD-MODEL INPUT FORM — REUSABLE TEMPLATE                        ║
+║                                                                              ║
+║  PURPOSE:                                                                    ║
+║    This template defines the standard layout for a magnetic field model's    ║
+║    driving-parameter input form in the AMPS web wizard.  It is extracted     ║
+║    from the T96 implementation and is intended to be copy-pasted and         ║
+║    customised for any new Tsyganenko-family (or similar) empirical model.    ║
+║                                                                              ║
+║  THE TEMPLATE HAS FOUR PARTS:                                                ║
+║    PART A — HTML: driver-parameter input form   (goes in index.html)         ║
+║    PART B — HTML: keyword-preview strip rows    (goes in index.html)         ║
+║    PART C — JavaScript: logic functions         (goes in js/03-bgfield.js)   ║
+║    PART D — Integration checklist: hooks in     state, init, selector, CSS   ║
+║                                                                              ║
+║  NAMING CONVENTION:                                                          ║
+║    Throughout, "XX" is the lowercase model tag  (e.g. t96, t01, ta15).       ║
+║    "XX" in HTML ids becomes the prefix:  id="XX-dst", id="XX-pdyn", etc.     ║
+║    "XX" in JS becomes the function prefix: xxChange(), validateXX(), etc.    ║
+║    "MODEL" is the UPPERCASE model key:  T96, T01, TA15, TS07D, etc.         ║
+║    Replace every occurrence of XX / MODEL with your actual model tag/key.    ║
+║                                                                              ║
+║  REFERENCE IMPLEMENTATION:                                                   ║
+║    T96 in index.html lines ~1660–1730                                        ║
+║    T96 in js/03-bgfield.js  (t96Change, validateT96, presets, parser)        ║
+║                                                                              ║
+║  LAST UPDATED: 2026-02-25                                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PART A — HTML FORM
+     ════════════════════════════════════════════════════════════════════════════
+
+     WHERE TO INSERT:
+       Inside the Step 3 panel in index.html, after the model-selector card
+       grid and alongside the other model forms (ts05-form, t96-form, etc.).
+
+     DISPLAY LOGIC:
+       The form starts hidden (display:none).  selectFieldModel('MODEL') in
+       JS will set display:block when the user clicks the model's card.
+
+     LAYOUT STRUCTURE:
+       ┌─────────────────────────────────────────────────────────┐
+       │  TITLE — coloured uppercase label                       │
+       ├─────────────────────────────────────────────────────────┤
+       │  INFOBOX — orange hint with example preset values       │
+       ├─────────────────────────────────────────────────────────┤
+       │  ROW 1 — 4-column grid of primary required inputs       │
+       │  ┌──────────┬──────────┬──────────┬──────────┐          │
+       │  │ Param 1  │ Param 2  │ Param 3  │ Epoch    │          │
+       │  │ (req *)  │ (req *)  │ (req *)  │          │          │
+       │  └──────────┴──────────┴──────────┴──────────┘          │
+       ├─────────────────────────────────────────────────────────┤
+       │  ROW 2 — optional / secondary parameters                │
+       │  ┌──────────┬──────────┐                                │
+       │  │ Param 4  │ Param 5  │  (opt)                         │
+       │  └──────────┴──────────┘                                │
+       ├─────────────────────────────────────────────────────────┤
+       │  ADVANCED — collapsible <details> section               │
+       │  ┌───────────────────────────────────────────────┐      │
+       │  │ Preset buttons   │   Parse-from-text area     │      │
+       │  │ Parsed readout line                            │      │
+       │  └───────────────────────────────────────────────┘      │
+       └─────────────────────────────────────────────────────────┘
+
+     EACH INPUT FIELD has three sub-elements:
+       1. <input>         — the actual value; has oninput="xxChange()"
+       2. <div class="field-note"> — live validation status (✓/⚠/✗)
+       3. <div class="hint">       — static help text (always visible)
+
+     CSS CLASSES ON <input> (set by validation JS):
+       .valid  → green border   (value within recommended range)
+       .warn   → orange border  (outside recommended but within hard limits)
+       .bad    → red border     (outside hard limits — likely typo)
+       .error  → red border     (alias used by some models)
+       These classes are toggled dynamically; set the initial class to
+       match the default value (usually "valid").
+
+     LABEL BADGES:
+       <span class="req">*</span>   — red asterisk, marks a required field
+       <span class="opt">opt</span> — grey "opt" tag, marks an optional field
+       <span class="unit">[nT]</span> — unit label (not uppercased by CSS)
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+
+    <!-- ── MODEL form: REPLACE "XX" and "MODEL" everywhere ── -->
+    <div id="XX-form" style="display:none;">
+
+      <!-- ╔══════════════════════════════════════════════════════╗
+           ║  TITLE                                               ║
+           ║  Appears as bright-blue uppercase text above the     ║
+           ║  form.  Give it an id so JS can update it at         ║
+           ║  runtime (e.g. if two models share the same form).   ║
+           ╚══════════════════════════════════════════════════════╝ -->
+      <div id="XX-label"
+           style="font-size:11px;
+                  font-weight:700;
+                  color:var(--accent-bright);
+                  text-transform:uppercase;
+                  letter-spacing:.4px;
+                  margin-bottom:8px;">
+        MODEL Driving Parameters
+      </div>
+
+
+      <!-- ╔══════════════════════════════════════════════════════╗
+           ║  INFOBOX — example preset values                     ║
+           ║  Orange background.  Give the user a quick sense     ║
+           ║  of "what numbers should I type?".                   ║
+           ║                                                      ║
+           ║  Colour variants:  info-orange, info-blue,           ║
+           ║                    info-green, info-red               ║
+           ╚══════════════════════════════════════════════════════╝ -->
+      <div class="infobox info-orange">
+        <b>Example presets:</b>
+        <span style="color:var(--text-dim)">quiet</span>
+          (Param1 ≈ VAL1, Param2 ≈ VAL2, Param3 ≈ VAL3) and
+        <span style="color:var(--text-dim)">storm</span>
+          (Param1 ≈ VAL4, Param2 ≈ VAL5, Param3 ≈ VAL6).
+        Use OMNI/CCMC iSWA values for event runs.
+      </div>
+
+
+      <!-- ╔══════════════════════════════════════════════════════╗
+           ║  ROW 1 — primary inputs                              ║
+           ║                                                      ║
+           ║  .frow      = CSS grid row container                 ║
+           ║  .c4        = 4 equal columns (also: c2, c3, c5)    ║
+           ║  .field     = single labelled-input wrapper          ║
+           ║                                                      ║
+           ║  Responsive: at ≤700 px → 2 columns                 ║
+           ║              at ≤480 px → 1 column                   ║
+           ║                                                      ║
+           ║  FILL IN: one <div class="field"> per parameter.     ║
+           ║  The last column is typically Epoch (datetime).       ║
+           ╚══════════════════════════════════════════════════════╝ -->
+      <div class="frow c4">
+
+        <!-- ── FIELD: Parameter 1 (required) ──────────────────
+             ANATOMY OF A FIELD:
+               <label>
+                 Human name
+                 <span class="unit">[UNIT]</span>     ← physical unit
+                 <span class="req">*</span>           ← required marker
+               </label>
+               <input
+                 id="XX-PARAM"                  ← unique DOM id
+                 type="number"                  ← "number" or "datetime-local"
+                 value="DEFAULT"                ← initial default value
+                 step="STEP"                    ← spinner increment
+                 min="HARD_MIN" max="HARD_MAX"  ← browser hard limits
+                 class="valid"                  ← initial validation state
+                 oninput="xxChange()"           ← fires on every keystroke
+               />
+               <div id="XX-PARAM-status"        ← validation status text
+                    class="field-note"
+                    style="color:var(--green);">
+                 ✓ Within normal range           ← initial status message
+               </div>
+               <div class="hint">
+                 Static helper text.             ← always visible
+               </div>
+        ──────────────────────────────────────────────────── -->
+        <div class="field">
+          <label>Param1 <span class="unit">[UNIT]</span> <span class="req">*</span></label>
+          <input id="XX-param1" type="number"
+                 value="DEFAULT" step="STEP" min="HARD_MIN" max="HARD_MAX"
+                 class="valid"
+                 oninput="xxChange()"/>
+          <div id="XX-param1-status" class="field-note"
+               style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Brief physics description of this parameter.</div>
+        </div>
+
+        <!-- ── FIELD: Parameter 2 (required) ── -->
+        <div class="field">
+          <label>Param2 <span class="unit">[UNIT]</span> <span class="req">*</span></label>
+          <input id="XX-param2" type="number"
+                 value="DEFAULT" step="STEP" min="HARD_MIN" max="HARD_MAX"
+                 class="valid"
+                 oninput="xxChange()"/>
+          <div id="XX-param2-status" class="field-note"
+               style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Brief physics description of this parameter.</div>
+        </div>
+
+        <!-- ── FIELD: Parameter 3 (required) ── -->
+        <div class="field">
+          <label>Param3 <span class="unit">[UNIT]</span> <span class="req">*</span></label>
+          <input id="XX-param3" type="number"
+                 value="DEFAULT" step="STEP" min="HARD_MIN" max="HARD_MAX"
+                 class="valid"
+                 oninput="xxChange()"/>
+          <div id="XX-param3-status" class="field-note"
+               style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Brief physics description of this parameter.</div>
+        </div>
+
+        <!-- ── FIELD: Epoch (datetime, no validation status) ──
+             The Epoch field uses type="datetime-local" and has no
+             status badge because any valid datetime is acceptable.
+             It does NOT get a .req or .opt badge — it is simply
+             always present.
+        ──────────────────────────────────────────────────── -->
+        <div class="field">
+          <label>Epoch <span class="unit">[UTC]</span></label>
+          <input id="XX-epoch" type="datetime-local"
+                 value="2017-09-10T16:00"
+                 oninput="xxChange()"/>
+          <div class="hint">Snapshot timestamp for STEADY_STATE mode.</div>
+        </div>
+
+      </div><!-- /.frow c4 — end of Row 1 -->
+
+
+      <!-- ╔══════════════════════════════════════════════════════╗
+           ║  ROW 2 — optional / secondary inputs                 ║
+           ║                                                      ║
+           ║  Same .frow c4 grid, but only fill as many columns   ║
+           ║  as you need.  Empty columns will just be blank      ║
+           ║  space — do NOT add invisible placeholder divs.      ║
+           ║                                                      ║
+           ║  Use <span class="opt">opt</span> to mark these as   ║
+           ║  optional in the label.                               ║
+           ║                                                      ║
+           ║  If your model has NO optional parameters, delete    ║
+           ║  this entire <div class="frow c4"> block.            ║
+           ╚══════════════════════════════════════════════════════╝ -->
+      <div class="frow c4">
+
+        <div class="field">
+          <label>Param4 <span class="unit">[UNIT]</span> <span class="opt">opt</span></label>
+          <input id="XX-param4" type="number"
+                 value="DEFAULT" step="STEP" min="HARD_MIN" max="HARD_MAX"
+                 class="valid"
+                 oninput="xxChange()"/>
+          <div id="XX-param4-status" class="field-note"
+               style="color:var(--green);">&#10003; Within normal range</div>
+          <div class="hint">Brief physics description.</div>
+        </div>
+
+        <div class="field">
+          <label>Param5 <span class="unit">[UNIT]</span> <span class="opt">opt</span></label>
+          <input id="XX-param5" type="number"
+                 value="DEFAULT" step="STEP" min="HARD_MIN" max="HARD_MAX"
+                 class="valid"
+                 oninput="xxChange()"/>
+          <div id="XX-param5-status" class="field-note"
+               style="color:var(--green);">&#10003; OK</div>
+          <div class="hint">Brief physics description.</div>
+        </div>
+
+        <!-- (leave remaining columns empty — do NOT pad with hidden divs) -->
+
+      </div><!-- /.frow c4 — end of Row 2 -->
+
+
+      <!-- ╔══════════════════════════════════════════════════════╗
+           ║  ADVANCED SECTION                                     ║
+           ║                                                      ║
+           ║  Collapsible <details> styled as a blue infobox.     ║
+           ║  Contains three sub-parts:                            ║
+           ║    1. Preset buttons — quick-fill common scenarios    ║
+           ║    2. Paste area — bulk-import from a text record     ║
+           ║    3. Readout line — shows what the parser extracted  ║
+           ║                                                      ║
+           ║  The <details> is collapsed by default; user clicks   ║
+           ║  the <summary> triangle to expand it.                 ║
+           ║                                                      ║
+           ║  The overall status message (XX-status) is placed     ║
+           ║  inside the button row with margin-left:auto so it    ║
+           ║  floats to the right.                                 ║
+           ╚══════════════════════════════════════════════════════╝ -->
+      <details class="infobox info-blue" style="margin-top:10px;">
+        <summary style="cursor:pointer;">
+          <b>Advanced:</b> load presets or paste a data record
+        </summary>
+
+        <!-- ── Description text ── -->
+        <div style="margin-top:8px; font-size:12px; color:var(--text-dim); line-height:1.35;">
+          Use a preset to quickly populate typical quiet or storm-time values,
+          or paste a whitespace-separated record with
+          <code>Param1</code> [UNIT],
+          <code>Param2</code> [UNIT],
+          <code>Param3</code> [UNIT],
+          <code>Param4</code> [UNIT],
+          <code>Param5</code> [UNIT].
+          You can also copy shared scalars from any TS05 values already entered.
+        </div>
+
+        <!-- ── Preset buttons ──
+             Each button calls a JS function that sets all input values
+             to a predefined scenario and then calls xxChange() to
+             update state + validation + keyword preview.
+
+             The <span id="XX-status"> at the right shows the overall
+             validation summary (green / yellow / red) after any change.
+        ──────────────────────────────────────────────────── -->
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="xxPresetQuiet()">Preset: Quiet</button>
+          <button class="btn" type="button" onclick="xxPresetStorm()">Preset: Storm</button>
+          <button class="btn" type="button" onclick="xxCopyFromTs05()">Copy from TS05 scalars</button>
+          <span id="XX-status"
+                style="margin-left:auto;font-size:11px;color:var(--text-dim);"></span>
+        </div>
+
+        <!-- ── Paste area ──
+             Monospace textarea where user can paste a single line of
+             whitespace-separated values.  The placeholder shows the
+             expected column order.
+        ──────────────────────────────────────────────────── -->
+        <textarea id="XX-omni-line"
+          style="width:100%;
+                 height:90px;
+                 margin-top:8px;
+                 font-family:ui-monospace, SFMono-Regular, Menlo, Monaco,
+                             Consolas, 'Liberation Mono', 'Courier New', monospace;
+                 font-size:11px;"
+          placeholder="PARAM1  PARAM2  PARAM3  PARAM4  PARAM5   (whitespace-separated)">
+        </textarea>
+
+        <!-- ── Parse button + status ── -->
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="parseXXOmniLine()">
+            Parse record → MODEL inputs
+          </button>
+          <span id="XX-omni-status"
+                style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+
+        <!-- ── Parsed readout ──
+             Shows the extracted values after a successful parse.
+             Each <span id="XX-PARAM-read"> is updated by the parser.
+             Initial value is an em-dash "—".
+        ──────────────────────────────────────────────────── -->
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          Parsed values:
+          <b>P1</b>=<span id="XX-param1-read">—</span> UNIT,
+          <b>P2</b>=<span id="XX-param2-read">—</span> UNIT,
+          <b>P3</b>=<span id="XX-param3-read">—</span> UNIT,
+          <b>P4</b>=<span id="XX-param4-read">—</span> UNIT,
+          <b>P5</b>=<span id="XX-param5-read">—</span> UNIT.
+        </div>
+
+      </details>
+
+    </div><!-- /XX-form -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PART A-2 — MODEL SELECTOR CARD
+     ════════════════════════════════════════════════════════════════════════════
+
+     WHERE TO INSERT:
+       Inside the model-selector grid in index.html (~line 1505).
+       Each model gets one card.  The card's onclick calls
+       selectFieldModel('MODEL'), which shows the matching form
+       and hides all others.
+
+     The "msc-" prefix + lowercase model key forms the card's id.
+     selectFieldModel() uses this id to add/remove the .sel class.
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<!--
+      <div class="model-sel-card" id="msc-xx" onclick="selectFieldModel('MODEL')">
+        <div class="msc-icon">🔬</div>
+        <div class="msc-title">MODEL — Short Description</div>
+        <div class="msc-sub">Author (Year). One or two sentence description of the model,
+          what it is driven by, and when to use it.</div>
+        <div class="msc-badge" style="margin-top:7px;">
+          <code style="font-size:10px;color:var(--accent-bright);
+                       background:rgba(0,0,0,.3);padding:2px 6px;
+                       border-radius:3px;">FIELD_MODEL = MODEL</code>
+        </div>
+      </div>
+-->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PART B — KEYWORD-PREVIEW STRIP ROWS
+     ════════════════════════════════════════════════════════════════════════════
+
+     WHERE TO INSERT:
+       Inside the <div class="kw-strip" id="ts05-kw-preview"> block in
+       index.html (~line 1850), alongside the other model's kw-rows.
+
+     HOW IT WORKS:
+       Each row is a <span class="XX-kw-row"> that starts hidden.
+       When the user selects MODEL, selectFieldModel() in JS sets
+       display:'' on all .XX-kw-row spans (and display:none on all others).
+
+       Inside each row:
+         .kw-key     — parameter name  (white, monospace)
+         .kw-val     — live value      (bright white, id for JS to update)
+         .kw-comment — inline comment  (dim blue)
+
+     IMPORTANT:
+       - Every <span> must be properly closed.
+       - Rows must NOT be nested inside another model's rows.
+       - The id on .kw-val (e.g. "kv-XX-param1") must match what
+         the JS xxChange() function writes to.
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<!--
+<span class="XX-kw-row" style="display:none;"><span class="kw-key">PARAM1_KEY</span>          <span class="kw-val" id="kv-XX-param1">DEFAULT</span>    <span class="kw-comment">! UNIT description</span>
+</span><span class="XX-kw-row" style="display:none;"><span class="kw-key">PARAM2_KEY</span>          <span class="kw-val" id="kv-XX-param2">DEFAULT</span>    <span class="kw-comment">! UNIT description</span>
+</span><span class="XX-kw-row" style="display:none;"><span class="kw-key">PARAM3_KEY</span>          <span class="kw-val" id="kv-XX-param3">DEFAULT</span>    <span class="kw-comment">! UNIT description</span>
+</span><span class="XX-kw-row" style="display:none;"><span class="kw-key">PARAM4_KEY</span>          <span class="kw-val" id="kv-XX-param4">DEFAULT</span>    <span class="kw-comment">! UNIT description</span>
+</span><span class="XX-kw-row" style="display:none;"><span class="kw-key">PARAM5_KEY</span>          <span class="kw-val" id="kv-XX-param5">DEFAULT</span>    <span class="kw-comment">! UNIT description</span>
+</span><span class="XX-kw-row" style="display:none;"><span class="kw-key">EPOCH</span>               <span class="kw-val" id="kv-XX-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
+</span>
+-->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PART C — JAVASCRIPT FUNCTIONS
+     ════════════════════════════════════════════════════════════════════════════
+
+     WHERE TO INSERT:
+       In js/03-bgfield.js, alongside the other model functions.
+
+     FUNCTIONS TO IMPLEMENT (5 total):
+       1. xxChange()        — read UI → state → kw preview → validate
+       2. validateXX()      — range-check each input, set CSS classes
+       3. xxPresetQuiet()   — fill inputs with quiet-time defaults
+       4. xxPresetStorm()   — fill inputs with storm-time defaults
+       5. parseXXOmniLine() — parse pasted text record → inputs
+       (+  xxCopyFromTs05() — optional convenience copy)
+
+     DEPENDS ON:
+       $(id)  — alias for document.getElementById  (defined in 01-state.js)
+       S      — global state object                (defined in 01-state.js)
+       updateSidebar() — refresh sidebar preview   (defined in 02-wizard.js)
+       bndShueUpdate() — recompute Shue boundary   (defined in 04-boundary.js)
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<script>
+/* ──────────────────────────────────────────────────────────────────────────────
+   FUNCTION 1: xxChange()
+   ──────────────────────────────────────────────────────────────────────────────
+   CALLED BY:  oninput="xxChange()" on every <input> in the XX form.
+   PURPOSE:    Sync UI input values → global state S → keyword preview strip.
+
+   FLOW:
+     1. Read each input's .value via parseFloat / string
+     2. Store into model-specific state keys: S.xxParam1, S.xxParam2, …
+     3. Also mirror into generic state keys (S.dst, S.pdyn, S.bz, …)
+        so that downstream steps (Shue boundary, Weimer E-field) can
+        use them without knowing which model is active.
+     4. Update the kw-preview strip <span> elements with formatted values.
+     5. Call validateXX() to re-check ranges and colour inputs.
+     6. Call updateSidebar() to refresh the right-hand summary panel.
+   ────────────────────────────────────────────────────────────────────────── */
+function xxChange() {
+  // ── 1. Read UI → model-specific state ──
+  //    Use ?? (nullish coalesce) so that NaN from an empty field
+  //    does not overwrite a previously good value.
+  S.xxParam1 = parseFloat($('XX-param1')?.value) ?? S.xxParam1;
+  S.xxParam2 = parseFloat($('XX-param2')?.value) ?? S.xxParam2;
+  S.xxParam3 = parseFloat($('XX-param3')?.value) ?? S.xxParam3;
+  S.xxParam4 = parseFloat($('XX-param4')?.value) ?? S.xxParam4;
+  S.xxParam5 = parseFloat($('XX-param5')?.value) ?? S.xxParam5;
+  S.xxEpoch  = $('XX-epoch')?.value || S.xxEpoch;
+
+  // ── 2. Mirror into generic state keys ──
+  //    Only when this model is the active one, so we don't clobber
+  //    values from another model the user might switch back to.
+  if (S.fieldModel === 'MODEL') {
+    S.dst  = Number.isFinite(S.xxParam1) ? S.xxParam1 : S.dst;
+    S.pdyn = Number.isFinite(S.xxParam2) ? S.xxParam2 : S.pdyn;
+    S.bz   = Number.isFinite(S.xxParam3) ? S.xxParam3 : S.bz;
+    S.by   = Number.isFinite(S.xxParam4) ? S.xxParam4 : S.by;
+    // … add more mappings as needed
+  }
+
+  // ── 3. Update keyword-preview strip ──
+  //    set() is a local helper that writes .textContent into a <span>.
+  const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+  set('kv-XX-param1', Number(S.xxParam1).toFixed(1));   // match decimal places to physics
+  set('kv-XX-param2', Number(S.xxParam2).toFixed(2));
+  set('kv-XX-param3', Number(S.xxParam3).toFixed(2));
+  set('kv-XX-param4', Number(S.xxParam4).toFixed(2));
+  set('kv-XX-param5', Number(S.xxParam5).toFixed(1));
+  set('kv-XX-epoch',  S.xxEpoch || '');
+
+  // ── 4. Validate, refresh sidebar ──
+  validateXX();
+  updateSidebar();
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   FUNCTION 2: validateXX()
+   ──────────────────────────────────────────────────────────────────────────────
+   CALLED BY:  xxChange() after every input update.
+   PURPOSE:    Three-tier range check on each numeric input.
+
+   VALIDATION TIERS:
+     ┌─────────────────────────────────────────────────────┐
+     │  TIER       │ CSS CLASS │ COLOUR  │ MEANING          │
+     ├─────────────┼───────────┼─────────┼──────────────────┤
+     │  ok range   │ .valid    │ green   │ within model's   │
+     │             │           │         │ recommended fit   │
+     ├─────────────┼───────────┼─────────┼──────────────────┤
+     │  warn range │ .warn     │ orange  │ outside recom-   │
+     │             │           │         │ mended but phys-  │
+     │             │           │         │ ically plausible  │
+     ├─────────────┼───────────┼─────────┼──────────────────┤
+     │  hard range │ .bad      │ red     │ almost certainly  │
+     │             │           │         │ a typo or out of  │
+     │             │           │         │ model validity    │
+     └─────────────┴───────────┴─────────┴──────────────────┘
+
+   DATA STRUCTURE — R (ranges object):
+     Each key maps a parameter name to:
+       ok:   [min, max]   — recommended operating range
+       hard: [min, max]   — absolute hard limits (beyond = likely error)
+       msgOk / msgWarn / msgBad — status text for each tier
+
+   FIELDS ARRAY:
+     Maps [input-DOM-id, range-key, status-DOM-id] triples so the
+     loop can process all fields generically.
+
+   OVERALL STATUS:
+     The <span id="XX-status"> in the Advanced section shows a
+     summary: green if all OK, yellow if any warn, red if any bad.
+   ────────────────────────────────────────────────────────────────────────── */
+function validateXX() {
+
+  // ── Define ranges per parameter ──
+  //    ok:   recommended range (model was fitted to data in this range)
+  //    hard: hard limits (beyond this, results are meaningless)
+  const R = {
+    param1: {
+      ok:   [-100, 20],     // ← FILL IN: recommended range
+      hard: [-600, 50],     // ← FILL IN: hard limits
+      msgOk:   '\u2713 Within normal range',      // ✓
+      msgWarn: '\u26A0 Outside recommended range', // ⚠
+      msgBad:  '\u2717 Out-of-range'               // ✗
+    },
+    param2: {
+      ok:   [0.5,  10],
+      hard: [0.1,  30],
+      msgOk:   '\u2713 Within normal range',
+      msgWarn: '\u26A0 Outside recommended range',
+      msgBad:  '\u2717 Out-of-range'
+    },
+    param3: {
+      ok:   [-10,  10],
+      hard: [-50,  20],
+      msgOk:   '\u2713 Within normal range',
+      msgWarn: '\u26A0 Outside recommended range',
+      msgBad:  '\u2717 Out-of-range'
+    },
+    param4: {
+      ok:   [-10,  10],
+      hard: [-40,  40],
+      msgOk:   '\u2713 Within normal range',
+      msgWarn: '\u26A0 Outside recommended range',
+      msgBad:  '\u2717 Out-of-range'
+    },
+    param5: {
+      ok:   [-35,  35],
+      hard: [-35,  35],
+      msgOk:   '\u2713 OK',
+      msgWarn: '\u26A0 Check',
+      msgBad:  '\u2717 Out-of-range'
+    }
+  };
+
+  // ── Map: [input-id, range-key, status-div-id] ──
+  const fields = [
+    ['XX-param1', 'param1', 'XX-param1-status'],
+    ['XX-param2', 'param2', 'XX-param2-status'],
+    ['XX-param3', 'param3', 'XX-param3-status'],
+    ['XX-param4', 'param4', 'XX-param4-status'],
+    ['XX-param5', 'param5', 'XX-param5-status']
+  ];
+
+  let anyWarn = false, anyBad = false;
+
+  for (const [id, k, statusId] of fields) {
+    const el = $(id);
+    const st = $(statusId);
+    if (!el) continue;
+
+    const v = parseFloat(el.value);
+
+    // Reset all validation classes first
+    el.classList.remove('valid', 'warn', 'bad', 'error');
+
+    // Skip if input is empty / non-numeric
+    if (!Number.isFinite(v)) {
+      if (st) { st.textContent = ''; st.style.color = 'var(--text-muted)'; }
+      continue;
+    }
+
+    const [ok0, ok1]   = R[k].ok;
+    const [h0,  h1]    = R[k].hard;
+
+    if (v < h0 || v > h1) {
+      // ── RED: outside hard limits ──
+      el.classList.add('bad');
+      anyBad = true;
+      if (st) { st.textContent = R[k].msgBad; st.style.color = 'var(--red)'; }
+    } else if (v < ok0 || v > ok1) {
+      // ── ORANGE: outside recommended range ──
+      el.classList.add('warn');
+      anyWarn = true;
+      if (st) { st.textContent = R[k].msgWarn; st.style.color = 'var(--orange)'; }
+    } else {
+      // ── GREEN: within recommended range ──
+      el.classList.add('valid');
+      if (st) { st.textContent = R[k].msgOk; st.style.color = 'var(--green)'; }
+    }
+  }
+
+  // ── Overall summary in the Advanced section ──
+  const st = $('XX-status');
+  if (st) {
+    if (anyBad) {
+      st.textContent = 'Out-of-range: expect unreliable/extrapolated results.';
+      st.style.color = 'var(--red)';
+    } else if (anyWarn) {
+      st.textContent = 'Outside recommended range: use caution (extrapolation).';
+      st.style.color = 'var(--yellow)';
+    } else {
+      st.textContent = 'Within recommended range.';
+      st.style.color = 'var(--green)';
+    }
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   FUNCTIONS 3 & 4: xxPresetQuiet() / xxPresetStorm()
+   ──────────────────────────────────────────────────────────────────────────────
+   PURPOSE:  One-click fill of all inputs with representative values.
+   PATTERN:  Set each input's .value, then call xxChange() once to
+             sync state + validate + refresh kw-preview.
+   ────────────────────────────────────────────────────────────────────────── */
+function xxPresetQuiet() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = String(v); };
+  setv('XX-param1',  -10);     // ← FILL IN quiet-time values
+  setv('XX-param2',    2.0);
+  setv('XX-param3',    2.0);
+  setv('XX-param4',    0.0);
+  setv('XX-param5',    0.0);
+  xxChange();
+}
+
+function xxPresetStorm() {
+  const setv = (id, v) => { const e = $(id); if (e) e.value = String(v); };
+  setv('XX-param1', -120);     // ← FILL IN storm-time values
+  setv('XX-param2',    8.0);
+  setv('XX-param3',  -15.0);
+  setv('XX-param4',    5.0);
+  setv('XX-param5',    0.0);
+  xxChange();
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   FUNCTION 5 (optional): xxCopyFromTs05()
+   ──────────────────────────────────────────────────────────────────────────────
+   PURPOSE:  Copy the shared solar-wind / IMF scalars that the user may
+             already have entered for TS05.  Useful for quick A/B model
+             comparisons without retyping.
+   ────────────────────────────────────────────────────────────────────────── */
+function xxCopyFromTs05() {
+  const setv = (id, v) => { const e = $(id); if (e && Number.isFinite(v)) e.value = String(v); };
+  setv('XX-param1', S.dst);    // ← map TS05 state keys to your inputs
+  setv('XX-param2', S.pdyn);
+  setv('XX-param3', S.bz);
+  setv('XX-param4', S.by);
+  xxChange();
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   FUNCTION 6: parseXXOmniLine()
+   ──────────────────────────────────────────────────────────────────────────────
+   PURPOSE:  Parse a whitespace-separated text record from the <textarea>
+             and populate all input fields + readout spans.
+
+   EXPECTED FORMAT:
+     PARAM1  PARAM2  PARAM3  PARAM4  PARAM5
+     (whitespace-separated, one line)
+
+   ERROR HANDLING:
+     - Empty textarea  → orange "paste first" message
+     - Too few columns → red column-count message
+     - Parse exception → red error message with details
+
+   ON SUCCESS:
+     1. Sets all input .value fields
+     2. Updates the readout <span> elements (XX-param1-read, etc.)
+     3. Shows green "Parsed OK." status
+     4. Calls xxChange() to sync everything
+   ────────────────────────────────────────────────────────────────────────── */
+function parseXXOmniLine() {
+  const box = $('XX-omni-line');
+  const st  = $('XX-omni-status');
+  const setText = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+
+  if (!box) { if (st) st.textContent = '(no input box found)'; return; }
+
+  const raw = (box.value || '').trim();
+  if (!raw) {
+    if (st) { st.textContent = 'Paste a record line first.'; st.style.color = 'var(--orange)'; }
+    return;
+  }
+
+  const toks = raw.split(/\s+/);
+  // ── FILL IN: minimum expected column count ──
+  const MIN_COLS = 4;
+  if (toks.length < MIN_COLS) {
+    if (st) {
+      st.textContent = `Too few columns: got ${toks.length}, expected at least ${MIN_COLS}.`;
+      st.style.color = 'var(--red)';
+    }
+    return;
+  }
+
+  try {
+    const f = (k) => parseFloat(toks[k]);
+    const p1 = f(0), p2 = f(1), p3 = f(2), p4 = f(3);
+    const p5 = (toks.length >= 5) ? f(4) : 0.0;   // optional with default
+
+    // Push into UI fields
+    const setv = (id, v) => { const e = $(id); if (e) e.value = String(v); };
+    setv('XX-param1', p1);
+    setv('XX-param2', p2);
+    setv('XX-param3', p3);
+    setv('XX-param4', p4);
+    setv('XX-param5', p5);
+
+    // Update readout spans
+    setText('XX-param1-read', p1.toFixed(1));
+    setText('XX-param2-read', p2.toFixed(2));
+    setText('XX-param3-read', p3.toFixed(2));
+    setText('XX-param4-read', p4.toFixed(2));
+    setText('XX-param5-read', p5.toFixed(1));
+
+    if (st) { st.textContent = 'Parsed OK.'; st.style.color = 'var(--green)'; }
+
+    xxChange();   // sync state + validate + kw preview
+  } catch (e) {
+    if (st) {
+      st.textContent = 'Parse failed: ' + (e && e.message ? e.message : String(e));
+      st.style.color = 'var(--red)';
+    }
+  }
+}
+</script>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     PART D — INTEGRATION CHECKLIST
+     ════════════════════════════════════════════════════════════════════════════
+
+     After creating PARTS A, B, C above, you must hook the new model into
+     the existing codebase in FOUR places.  Each is a small, mechanical edit.
+
+     ┌──────────────────────────────────────────────────────────────────────┐
+     │  HOOK 1: js/01-state.js — State defaults                           │
+     │                                                                     │
+     │  Add default values for your model-specific state keys inside the   │
+     │  S = { … } object.  Follow the existing pattern:                    │
+     │                                                                     │
+     │    // MODEL defaults                                                │
+     │    xxParam1:  DEFAULT,                                              │
+     │    xxParam2:  DEFAULT,                                              │
+     │    xxParam3:  DEFAULT,                                              │
+     │    xxParam4:  DEFAULT,                                              │
+     │    xxParam5:  DEFAULT,                                              │
+     │    xxEpoch:   '2017-09-10T16:00',                                   │
+     │                                                                     │
+     │  Also add a comment in the header listing these keys.               │
+     ├──────────────────────────────────────────────────────────────────────┤
+     │  HOOK 2: js/03-bgfield.js — selectFieldModel()                     │
+     │                                                                     │
+     │  THREE small edits inside selectFieldModel():                       │
+     │                                                                     │
+     │  (a) Add to the forms dictionary:                                   │
+     │        const forms = { …, xx: 'XX-form' };                         │
+     │                                                                     │
+     │  (b) Add an else-if to show the form:                               │
+     │        } else if (model === 'MODEL') {                              │
+     │          $('XX-form').style.display = 'block';                      │
+     │        }                                                            │
+     │                                                                     │
+     │  (c) Add a kw-row visibility toggle:                                │
+     │        document.querySelectorAll('.XX-kw-row').forEach(             │
+     │          r => r.style.display = model==='MODEL' ? '' : 'none'      │
+     │        );                                                           │
+     │                                                                     │
+     │  (d) Add to the commentMap:                                         │
+     │        MODEL: '! Author (Year)',                                    │
+     ├──────────────────────────────────────────────────────────────────────┤
+     │  HOOK 3: js/09-init.js — Startup sync                              │
+     │                                                                     │
+     │  Add an else-if in the init block so that if the saved state has    │
+     │  fieldModel === 'MODEL', the form gets synced on page load:         │
+     │                                                                     │
+     │    else if (S.fieldModel === 'MODEL') {                             │
+     │      if (typeof xxChange === 'function') xxChange();                │
+     │    }                                                                │
+     ├──────────────────────────────────────────────────────────────────────┤
+     │  HOOK 4: js/08-review.js — Final review output (optional)           │
+     │                                                                     │
+     │  If the review/export step generates an AMPS_PARAM.in text block,   │
+     │  add a case for MODEL that emits the correct keyword lines.         │
+     │  This is model-specific; follow the existing TS05/T96 patterns.     │
+     └──────────────────────────────────────────────────────────────────────┘
+
+     That's it!  With Parts A–D in place, the new model will:
+       ✓ Appear as a selectable card in Step 3
+       ✓ Show a styled input form when selected
+       ✓ Validate inputs with green/orange/red feedback
+       ✓ Update the keyword-preview strip in real time
+       ✓ Support presets, paste-from-text, and copy-from-TS05
+       ✓ Persist state across wizard steps
+       ✓ Initialize correctly on page load
+
+     ════════════════════════════════════════════════════════════════════════ -->
