@@ -570,6 +570,97 @@ function updateKwPreview(){
   set('kv-dst', f(S.dst,1)); set('kv-pdyn',f(S.pdyn,2)); set('kv-bz',f(S.bz,2));
   set('kv-vx',  f(S.vx,1));  set('kv-nsw', f(S.nsw,2)); set('kv-by', f(S.by,2));
   set('kv-bx',  f(S.bx,2));  set('kv-epoch', S.epoch);
+  // Advanced TS05 extras (optional): dipole tilt + 6 driving variables W1..W6
+  const haveW = (S.ts05W1!=null||S.ts05W2!=null||S.ts05W3!=null||S.ts05W4!=null||S.ts05W5!=null||S.ts05W6!=null);
+  const advRows = document.querySelectorAll('.ts05-kw-adv');
+  advRows.forEach(r=>r.style.display = haveW ? 'inline' : 'none');
+  set('kv-ts05-tilt', (Number(S.ts05TiltRad)||0).toFixed(4));
+  set('kv-ts05-w1', (S.ts05W1==null?0:Number(S.ts05W1)).toFixed(2));
+  set('kv-ts05-w2', (S.ts05W2==null?0:Number(S.ts05W2)).toFixed(2));
+  set('kv-ts05-w3', (S.ts05W3==null?0:Number(S.ts05W3)).toFixed(2));
+  set('kv-ts05-w4', (S.ts05W4==null?0:Number(S.ts05W4)).toFixed(2));
+  set('kv-ts05-w5', (S.ts05W5==null?0:Number(S.ts05W5)).toFixed(2));
+  set('kv-ts05-w6', (S.ts05W6==null?0:Number(S.ts05W6)).toFixed(2));
+}
+
+
+/* ── Advanced TS05: parse a single OMNI 5-min record with W1..W6 ─────────
+   Format (whitespace-separated):
+     YEAR DOY HOUR MIN BXGSM BYGSM BZGSM VXGSE VYGSE VZGSE DEN TEMP SYMH IMFFLAG ISWFLAG TILT PDYN W1 W2 W3 W4 W5 W6
+   Units: B[nT], V[km/s], DEN[cm^-3], TEMP[K], SYMH[nT], TILT[rad], PDYN[nPa].
+   See: ts05_Data_format.txt and Tsyganenko & Sitnov (2005).
+*/
+function parseTs05OmniLine(){
+  const box = $('ts05-omni-line');
+  const st  = $('ts05-omni-status');
+  const setText=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  if(!box){ if(st) st.textContent='(no input box found)'; return; }
+  const raw=(box.value||'').trim();
+  if(!raw){ if(st){ st.textContent='Paste a record line first.'; st.style.color='var(--orange)'; } return; }
+
+  const toks=raw.split(/\s+/);
+  if(toks.length<24){
+    if(st){ st.textContent=`Too few columns: got ${toks.length}, expected 24.`; st.style.color='var(--red)'; }
+    return;
+  }
+  try{
+    const i=(k)=>parseInt(toks[k],10);
+    const f=(k)=>parseFloat(toks[k]);
+
+    const year=i(0), doy=i(1), hour=i(2), minute=i(3);
+    const bx=f(4), by=f(5), bz=f(6);
+    const vx=f(7);
+    const den=f(10);
+    const symh=f(12);
+    const imfflag=i(13), iswflag=i(14);
+    const tilt=f(15);
+    const pdyn=f(16);
+    const w=[f(17),f(18),f(19),f(20),f(21),f(22)];
+
+    // Convert (year, DOY, hour, minute) to ISO-local datetime string for the UI.
+    // Note: input is UTC; we store the same string for reproducibility.
+    const dt=new Date(Date.UTC(year,0,1,hour,minute,0));
+    dt.setUTCDate(dt.getUTCDate()+ (doy-1));
+    const iso=dt.toISOString().slice(0,16); // YYYY-MM-DDTHH:MM
+
+    // Update state
+    S.fieldModel = (S.fieldModel==='TS04') ? 'TS04' : 'TS05';
+    S.ts05DriverMode = 'omni_record';
+    S.dst = symh;       // SYM-H in OMNI record; used here as a Dst-like proxy.
+    S.pdyn = pdyn;
+    S.bx = bx; S.by = by; S.bz = bz;
+    S.vx = vx;
+    S.nsw = den;
+    S.epoch = iso;
+
+    S.ts05TiltRad = tilt;
+    S.ts05ImfFlag = imfflag;
+    S.ts05SwFlag  = iswflag;
+    S.ts05W1 = w[0]; S.ts05W2 = w[1]; S.ts05W3 = w[2]; S.ts05W4 = w[3]; S.ts05W5 = w[4]; S.ts05W6 = w[5];
+
+    // Push into UI fields
+    if($('ts05-dst')) $('ts05-dst').value = String(symh);
+    if($('ts05-pdyn')) $('ts05-pdyn').value = String(pdyn);
+    if($('ts05-bz')) $('ts05-bz').value = String(bz);
+    if($('ts05-vx')) $('ts05-vx').value = String(vx);
+    if($('ts05-nsw')) $('ts05-nsw').value = String(den);
+    if($('ts05-by')) $('ts05-by').value = String(by);
+    if($('ts05-bx')) $('ts05-bx').value = String(bx);
+    if($('ts05-epoch')) $('ts05-epoch').value = iso;
+
+    // Status readout
+    setText('ts05-tilt-read', tilt.toFixed(4));
+    setText('ts05-imfflag-read', String(imfflag));
+    setText('ts05-iswflag-read', String(iswflag));
+    setText('ts05-w-read', w.map(x=>Number(x).toFixed(2)).join(', '));
+
+    if(st){ st.textContent='Parsed OK.'; st.style.color='var(--green)'; }
+
+    // Refresh derived views
+    ts05Change(); // will re-validate + kw preview + Shue coupling
+  }catch(e){
+    if(st){ st.textContent='Parse failed: '+(e&&e.message?e.message:String(e)); st.style.color='var(--red)'; }
+  }
 }
 
 /* ── 3e. STEP 4 BOUNDARY ─────────────────────────────────────────── */

@@ -67,6 +67,10 @@ function init() {
   /* ── 3. Initial Shue magnetopause diagram ── */
   bndShueUpdate();
 
+  /* ── 3a. Ensure Step-3 field model UI is consistent with S ── */
+  if(typeof selectFieldModel==='function') selectFieldModel(S.fieldModel||'TS05');
+  if(typeof ts05Change==='function') ts05Change();
+
   /* ── 4–6. Volland–Stern initial Kp and intensity ── */
   S.vsKp = dstToKp(S.dst);          // derive Kp from default Dst = -142 nT
   S.vsA  = vsIntensityA(S.vsKp);

@@ -240,6 +240,16 @@ SW_N                   ${f(S.nsw,2)}         ! cm-3 solar-wind proton density
 IMF_BY                 ${f(S.by,2)}          ! nT IMF By
 IMF_BX                 ${f(S.bx,2)}          ! nT IMF Bx
 EPOCH                  ${S.epoch}  ! UTC snapshot
+! TS05 advanced inputs (optional; for reproducibility / TS05 W-variable runs)
+! TS05_TILT_RAD          ${Number(S.ts05TiltRad||0).toFixed(4)}
+! TS05_IMFFLAG           ${S.ts05ImfFlag==null?'':S.ts05ImfFlag}
+! TS05_ISWFLAG           ${S.ts05SwFlag==null?'':S.ts05SwFlag}
+! TS05_W1                ${S.ts05W1==null?'':Number(S.ts05W1).toFixed(2)}
+! TS05_W2                ${S.ts05W2==null?'':Number(S.ts05W2).toFixed(2)}
+! TS05_W3                ${S.ts05W3==null?'':Number(S.ts05W3).toFixed(2)}
+! TS05_W4                ${S.ts05W4==null?'':Number(S.ts05W4).toFixed(2)}
+! TS05_W5                ${S.ts05W5==null?'':Number(S.ts05W5).toFixed(2)}
+! TS05_W6                ${S.ts05W6==null?'':Number(S.ts05W6).toFixed(2)}
 
 #DOMAIN_BOUNDARY
 BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,

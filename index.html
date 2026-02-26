@@ -285,18 +285,14 @@ MAINTAINER NOTE
                   
                   <div class="model-section">
                     <h5>TS05 (Tsyganenko 2005)</h5>
-                    <p><strong>Type:</strong> Storm-time empirical model with realistic tail current dynamics.</p>
-                    <p><strong>Driving Parameters:</strong></p>
-                    <ul>
-                      <li><strong>Dst:</strong> Disturbance storm-time index [nT]. Proxy for ring current intensity. Typical range: +50 (quiet) to -600 (extreme storm).</li>
-                      <li><strong>Pdyn:</strong> Solar wind dynamic pressure [nPa]. Typical: 1-5 nPa (quiet), 5-20 nPa (storm).</li>
-                      <li><strong>IMF By, Bz:</strong> Interplanetary magnetic field components [nT, GSM]. Control magnetopause shape and tail configuration.</li>
-                      <li><strong>Vx:</strong> Solar wind velocity [km/s, GSM]. Typical: 300-800 km/s.</li>
-                      <li><strong>Nsw:</strong> Solar wind proton density [cm⁻³]. Typical: 1-30 cm⁻³.</li>
-                    </ul>
-                    <p><strong>Applications:</strong> SEP event modeling, radiation belt dynamics, geomagnetic storm studies.</p>
-                    <p><strong>Reference:</strong> Tsyganenko, N. A., & Sitnov, M. I. (2005). "Modeling the dynamics of the inner magnetosphere during strong geomagnetic storms." <em>J. Geophys. Res.</em>, 110(A3), A03208. doi:10.1029/2004JA010798</p>
-                  </div>
+                    <p><strong>Type:</strong> Storm-time empirical model with realistic, dynamical current-system response.</p>
+                    <p><strong>Scalar drivers (snapshot / sweeps):</strong> The UI exposes a compact driver set used widely in CCMC/GEOPACK-style toolchains: Dst (or SYM-H), Pdyn, IMF Bx/By/Bz, solar-wind Vx and density N, plus an Epoch tag.</p>
+                    <p><strong>Dynamical TS05 drivers (event runs):</strong> The original TS05 formulation uses six history-dependent driving variables W1..W6 that encode the prior solar-wind/IMF forcing with different relaxation timescales ("memory"). If you have OMNI TS05 files, you can paste a single 5-min record (Advanced section in Panel 3) to populate both the scalar drivers and W1..W6.</p>
+                    <p><strong>Typical order-of-magnitude presets:</strong> quiet Pdyn≈1–3 nPa, |Bz|≲5 nT, Vx≈−400 km/s, N≈3–10 cm⁻³; storm main phase Pdyn≈5–15 nPa, Bz≈−10 to −30 nT, Vx≈−600 to −800 km/s, and Dst/SYM-H≲−100 nT.</p>
+                    <p><strong>OMNI TS05 record format (5-min):</strong> Year, DOY, hour, minute, Bx/By/Bz, Vx/Vy/Vz, density, temperature, SYM-H, IMF/SW flags, dipole tilt (rad), Pdyn (nPa), and W1..W6.</p>
+                    <p><strong>Applications:</strong> SEP cutoff and access modeling, geomagnetic storm studies, inner-magnetosphere field structure.</p>
+                    <p><strong>Reference:</strong> Tsyganenko, N. A., &amp; Sitnov, M. I. (2005). &quot;Modeling the dynamics of the inner magnetosphere during strong geomagnetic storms.&quot; <em>J. Geophys. Res.</em>, 110(A3), A03208. doi:10.1029/2004JA010798</p>
+</div>
 
                   <div class="model-section">
                     <h5>T96 (Tsyganenko 1996)</h5>
@@ -1616,7 +1612,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div class="hint">Negative = southward = reconnection onset.</div>
       </div>
       <div class="field"><label>Epoch <span class="unit">[UTC]</span></label>
-        <input id="ts05-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="liveUpdate()"/>
+        <input id="ts05-epoch" type="datetime-local" value="2017-09-10T16:00" oninput="ts05Change()"/>
         <div class="hint">Snapshot timestamp for STEADY_STATE mode.</div>
       </div>
     </div>
@@ -1640,6 +1636,24 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div class="hint">Usually 0.</div>
       </div>
     </div>
+
+      <details class="infobox info-blue" style="margin-top:10px;">
+        <summary style="cursor:pointer;"><b>Advanced:</b> paste a single OMNI 5‑min TS05 record (includes W1..W6)</summary>
+        <div style="margin-top:8px; font-size:12px; color:var(--text-dim); line-height:1.35;">
+          Use this when you have a line from the yearly files <code>YYYY_OMNI_5m_with_TS05_variables.dat</code>.
+          The record contains IMF (Bx,By,Bz), solar-wind velocity, density, <code>SYM-H</code>, dipole <code>TILT</code> (rad), <code>Pdyn</code> (nPa), and the six TS05 driving variables <code>W1..W6</code>.
+          Units and column order follow the OMNI/TS05 format described in the attached spec.
+        </div>
+        <textarea id="ts05-omni-line" style="width:100%;height:90px;margin-top:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;font-size:11px;" placeholder="YEAR DOY HOUR MIN BXGSM BYGSM BZGSM VXGSE VYGSE VZGSE DEN TEMP SYMH IMFFLAG ISWFLAG TILT Pdyn W1 W2 W3 W4 W5 W6"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" type="button" onclick="parseTs05OmniLine()">Parse record → TS05 inputs</button>
+          <span id="ts05-omni-status" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+          Parsed extras: <b>TILT</b>=<span id="ts05-tilt-read">—</span> rad, flags (<b>IMF</b>=<span id="ts05-imfflag-read">—</span>, <b>SW</b>=<span id="ts05-iswflag-read">—</span>), W1..W6=<span id="ts05-w-read">—</span>.
+        </div>
+      </details>
+
     </div><!-- /ts05-form -->
 
     <!-- ── T96 form: Dst + Pdyn + IMF By/Bz + dipole tilt ── -->
@@ -1794,10 +1808,19 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 </span><span class="ts05-kw-row"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa dynamic pressure</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM southward component</span>
 </span><span class="ts05-kw-row"><span class="kw-key">SW_VX</span>           <span class="kw-val" id="kv-vx">-650.0</span>    <span class="kw-comment">! km/s solar wind velocity</span>
-</span><span class="ts05-kw-row"><span class="kw-key">SW_NSW</span>          <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm⁻³ proton density</span>
+</span><span class="ts05-kw-row"><span class="kw-key">SW_N</span>          <span class="kw-val" id="kv-nsw">12.00</span>     <span class="kw-comment">! cm⁻³ proton density</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-by">3.20</span>      <span class="kw-comment">! nT dawn-dusk component</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BX</span>          <span class="kw-val" id="kv-bx">0.00</span>      <span class="kw-comment">! nT (optional)</span>
-</span><!-- T96/T01 rows — hidden unless T96 or T01 selected -->
+</span>
+</span><span class="ts05-kw-row"><span class="kw-key">EPOCH</span>          <span class="kw-val" id="kv-epoch">2017-09-10T16:00</span> <span class="kw-comment">! UTC snapshot</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">TILT</span>           <span class="kw-val" id="kv-ts05-tilt">0.0000</span>  <span class="kw-comment">! rad (dipole tilt)</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W1</span>             <span class="kw-val" id="kv-ts05-w1">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W2</span>             <span class="kw-val" id="kv-ts05-w2">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W3</span>             <span class="kw-val" id="kv-ts05-w3">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W4</span>             <span class="kw-val" id="kv-ts05-w4">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W5</span>             <span class="kw-val" id="kv-ts05-w5">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+</span><span class="ts05-kw-row ts05-kw-adv" style="display:none;"><span class="kw-key">W6</span>             <span class="kw-val" id="kv-ts05-w6">0.00</span>    <span class="kw-comment">! TS05 driving variable</span>
+<!-- T96/T01 rows — hidden unless T96 or T01 selected -->
 <span class="t96-kw-row" style="display:none;"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-t96-dst">-20.0</span>    <span class="kw-comment">! nT</span>
 </span><span class="t96-kw-row" style="display:none;"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-t96-pdyn">2.00</span>     <span class="kw-comment">! nPa</span>
 </span><span class="t96-kw-row" style="display:none;"><span class="kw-key">IMF_BY</span>          <span class="kw-val" id="kv-t96-by">0.00</span>     <span class="kw-comment">! nT</span>

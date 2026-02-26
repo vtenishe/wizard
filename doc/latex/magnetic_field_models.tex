@@ -61,9 +61,28 @@ Typical inputs are solar-wind dynamic pressure, IMF $B_y/B_z$, Dst, and/or Kp.
 \subsection*{T96}
 Tsyganenko (1996) provides a widely used external field model suitable for many cutoff studies.
 
-\subsection*{TS05 / T15}
+\subsection*{TS05 (Tsyganenko \& Sitnov 2005) / TA15 (Tsyganenko--Andreeva 2015)}
 Storm-time models incorporate additional drivers and are designed to capture disturbed intervals.
-These are often preferred for event-realistic SEP cutoff calculations.
+For SEP cutoff calculations, these models are often preferred for event-realistic reconstructions and strong-storm sensitivity tests.
+
+\paragraph{Driver sets.} In this interface, the "TS05" model is configured with the common scalar drivers
+(Dst or SYM-H, solar-wind dynamic pressure $P_{dyn}$, IMF $B_x/B_y/B_z$, solar-wind $V_x$ and density $N$) and an \texttt{EPOCH} time tag.
+The underlying TS05 formulation is \emph{dynamical}: the magnitudes of major current systems are driven by six history-dependent variables $W_1..W_6$,
+each computed as a relaxation integral/sum over the prior solar-wind/IMF conditions. Tsyganenko \& Sitnov (2005) define (their Eq.\,(7--8))
+a generic form
+\begin{equation}
+W(t_i)=\frac{r}{12}\sum_{k=1}^{i} S_k\exp\left[\frac{r}{60}(t_k-t_i)\right],\qquad
+S_k = \left(\frac{N_k}{5}\right)^{\ell}\left(\frac{V_k}{400}\right)^{b}\left(\frac{B_{s,k}}{5}\right)^{g},
+\end{equation}
+with module-specific exponents and relaxation rates. This is why TS05 is best driven from an OMNI-style time series (5-min cadence).
+
+\paragraph{OMNI/TS05 record format.} A commonly used dataset is distributed as yearly files
+\texttt{YYYY\_OMNI\_5m\_with\_TS05\_variables.dat}, where each 5-min record contains
+IMF ($B_x,B_y,B_z$), solar-wind velocity components, density, temperature, \texttt{SYM-H}, availability flags, dipole tilt angle (radians), $P_{dyn}$ (nPa),
+and the six TS05 driving variables $W_1..W_6$.
+
+\paragraph{Parameter presets (order-of-magnitude).} Quiet solar wind typically corresponds to $P_{dyn}\sim1$--$3$ nPa, $|B_z|\lesssim 5$ nT, $V_x\sim-400$ km/s, $N\sim 3$--$10$ cm$^{-3}$;
+storm main-phase intervals commonly reach $P_{dyn}\sim5$--$15$ nPa, $B_z\sim-10$ to $-30$ nT, $V_x\sim-600$ to $-800$ km/s, and $\mathrm{Dst/SYM\mbox{-}H}\lesssim-100$ nT.
 
 \section{MHD-driven fields (BATSRUS / GAMERA)}
 For highest fidelity, AMPS can ingest a 3D time-dependent magnetic field from a global MHD model.

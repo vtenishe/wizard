@@ -199,6 +199,16 @@ const S = {
   by:      3.2,        // [nT]  IMF By (GSM)
   bx:      0.0,        // [nT]  IMF Bx (GSM)
   epoch: '2017-09-10T16:00',  // ISO-8601 epoch for STEADY_STATE runs
+  ts05DriverMode: 'manual',   // 'manual' | 'omni_record' (paste OMNI+W1..W6 line)
+  ts05TiltRad:   0.0,        // [rad] dipole tilt (from OMNI record)
+  ts05ImfFlag:   1,          // -1 none, 1 original, 2 interpolated (from OMNI record)
+  ts05SwFlag:    1,
+  ts05W1:        null,
+  ts05W2:        null,
+  ts05W3:        null,
+  ts05W4:        null,
+  ts05W5:        null,
+  ts05W6:        null,
   // T96 driver set:
   t96Dst:  -20.0,
   t96Pdyn:   2.0,
