@@ -1,0 +1,20 @@
+
+IYEAR       i4       4-digit year
+IDAY        i4       Day of year (IDAY=1 is January 1)
+IHOUR       i3       UT hour (0 - 23)
+MIN         i3       UT minute (0 - 59)
+<Bx IMF>    f8.2     nT, in GSW coordinates, average over 30-min trailing interval
+<By IMF>    f8.2     nT, in GSW coordinates, average over 30-min trailing interval
+<Bz IMF>    f8.2     nT, in GSW coordinates, average over 30-min trailing interval
+Vx          f8.1     solar wind Vx in GSE coordinates, km/s
+Vy          f8.1     solar wind Vy in GSE coordinates, km/s
+Vz          f8.1     solar wind Vz in GSE coordinates, km/s
+Np          f7.2     solar wind proton density, cm^-3
+T           f9.0     solar wind proton temperature, degs K
+Sym-H       f7.1     Sym-H index, nT
+IMF flag    i5       equals 1 for actually measured or 2 for linearly interpolated IMF
+SW flag     i5       equals 1 for actually measured or 2 for linearly interpolated solar wind parameters
+Tilt        f8.4     geodipole tilt angle (radians!) in GSW coordinate system
+Pdyn        f7.2     solar wind flow ram pressure, nPa
+N-index     f8.4     average over 30-min trailing interval, see Eq.(1) in TA15_Model_description.pdf 
+B-index     f8.4     average over 30-min trailing interval, see Eq.(2) in TA15_Model_description.pdf
