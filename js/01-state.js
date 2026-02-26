@@ -89,7 +89,7 @@ LAST UPDATED: 2026-02-21
     standard Tsyganenko-family naming used by CCMC, GEOPACK and common wrappers.
 
   What was updated:
-    - Normalized the Step 3 model list to: TS05, TS04, T96, T01, TA15, TA16RBF
+    - Normalized the Step 3 model list to: TS05, T96, T01, TA15, TA16RBF
       plus file-driven MHD backgrounds: BATSRUS, GAMERA.
     - Added dedicated state keys for model-specific drivers:
         * t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
@@ -195,7 +195,7 @@ const S = {
 
   /* ── Step 3 · Background magnetic field model ──────────────────────── */
   fieldModel: 'TS05',
-  // TS05 / TS04 shared storm-time driver set (UI-compatible):
+  // TS05 storm-time driver set (UI-compatible):
   dst:   -142.0,       // [nT]  Dst index (ring current proxy)
   pdyn:    3.5,        // [nPa] solar wind dynamic pressure
   bz:    -18.5,        // [nT]  IMF Bz (GSM)

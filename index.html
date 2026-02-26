@@ -55,13 +55,13 @@ FIXES APPLIED IN THIS PACKAGE (2026-02-20)
 ADDITIONAL UPDATES (2026-02-20): "Bkg B-Field" correctness + documentation
 - Replaced placeholder/legacy field-model labels with a consistent set of
   Tsyganenko-family external-field options that match typical CCMC/GEOPACK
-  naming: TS05, TS04, T96, T01, TA15, TA16RBF.
+  naming: TS05, T96, T01, TA15, TA16RBF.
 - Preserved physics-based background-field workflows via uploaded MHD output:
   BATSRUS and GAMERA.
 - Implemented model-specific "Driving Parameters" forms that reflect how each
   model is normally driven (scalar drivers for T96/T01; coefficient selection
   for TA16RBF).
-- Added example quiet/storm presets (order-of-magnitude) in the TS05/TS04
+- Added example quiet/storm presets (order-of-magnitude) in the TS05
   driving-parameter section to guide users and improve reproducibility.
 
 MAINTAINER NOTE
@@ -856,7 +856,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           </div>
           <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">
             The magnetic field is computed <b>analytically</b> at each particle position using the selected
-            Tsyganenko-family model (TS05, TS04, T96, T01, TA15, TA16RBF). No spatial grid is involved.
+            Tsyganenko-family model (TS05, T96, T01, TA15, TA16RBF). No spatial grid is involved.
             <br><br>
             <b>Restrictions:</b>
           </div>
@@ -1494,7 +1494,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
   <div class="sect-hd" onclick="toggleSection('s-bgfield')">
     <div class="sect-icon" style="background:rgba(255,208,75,.12)">&#129522;</div>
     <div><div class="sect-title">Background Magnetic Field — Model &amp; Driving Parameters</div>
-    <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05/TS04 support storm-time reconstruction; T96/T01 provide robust baseline; TA15 uses OMNI-style drivers; TA16RBF adds SymHc (centered 30‑min sliding average) to an OMNI-style driver set.</div></div>
+    <div style="font-size:11px;color:var(--text-dim)">Select an empirical Tsyganenko-type model or upload MHD output. Driving parameters shown depend on the model. TS05 supports storm-time reconstruction; T96/T01 provide robust baseline; TA15 uses OMNI-style drivers; TA16RBF adds SymHc (centered 30‑min sliding average) to an OMNI-style driver set.</div></div>
     <span class="sect-sub"><span class="tag tag-new">Step 4</span></span>
     <span class="chevron">&#9660;</span>
   </div>
@@ -1506,7 +1506,6 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
          Empirical models — driven by scalar solar-wind / geomag indices:
            TS05   Tsyganenko & Sitnov 2005   — storm-time, robust drivers
-           TS04   Tsyganenko & Sitnov 2004   — storm-time empirical
            T96    Tsyganenko 1996            — Dst/Pdyn/By/Bz/tilt baseline
            T01    Tsyganenko 2001            — 2001 coefficient family
            TA16RBF  Tsyganenko &amp; Andreeva 2016  — empirical RBF model
@@ -1517,7 +1516,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
            GAMERA   Lemos et al. 2023 (upload .h5)
     ══════════════════════════════════════════════════════ -->
 
-    <!-- Row 1: TS05 | TS04 -->
+    <!-- Row 1: TS05 | T01 -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
 
       <!-- TS05: full 8-parameter storm-time model — RECOMMENDED DEFAULT -->
@@ -1526,26 +1525,6 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div class="msc-title">TS05 <span style="font-size:9px;background:rgba(45,212,160,.2);color:var(--green);padding:1px 5px;border-radius:3px;">Recommended</span></div>
         <div class="msc-sub">Tsyganenko &amp; Sitnov (2005). 8 drivers: Dst, Pdyn, Bz, Vx, Nsw, By, Bx, epoch. Best accuracy for storm-time SEP runs. Directly couples to Shue boundary auto-compute and Weimer E-field.</div>
         <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--green);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS05</code></div>
-      </div>
-
-      <!-- TS04: storm-time empirical model (Tsyganenko & Sitnov 2004) -->
-      <div class="model-sel-card" id="msc-ts04" onclick="selectFieldModel('TS04')">
-        <div class="msc-icon">⚡</div>
-        <div class="msc-title">TS04 — Storm-time Empirical</div>
-        <div class="msc-sub">Tsyganenko &amp; Sitnov (2004). Storm-time model with improved current systems versus T96/T01. Typically used for disturbed intervals; supports parameter studies when TS05 is not required.</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TS04</code></div>
-      </div>
-    </div>
-
-    <!-- Row 2: T96 | T01 -->
-    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
-
-      <!-- T96: solar-wind/IMF driven empirical model -->
-      <div class="model-sel-card" id="msc-t96" onclick="selectFieldModel('T96')">
-        <div class="msc-icon">🌐</div>
-        <div class="msc-title">T96 — SW/IMF Driven</div>
-        <div class="msc-sub">Tsyganenko (1996). Widely used baseline empirical model driven by Dst, solar-wind dynamic pressure, IMF By/Bz, and dipole tilt. Good for quick event studies when full storm-time W-parameters are not needed.</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T96</code></div>
       </div>
 
       <!-- T01: 2001 model family -->
@@ -1557,15 +1536,15 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
     </div>
 
-    <!-- Row 3: TA16RBF | TA15 -->
+    <!-- Row 2: T96 | TA15 -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
 
-      <!-- TA16RBF: empirical RBF model (TA16) -->
-      <div class="model-sel-card" id="msc-ta16rbf" onclick="selectFieldModel('TA16RBF')">
-        <div class="msc-icon">🧩</div>
-        <div class="msc-title">TA16RBF — RBF Empirical <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
-        <div class="msc-sub">Tsyganenko &amp; Andreeva (2016). Empirical radial-basis-function (RBF) model driven by interplanetary and ground-based drivers (Pdyn, SYM‑H, Newell N‑index, IMF By, etc.). Uses OMNI-style record inputs plus SymHc (centered 30‑min sliding average).</div>
-        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TA16RBF</code></div>
+      <!-- T96: solar-wind/IMF driven empirical model -->
+      <div class="model-sel-card" id="msc-t96" onclick="selectFieldModel('T96')">
+        <div class="msc-icon">🌐</div>
+        <div class="msc-title">T96 — SW/IMF Driven</div>
+        <div class="msc-sub">Tsyganenko (1996). Widely used baseline empirical model driven by Dst, solar-wind dynamic pressure, IMF By/Bz, and dipole tilt. Good for quick event studies when full storm-time W-parameters are not needed.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--accent-bright);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = T96</code></div>
       </div>
 
       <!-- TA15: Tsyganenko & Andreeva 2015 — advanced empirical model -->
@@ -1574,6 +1553,18 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div class="msc-title">TA15 — Advanced Empirical <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
         <div class="msc-sub">Tsyganenko &amp; Andreeva (2015). Forecasting-oriented empirical model driven by OMNI-style solar wind/IMF + indices (see TA15 record-format doc for exact inputs).</div>
         <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TA15</code></div>
+      </div>
+    </div>
+
+    <!-- Row 3: TA16RBF -->
+    <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
+
+      <!-- TA16RBF: empirical RBF model (TA16) -->
+      <div class="model-sel-card" id="msc-ta16rbf" onclick="selectFieldModel('TA16RBF')">
+        <div class="msc-icon">🧩</div>
+        <div class="msc-title">TA16RBF — RBF Empirical <span style="font-size:9px;background:rgba(139,111,247,.18);color:var(--purple);padding:1px 5px;border-radius:3px;">Advanced</span></div>
+        <div class="msc-sub">Tsyganenko &amp; Andreeva (2016). Empirical radial-basis-function (RBF) model driven by interplanetary and ground-based drivers (Pdyn, SYM‑H, Newell N‑index, IMF By, etc.). Uses OMNI-style record inputs plus SymHc (centered 30‑min sliding average).</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--purple);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = TA16RBF</code></div>
       </div>
     </div>
 
@@ -1605,7 +1596,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
          Only one form is shown at a time; selectFieldModel() toggles visibility.
     ══════════════════════════════════════════════════════ -->
 
-    <!-- ── TS05 / TS04 form (shared inputs — storm-time driver UI) ── -->
+    <!-- ── TS05 form (storm-time driver UI) ── -->
     <div id="ts05-form">
       <div id="ts05-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">TS05 Driving Parameters</div>
     <div class="infobox info-orange">
@@ -2146,7 +2137,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <div class="kw-strip" id="ts05-kw-preview">
 <span class="kw-section">#BACKGROUND_FIELD</span>
 <span class="kw-key">FIELD_MODEL</span>     <span class="kw-val" id="kv-field-model">TS05</span>      <span class="kw-comment" id="kv-field-model-comment">! Tsyganenko &amp; Sitnov (2005)</span>
-<!-- TS05/TS04 rows — hidden when other model selected -->
+<!-- TS05 rows — hidden when other model selected -->
 <span class="ts05-kw-row"><span class="kw-key">DST</span>             <span class="kw-val" id="kv-dst">-142.0</span>    <span class="kw-comment">! nT ring current index</span>
 </span><span class="ts05-kw-row"><span class="kw-key">PDYN</span>            <span class="kw-val" id="kv-pdyn">3.50</span>      <span class="kw-comment">! nPa dynamic pressure</span>
 </span><span class="ts05-kw-row"><span class="kw-key">IMF_BZ</span>          <span class="kw-val" id="kv-bz">-18.50</span>    <span class="kw-comment">! nT GSM southward component</span>

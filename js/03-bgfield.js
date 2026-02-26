@@ -37,9 +37,6 @@ LAST UPDATED: 2026-02-21
              and Weimer E-field auto-mode (Step 5).
              FIELD_MODEL = TS05
 
-     TS04  — Tsyganenko & Sitnov (2004) storm-time model.
-             FIELD_MODEL = TS04
-
      T96   — Tsyganenko (1996).
              Drivers: Dst, Pdyn, IMF By/Bz, dipole tilt.
              FIELD_MODEL = T96
@@ -76,7 +73,7 @@ LAST UPDATED: 2026-02-21
      selectSpecies(key,card) — choose particle species
      updateRigidity()        — recompute and display rigidity range
      selectFieldModel(model) — switch active model card + show its form
-     ts05Change()            — sync TS05/TS04 inputs → S + update KW
+     ts05Change()            — sync TS05 inputs → S + update KW
      t96Change()             — sync T96 inputs → S
      t01Change()             — sync T01 inputs → S
      ta15Change()            — sync TA15 inputs → S
@@ -93,11 +90,11 @@ LAST UPDATED: 2026-02-21
 
   Summary of modifications in this file:
     1) Normalized the empirical field-model list to a standard Tsyganenko-family
-       set used by CCMC/GEOPACK toolchains: TS05, TS04, T96, T01, TA15, TA16RBF.
+       set used by CCMC/GEOPACK toolchains: TS05, T96, T01, TA15, TA16RBF.
        Retained file-driven MHD options: BATSRUS and GAMERA.
 
     2) Implemented model-specific driver forms + state synchronization:
-       - TS05/TS04 share an 8-parameter storm-time driver UI (Dst, Pdyn, Bz,
+       - TS05 uses an 8-parameter storm-time driver UI (Dst, Pdyn, Bz,
          Vx, Nsw, By, Bx, epoch). These drivers are also used by downstream
          steps for boundary auto-compute (Shue) and E-field auto modes (Weimer).
        - T96/T01 use the common reduced driver set (Dst, Pdyn, IMF By/Bz,
@@ -625,7 +622,7 @@ function parseTs05OmniLine(){
     const iso=dt.toISOString().slice(0,16); // YYYY-MM-DDTHH:MM
 
     // Update state
-    S.fieldModel = (S.fieldModel==='TS04') ? 'TS04' : 'TS05';
+    S.fieldModel = 'TS05';
     S.ts05DriverMode = 'omni_record';
     S.dst = symh;       // SYM-H in OMNI record; used here as a Dst-like proxy.
     S.pdyn = pdyn;
@@ -689,7 +686,7 @@ function selectFieldModel(model) {
     if (el) el.style.display = 'none';
   });
   const isMhd  = (model === 'BATSRUS' || model === 'GAMERA');
-  const isTs05 = (model === 'TS05' || model === 'TS04');
+  const isTs05 = (model === 'TS05');
 
   const isT96  = (model === 'T96');
   const isT01  = (model === 'T01');
@@ -699,9 +696,7 @@ function selectFieldModel(model) {
   if (isTs05) {
     $('ts05-form').style.display = 'block';
     const lbl = $('ts05-label');
-    if (lbl) lbl.textContent = model === 'TS05'
-      ? 'TS05 Driving Parameters'
-      : 'TS04 Driving Parameters (reuse TS05 driver UI)';
+    if (lbl) lbl.textContent = 'TS05 Driving Parameters';
   } else if (isT96) {
     $('t96-form').style.display = 'block';
   } else if (isT01) {
@@ -731,7 +726,6 @@ function selectFieldModel(model) {
   // Update model comment
   const commentMap = {
     TS05: '! Tsyganenko & Sitnov (2005)',
-    TS04: '! Tsyganenko & Sitnov (2004)',
     T96:  '! Tsyganenko (1996)',
     T01:  '! Tsyganenko (2001)',
     TA15: '! Tsyganenko & Andreeva (2015)',

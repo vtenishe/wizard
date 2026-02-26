@@ -70,7 +70,7 @@ function init() {
   /* ── 3a. Ensure Step-3 field model UI is consistent with S ── */
   if(typeof selectFieldModel==='function') selectFieldModel(S.fieldModel||'TS05');
   // Sync the visible model form + keyword preview with the active model.
-  if(S.fieldModel==='TS05' || S.fieldModel==='TS04'){ if(typeof ts05Change==='function') ts05Change(); }
+  if(S.fieldModel==='TS05'){ if(typeof ts05Change==='function') ts05Change(); }
   else if(S.fieldModel==='T96'){ if(typeof t96Change==='function') t96Change(); }
   else if(S.fieldModel==='T01'){ if(typeof t01Change==='function') t01Change(); }
   else if(S.fieldModel==='TA16RBF'){ if(typeof ta16Change==='function') ta16Change(); }

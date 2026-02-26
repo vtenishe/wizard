@@ -86,7 +86,7 @@ LAST UPDATED: 2026-02-21
    during the Lorentz-force integration:
 
    A. GRIDLESS  (analytic evaluation)
-      The selected Tsyganenko empirical model (TS05, TS04, T96, T01,
+      The selected Tsyganenko empirical model (TS05, T96, T01,
       TA16RBF, or TA15) is called analytically for every particle position
       via the GEOPACK library.  This is the standard approach for
       geomagnetic cutoff rigidity:
