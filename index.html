@@ -95,6 +95,7 @@ MAINTAINER NOTE
   <div class="tb-right">
     <a class="tb-link" href="#">Model Catalog</a>
     <a class="tb-link" href="#">My Runs</a>
+    <a class="tb-link" href="#" onclick="event.preventDefault();showLoadModal();" style="color:var(--green);">&#128194; Load File</a>
     <!--
       DOCS MENU (NEW)
       --------------
@@ -623,6 +624,15 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <span class="chevron">&#9660;</span>
   </div>
   <div class="sect-body">
+    <!-- Load previous config prompt — visible on step 1 for returning users -->
+    <div onclick="showLoadModal()" style="padding:12px 16px;margin-bottom:12px;background:rgba(45,212,160,.04);border:1px dashed rgba(45,212,160,.3);border-radius:var(--radius-lg);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s ease;" onmouseenter="this.style.background='rgba(45,212,160,.08)'" onmouseleave="this.style.background='rgba(45,212,160,.04)'">
+      <span style="font-size:22px;">&#128194;</span>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--green);">Have a previous AMPS_PARAM.in file?</div>
+        <div style="font-size:11px;color:var(--text-dim);">Click here to load it and auto-fill all wizard steps — then review and edit.</div>
+      </div>
+      <span style="margin-left:auto;font-size:12px;color:var(--green);font-weight:600;">Load &rarr;</span>
+    </div>
     <div class="infobox info-blue"><b>Required fields</b> marked <span style="color:var(--red)">*</span> must be complete before submission. Optional fields help CCMC staff triage and archive your run.</div>
     <div class="frow c2">
       <div class="field"><label>Run Name <span class="req">*</span></label>
@@ -3409,6 +3419,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       <div style="display:flex;gap:8px;">
         <button class="btn-secondary btn-sm" id="copy-param" onclick="copyParam()">&#128203; Copy</button>
         <button class="btn-secondary btn-sm" id="download-param" onclick="downloadParam()">&#8681; Download</button>
+        <button class="btn-secondary btn-sm" onclick="showLoadModal()" style="border-color:var(--green);color:var(--green);">&#128194; Load File</button>
       </div>
     </div>
     <pre class="review-param-file" id="review-param" style="max-height:460px;overflow:auto;"></pre>
@@ -3484,6 +3495,56 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 </div>
 
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     LOAD FILE MODAL
+     Allows users to load a previously generated AMPS_PARAM.in file
+     to restore wizard state.  Supports drag-and-drop, file picker,
+     and paste from clipboard.
+     Implemented in js/12-load.js.
+     ═══════════════════════════════════════════════════════════════════ -->
+<input type="file" id="load-file-input" accept=".in,.txt,.param,text/plain" style="display:none;"/>
+<div id="load-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-panel);border:1px solid var(--border-lit);border-radius:var(--radius-xl);padding:36px;max-width:580px;width:92%;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2 style="color:var(--text-bright);font-size:18px;font-weight:600;margin:0;">
+        <span style="font-size:22px;margin-right:8px;">&#128194;</span> Load AMPS_PARAM.in
+      </h2>
+      <button onclick="hideLoadModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;" title="Close">&times;</button>
+    </div>
+
+    <div class="infobox info-blue" style="margin-bottom:16px;font-size:12px;line-height:1.6;">
+      Load a previously generated <code style="font-family:var(--font-mono);color:var(--accent-bright);">AMPS_PARAM.in</code> file to restore
+      all wizard settings.  You can then review and edit any step before re-submitting.
+    </div>
+
+    <!-- Dropzone -->
+    <div id="load-dropzone" class="load-dropzone" tabindex="0" role="button" aria-label="Click or drag a file here to load">
+      <div style="font-size:36px;margin-bottom:8px;opacity:.6;">&#128196;</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);">Drop AMPS_PARAM.in here, or click to browse</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Accepts .in, .txt, or .param files</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">or</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <!-- Paste option -->
+    <button id="load-paste-btn" class="btn-secondary" style="width:100%;margin-bottom:8px;font-size:12px;">
+      &#128203; Paste from clipboard
+    </button>
+    <textarea id="load-paste-area" rows="8" placeholder="Paste your AMPS_PARAM.in content here..." style="display:none;width:100%;font-family:var(--font-mono);font-size:11px;background:var(--bg-inset);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:10px;margin-bottom:8px;resize:vertical;"></textarea>
+    <button id="load-paste-apply" class="btn-primary" style="display:none;width:100%;font-size:12px;padding:8px 16px;">
+      &#9654; Apply Pasted Configuration
+    </button>
+
+    <!-- Error display -->
+    <div id="load-error" style="display:none;margin-top:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(255,90,90,.3);border-radius:var(--radius);font-size:12px;color:var(--red);"></div>
+  </div>
+</div>
+
 <div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;">
   <div style="background:var(--bg-panel);border:1px solid var(--green);border-radius:var(--radius-xl);padding:36px;max-width:520px;width:92%;text-align:center;">
     <div style="font-size:52px;margin-bottom:16px;">&#128640;</div>
@@ -3524,5 +3585,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 
 <script src="js/10-help.js"></script>
 <script src="js/11-docs.js"></script>
+<!-- 12. Load/parse AMPS_PARAM.in files (depends on: all above) -->
+<script src="js/12-load.js"></script>
 </body>
 </html>
