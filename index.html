@@ -711,7 +711,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
      AMPS_PARAM.in KEYWORDS AFFECTED:
        #CALCULATION_MODE
-       CALC_TARGET            = CUTOFF_RIGIDITY | FLUX
+       CALC_TARGET            = CUTOFF_RIGIDITY | DENSITY_SPECTRUM | DENSITY_3D
        FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
        GRID_NX / NY / NZ      (only when GRID_3D)
        GRID_XMIN..ZMAX        (only when GRID_3D)
@@ -775,15 +775,16 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
          which updates S.calcQuantity, toggles the .sel class on cards,
          shows/hides Section C (cutoff params), and refreshes sidebar.
 
-         AMPS_PARAM.in keyword: CALC_TARGET = CUTOFF_RIGIDITY | FLUX
+         AMPS_PARAM.in keyword: CALC_TARGET = CUTOFF_RIGIDITY | DENSITY_SPECTRUM | DENSITY_3D
     ══════════════════════════════════════════════════════════════════ -->
     <div class="subsection" style="margin-bottom:18px;">
       <div class="subsection-title">A — Calculation Target</div>
       <div class="infobox info-blue" style="margin-bottom:12px;">
         <b>Cutoff Rigidity:</b> traces particles backward from each observation point to determine the minimum rigidity
         (momentum per charge) that can reach that location through the geomagnetic field.
-        <br><b>Flux:</b> computes differential and/or integral particle flux at observation points by
-        injecting particles from the outer boundary with a specified source spectrum.
+        <br><b>Particle Energy Spectrum &amp; Density:</b> at each observation point, backward-traces particles across
+        a user-defined energy grid, then folds with the boundary source spectrum to obtain energy-resolved
+        particle density and spectral intensity at that location.
         <br><b>3-D Ion Density:</b> forward-models particle transport in geospace, sampling energy-resolved ion density
         on the simulation grid. Each energy bin produces a separate 3-D density field.
       </div>
@@ -794,11 +795,11 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <div class="opt-desc">Geomagnetic cutoff rigidity at each observation point. Backward-tracing in energy space.</div>
           <div class="opt-badge" style="background:rgba(45,212,160,.15);color:var(--green);">Fast &middot; No spectrum needed</div>
         </div>
-        <div class="opt-card" id="calc-flux-card" onclick="setCalcQuantity('FLUX',this)">
-          <div class="opt-icon" style="font-size:28px;">&#127774;</div>
-          <div class="opt-label">Particle Flux</div>
-          <div class="opt-desc">Differential/integral flux of SEP or GCR at observation points. Requires source spectrum.</div>
-          <div class="opt-badge" style="background:rgba(255,154,60,.15);color:var(--orange);">Requires spectrum definition</div>
+        <div class="opt-card" id="calc-densspec-card" onclick="setCalcQuantity('DENSITY_SPECTRUM',this)">
+          <div class="opt-icon" style="font-size:28px;">&#128202;</div>
+          <div class="opt-label">Particle Energy Spectrum &amp; Density</div>
+          <div class="opt-desc">Backward-trace at each observation point across an energy grid, fold with boundary spectrum to get local density &amp; spectral intensity.</div>
+          <div class="opt-badge" style="background:rgba(255,154,60,.15);color:var(--orange);">Requires boundary spectrum</div>
         </div>
         <!-- ── 4th card: 3-D Ion Density (forward modeling) ──
              Forward-models particle transport in 3-D geospace.
@@ -961,9 +962,9 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 
     <!-- ══════════════════════════════════════════════════════════════════
          SECTION C — CUTOFF RIGIDITY PARAMETERS
-         Visible only when S.calcQuantity ≠ 'FLUX' (i.e. when cutoff
+         Visible only when S.calcQuantity === 'CUTOFF_RIGIDITY' (i.e. when cutoff
          rigidity calculation is part of the run).  Hidden by
-         setCalcQuantity() when FLUX is selected.
+         setCalcQuantity() when a non-cutoff target is selected.
 
          Parameters control the backward-tracing cutoff scan:
            Emin / Emax:       Energy range [MeV/n] for the scan.
@@ -1051,7 +1052,98 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════════
-         SECTION D — 3-D ION DENSITY SAMPLING PARAMETERS
+         SECTION D — PARTICLE ENERGY SPECTRUM & DENSITY PARAMETERS
+         Visible only when S.calcQuantity === 'DENSITY_SPECTRUM'.
+
+         At each observation point, AMPS backward-traces test particles
+         across a user-defined energy grid.  The transmission function
+         (which rigidities reach the boundary) is then folded with the
+         user-provided boundary source spectrum to obtain:
+           - energy-resolved particle density  n(E_k)
+           - spectral intensity               j(E_k)
+         at that location.
+
+         Parameters control the energy sampling grid:
+           Emin / Emax:       Energy range [MeV/n].
+           Nintervals:        Number of energy intervals in [Emin, Emax].
+           Spacing:           LOG (logarithmic) or LINEAR.
+
+         AMPS_PARAM.in keywords:
+           #DENSITY_SPECTRUM
+           DS_EMIN              = <float> MeV/n
+           DS_EMAX              = <float> MeV/n
+           DS_NINTERVALS        = <int>
+           DS_ENERGY_SPACING    = LOG | LINEAR
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="subsection" id="densspec-params-section" style="display:none;">
+      <div class="subsection-title">D — Particle Energy Spectrum &amp; Density Sampling</div>
+      <div class="infobox info-blue" style="margin-bottom:12px;">
+        Configure the energy sampling for backward-traced density and spectrum output.
+        At each observation point AMPS backward-traces test particles across the energy grid.
+        The resulting transmission function is folded with the <b>boundary source spectrum</b> (Step&nbsp;8)
+        to produce energy-resolved <b>particle density</b> and <b>spectral intensity</b> at that location.
+      </div>
+      <div class="frow c2">
+        <div class="field"><label>Minimum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="ds-emin" type="number" value="1.0" min="0.01" max="100" step="0.1" onchange="dsParamChange()"/>
+          <div class="hint">Lower bound of energy sampling range. Typical: 1 MeV/n for SEP; 0.1 MeV/n for detailed low-energy structure.</div>
+        </div>
+        <div class="field"><label>Maximum Energy <span style="font-size:10px;color:var(--text-dim)">[MeV/n]</span></label>
+          <input id="ds-emax" type="number" value="1000" min="10" max="100000" step="10" onchange="dsParamChange()"/>
+          <div class="hint">Upper bound. Must cover the energy range of the boundary spectrum. Typical: 1000 MeV/n.</div>
+        </div>
+      </div>
+      <div class="frow c2">
+        <div class="field"><label>Number of Sampling Intervals</label>
+          <input id="ds-nintervals" type="number" value="50" min="2" max="500" step="1" onchange="dsParamChange()"/>
+          <div class="hint">Energy intervals spanning [E<sub>min</sub>, E<sub>max</sub>].
+            At each interval boundary, particles are backward-traced isotropically. Typical: 30–100.</div>
+        </div>
+        <div class="field"><label>Energy Interval Spacing</label>
+          <div class="tog" style="width:fit-content;">
+            <button class="tog-btn on" id="ds-log-btn" onclick="setDsSpacing('LOG')">
+              Log (recommended)
+            </button>
+            <button class="tog-btn" id="ds-lin-btn" onclick="setDsSpacing('LINEAR')">
+              Linear
+            </button>
+          </div>
+          <div class="hint">Log spacing gives finer resolution at low energies where spectral gradients are steepest. Linear is uniform in E.</div>
+        </div>
+      </div>
+
+      <!-- Visual: energy sampling bar -->
+      <div style="margin-top:12px;padding:12px 14px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">
+          <b style="color:var(--accent-bright);">Energy Sampling Range</b>
+          &nbsp;&middot;&nbsp;
+          <span id="ds-range-label">1.0 – 1000.0 MeV/n</span>
+          &nbsp;&middot;&nbsp;
+          <span id="ds-intervals-label">50 intervals</span>
+          &nbsp;&middot;&nbsp;
+          <span id="ds-spacing-label">log-spaced</span>
+        </div>
+        <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(45,212,160,.08),rgba(26,136,212,.15),rgba(139,111,247,.15));border-radius:4px;overflow:hidden;">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
+            <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);" id="ds-emin-bar">1.0 MeV/n</span>
+            <span style="font-size:9px;color:var(--text-dim);" id="ds-spacing-bar">← log-spaced intervals →</span>
+            <span style="font-size:10px;color:var(--purple);font-family:var(--font-mono);" id="ds-emax-bar">1000 MeV/n</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Keyword preview -->
+      <div style="margin-top:10px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-family:var(--font-mono);font-size:11px;">
+        <div style="color:var(--accent-bright);font-weight:700;margin-bottom:4px;">AMPS_PARAM.in</div>
+        <div><span class="kw-key">DS_EMIN</span>              <span class="kw-val" id="kw-ds-emin">1.0</span>       <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">DS_EMAX</span>              <span class="kw-val" id="kw-ds-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
+        <div><span class="kw-key">DS_NINTERVALS</span>        <span class="kw-val" id="kw-ds-nint">50</span></div>
+        <div><span class="kw-key">DS_ENERGY_SPACING</span>    <span class="kw-val" id="kw-ds-spacing">LOG</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECTION E — 3-D ION DENSITY SAMPLING PARAMETERS
          Visible only when S.calcQuantity === 'DENSITY_3D'.
 
          Forward-models particle transport in 3-D geospace.  Particles
@@ -1075,7 +1167,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
            DENS_ENERGY_SPACING    = LOG | LINEAR
     ══════════════════════════════════════════════════════════════════ -->
     <div class="subsection" id="density-params-section" style="display:none;">
-      <div class="subsection-title">D — 3-D Ion Density Sampling</div>
+      <div class="subsection-title">E — 3-D Ion Density Sampling</div>
       <div class="infobox info-blue" style="margin-bottom:12px;">
         Configure the energy binning for 3-D ion density output.
         Particles are forward-modeled from the outer boundary through the geomagnetic field.

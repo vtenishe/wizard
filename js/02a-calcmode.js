@@ -67,13 +67,16 @@ LAST UPDATED: 2026-02-21
         S.cutoffMaxParticles         — total test particles per point
         S.cutoffNenergy              — number of log-spaced energy bins
 
-   2. PARTICLE FLUX
-      AMPS injects particles from the outer boundary inward, weighted by
-      a user-defined source spectrum (Step 8).  At each observation point,
-      it accumulates differential and/or integral flux by counting
-      particles that reach the point, folded with the spectrum.  This
-      requires a complete spectrum definition and is more expensive than
-      a cutoff-only run.
+   2. DENSITY_SPECTRUM  (Particle Energy Spectrum & Density)
+      At each observation point, AMPS backward-traces test particles
+      across a user-defined energy grid [DS_EMIN, DS_EMAX], divided
+      into DS_NINTERVALS intervals (log or linear).  The resulting
+      transmission function (which rigidities reach the boundary)
+      is folded with the boundary source spectrum (Step 8) to compute
+      energy-resolved particle density and spectral intensity at that
+      location.  This mode uses backward integration — similar in
+      mechanism to cutoff rigidity — but produces a full spectrum
+      rather than a single cutoff value.
 
    ─── FIELD EVALUATION METHODS ─────────────────────────────────────────
 
@@ -120,9 +123,9 @@ LAST UPDATED: 2026-02-21
    ─── PUBLIC API ──────────────────────────────────────────────────────
 
      setCalcQuantity(target, card)
-       Set the calculation target to one of: 'CUTOFF_RIGIDITY', 'FLUX',
-       or 'DENSITY_3D'.  Updates the card selection visuals, shows/hides the
-       cutoff parameters panel (Section C), and refreshes the sidebar.
+       Set the calculation target to one of: 'CUTOFF_RIGIDITY',
+       'DENSITY_SPECTRUM', or 'DENSITY_3D'.  Updates the card selection
+       visuals, shows/hides the parameter panels, and refreshes the sidebar.
 
      setFieldMethod(method, card)
        Set the field evaluation method to 'GRIDLESS' or 'GRID_3D'.
@@ -163,7 +166,7 @@ LAST UPDATED: 2026-02-21
      Read by this module:
        calc-target-cards         — container for calculation target cards
        calc-cutoff-card          — CUTOFF_RIGIDITY card
-       calc-flux-card            — FLUX card
+       calc-densspec-card         — DENSITY_SPECTRUM card
        field-method-cards        — container for field method cards
        fm-gridless-card          — GRIDLESS card
        fm-grid3d-card            — GRID_3D card
@@ -188,7 +191,7 @@ LAST UPDATED: 2026-02-21
        cutoff-emin-bar, cutoff-emax-bar — energy bar endpoint labels
        gridless-info             — info banner shown in GRIDLESS mode
        grid3d-config             — grid config panel shown in GRID_3D mode
-       cutoff-params-section     — Section C, hidden when target = FLUX
+       cutoff-params-section     — Section C, hidden when target ≠ CUTOFF_RIGIDITY
        efield-gridless-overlay   — overlay shown in E-field panel (Step 6)
        fm-batsrus, fm-gamera     — MHD model cards disabled in GRIDLESS
 
@@ -202,7 +205,7 @@ LAST UPDATED: 2026-02-21
    ─── CHANGELOG ────────────────────────────────────────────────────────
 
      2026-02-21  Initial implementation (new Step 2).
-       • Calc target selector (CUTOFF_RIGIDITY / FLUX / DENSITY_3D).
+       • Calc target selector (CUTOFF_RIGIDITY / DENSITY_SPECTRUM / DENSITY_3D).
        • Two-card field method selector (GRIDLESS / GRID_3D).
        • Cutoff rigidity parameter panel (Emin, Emax, MaxParticles,
          Nenergy) with live keyword preview and visual energy bar.
@@ -225,53 +228,51 @@ LAST UPDATED: 2026-02-21
  * AMPS_PARAM.in.  The choice determines:
  *   • Whether the #CUTOFF_RIGIDITY block is emitted in the param file.
  *   • Whether Section C (cutoff parameters) is visible in the wizard.
- *   • Whether Section D (density parameters) is visible in the wizard.
- *   • Whether the Spectrum step (Step 8) is mandatory — FLUX and
- *     DENSITY_3D require a source spectrum; CUTOFF_RIGIDITY does not.
+ *   • Whether Section D (density-spectrum parameters) is visible.
+ *   • Whether Section E (3-D density parameters) is visible.
+ *   • Whether the Spectrum step (Step 8) is mandatory — DENSITY_SPECTRUM
+ *     and DENSITY_3D require a source spectrum; CUTOFF_RIGIDITY does not.
  *   • Whether the 3-D grid is required — DENSITY_3D forces GRID_3D
  *     because density is sampled on the simulation grid.
  *
- * @param {'CUTOFF_RIGIDITY'|'FLUX'|'DENSITY_3D'} target
+ * @param {'CUTOFF_RIGIDITY'|'DENSITY_SPECTRUM'|'DENSITY_3D'} target
  * @param {HTMLElement} card — the clicked opt-card element (for styling)
  */
 function setCalcQuantity(target, card) {
   /* ── 1. Update global state ── */
   S.calcQuantity = target;
 
-  /* ── 2. Visual feedback: highlight the selected card ──
-   *  Remove 'sel' class from all sibling cards, then add it to the
-   *  clicked card.  The CSS .opt-card.sel rule applies a bright border
-   *  and elevated shadow to indicate selection. */
+  /* ── 2. Visual feedback: highlight the selected card ── */
   document.querySelectorAll('#calc-target-cards .opt-card').forEach(c => c.classList.remove('sel'));
   if (card) card.classList.add('sel');
 
-  /* ── 3. Update the keyword preview strip ──
-   *  The small monospace box below the cards shows the AMPS_PARAM.in
-   *  keyword/value pair that will be generated. */
+  /* ── 3. Update the keyword preview strip ── */
   const kw = $('kw-calc-target');
   if (kw) kw.textContent = target;
 
   /* ── 4. Show/hide Section C: Cutoff Rigidity Parameters ──
-   *  Shown for CUTOFF_RIGIDITY (cutoff scan is part of the run).
-   *  Hidden for FLUX and DENSITY_3D (no cutoff computation). */
+   *  Shown for CUTOFF_RIGIDITY only. */
   const cutSec = $('cutoff-params-section');
   if (cutSec) {
-    const needsCutoff = (target === 'CUTOFF_RIGIDITY');
-    cutSec.style.display = needsCutoff ? '' : 'none';
+    cutSec.style.display = (target === 'CUTOFF_RIGIDITY') ? '' : 'none';
   }
 
-  /* ── 5. Show/hide Section D: 3-D Ion Density Parameters ──
-   *  Shown only for DENSITY_3D.  Hidden for all other targets. */
+  /* ── 5. Show/hide Section D: Density-Spectrum Parameters ──
+   *  Shown only for DENSITY_SPECTRUM. */
+  const dsSec = $('densspec-params-section');
+  if (dsSec) {
+    dsSec.style.display = (target === 'DENSITY_SPECTRUM') ? '' : 'none';
+  }
+
+  /* ── 6. Show/hide Section E: 3-D Ion Density Parameters ──
+   *  Shown only for DENSITY_3D. */
   const densSec = $('density-params-section');
   if (densSec) {
     densSec.style.display = (target === 'DENSITY_3D') ? '' : 'none';
   }
 
-  /* ── 6. Force GRID_3D when DENSITY_3D is selected ──
-   *  3-D density sampling requires a simulation grid (the density
-   *  is accumulated on the grid nodes).  If the user is currently
-   *  in GRIDLESS mode, automatically switch to GRID_3D and show
-   *  a warning banner in Section D. */
+  /* ── 7. Force GRID_3D when DENSITY_3D is selected ──
+   *  3-D density sampling requires a simulation grid. */
   if (target === 'DENSITY_3D' && S.fieldMethod === 'GRIDLESS') {
     const g3Card = $('fm-grid3d-card');
     setFieldMethod('GRID_3D', g3Card);
@@ -282,7 +283,7 @@ function setCalcQuantity(target, card) {
     if (warn) warn.style.display = 'none';
   }
 
-  /* ── 7. Refresh sidebar summary ── */
+  /* ── 8. Refresh sidebar summary ── */
   updateSidebar();
 }
 
@@ -670,4 +671,71 @@ function setDensSpacing(mode) {
 
   /* ── Refresh visual bar and sidebar via densityParamChange ── */
   densityParamChange();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   DENSITY-SPECTRUM SAMPLING PARAMETERS  (DENSITY_SPECTRUM mode)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * dsParamChange — synchronize density-spectrum sampling inputs to state S.
+ *
+ * Called from the onchange handlers on the ds-emin, ds-emax, and
+ * ds-nintervals input fields in the panel-2 HTML (Section D).
+ *
+ * In DENSITY_SPECTRUM mode, AMPS backward-traces from each
+ * observation point:
+ *   1. The energy range [dsEmin, dsEmax] is divided into
+ *      dsNintervals intervals (log or linear spacing).
+ *   2. At each interval boundary, test particles are launched
+ *      isotropically backward through the geomagnetic field.
+ *   3. The resulting transmission function is folded with the
+ *      user-provided boundary spectrum (Step 8).
+ *   4. Output at each point: energy-resolved particle density
+ *      and spectral intensity.
+ */
+function dsParamChange() {
+  S.dsEmin        = parseFloat($('ds-emin')?.value)       || S.dsEmin;
+  S.dsEmax        = parseFloat($('ds-emax')?.value)       || S.dsEmax;
+  S.dsNintervals  = parseInt($('ds-nintervals')?.value)   || S.dsNintervals;
+
+  /* ── Update keyword preview elements ── */
+  const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+  setKw('kw-ds-emin', S.dsEmin.toFixed(1));
+  setKw('kw-ds-emax', S.dsEmax.toFixed(1));
+  setKw('kw-ds-nint', S.dsNintervals);
+
+  /* ── Update visual labels ── */
+  const spacingLabel = S.dsEnergySpacing === 'LOG' ? 'log-spaced' : 'linear';
+  setKw('ds-range-label',     `${S.dsEmin.toFixed(1)} – ${S.dsEmax.toFixed(1)} MeV/n`);
+  setKw('ds-intervals-label', `${S.dsNintervals} intervals`);
+  setKw('ds-spacing-label',   spacingLabel);
+
+  /* ── Update energy bar endpoint labels ── */
+  setKw('ds-emin-bar',        `${S.dsEmin.toFixed(1)} MeV/n`);
+  setKw('ds-emax-bar',        `${S.dsEmax.toFixed(0)} MeV/n`);
+  setKw('ds-spacing-bar',     `← ${spacingLabel} intervals →`);
+
+  updateSidebar();
+}
+
+
+/**
+ * setDsSpacing — toggle energy interval spacing between LOG and LINEAR.
+ *
+ * @param {'LOG'|'LINEAR'} mode
+ */
+function setDsSpacing(mode) {
+  S.dsEnergySpacing = mode;
+
+  const logBtn = $('ds-log-btn');
+  const linBtn = $('ds-lin-btn');
+  if (logBtn) logBtn.classList.toggle('on', mode === 'LOG');
+  if (linBtn) linBtn.classList.toggle('on', mode === 'LINEAR');
+
+  const kwEl = $('kw-ds-spacing');
+  if (kwEl) kwEl.textContent = mode;
+
+  dsParamChange();
 }

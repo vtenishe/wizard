@@ -53,6 +53,7 @@ LAST UPDATED: 2026-02-21
                        cutoffEmin/cutoffEmax/cutoffMaxParticles/cutoffNenergy
                        gridNx/gridNy/gridNz/gridXmin..gridZmax
                        densEmin/densEmax/densNenergy/densEnergySpacing
+                       dsEmin/dsEmax/dsNintervals/dsEnergySpacing
      Particle          species, charge, mass
      Background field  fieldModel, dst, pdyn, bz, vx, nsw, by, bx, epoch
                        t96Dst/t96Pdyn/t96By/t96Bz/t96Tilt
@@ -130,7 +131,7 @@ const S = {
    *
    *  AMPS_PARAM.in keywords affected:
    *    #CALCULATION_MODE
-   *    CALC_TARGET            = CUTOFF_RIGIDITY | FLUX
+   *    CALC_TARGET            = CUTOFF_RIGIDITY | DENSITY_SPECTRUM | DENSITY_3D
    *    FIELD_EVAL_METHOD      = GRIDLESS | GRID_3D
    *    (plus GRID_NX/NY/NZ/XMIN..ZMAX when GRID_3D)
    *    #CUTOFF_RIGIDITY       (emitted only when target ≠ FLUX)
@@ -139,10 +140,13 @@ const S = {
    *    CUTOFF_NENERGY         = <int>
    * ───────────────────────────────────────────────────────────────────── */
 
-  /*  What to calculate: cutoff rigidity only or particle flux only.
-   *  CUTOFF_RIGIDITY: backward-trace to find geomagnetic cutoff.
-   *  FLUX:            forward-inject from boundary with source spectrum. */
-  calcQuantity: 'CUTOFF_RIGIDITY',  // 'CUTOFF_RIGIDITY' | 'FLUX'
+  /*  What to calculate: cutoff rigidity, spectrum & density, or 3-D density.
+   *  CUTOFF_RIGIDITY:    backward-trace to find geomagnetic cutoff.
+   *  DENSITY_SPECTRUM:   backward-trace across energy grid, fold with boundary
+   *                      spectrum to get local density & spectral intensity.
+   *  DENSITY_3D:         forward-inject from boundary; sample energy-resolved
+   *                      ion density on the 3-D simulation grid. */
+  calcQuantity: 'CUTOFF_RIGIDITY',  // 'CUTOFF_RIGIDITY' | 'DENSITY_SPECTRUM' | 'DENSITY_3D'
 
   /*  How the background B (and optionally E) field is evaluated at
    *  each particle position during Lorentz-force integration.
@@ -151,7 +155,7 @@ const S = {
    *            (supports MHD + E-field; requires grid config below). */
   fieldMethod:  'GRIDLESS',         // 'GRIDLESS' | 'GRID_3D'
 
-  /*  Cutoff rigidity scan parameters (used when calcQuantity ≠ 'FLUX').
+  /*  Cutoff rigidity scan parameters (used when calcQuantity === 'CUTOFF_RIGIDITY').
    *  At each observation point, AMPS injects test particles across
    *  [cutoffEmin, cutoffEmax] in cutoffNenergy log-spaced energy bins.
    *  cutoffMaxParticles is the total injected per point (divided among bins). */
@@ -170,6 +174,21 @@ const S = {
   gridXmin: -60, gridXmax:  15,     // [RE] X extent (tailward to sunward)
   gridYmin: -25, gridYmax:  25,     // [RE] Y extent (dawn to dusk)
   gridZmin: -20, gridZmax:  20,     // [RE] Z extent (south to north)
+
+  /*  Density-spectrum sampling parameters (used when calcQuantity === 'DENSITY_SPECTRUM').
+   *  At each observation point, AMPS backward-traces test particles across
+   *  an energy grid.  The transmission function is then folded with the
+   *  boundary source spectrum (Step 8) to obtain energy-resolved particle
+   *  density and spectral intensity at that location.
+   *  AMPS_PARAM.in keywords:
+   *    #DENSITY_SPECTRUM
+   *    DS_EMIN / DS_EMAX     = <float> MeV/n
+   *    DS_NINTERVALS         = <int>
+   *    DS_ENERGY_SPACING     = LOG | LINEAR */
+  dsEmin:        1.0,               // [MeV/n] lower bound for energy sampling
+  dsEmax:     1000.0,               // [MeV/n] upper bound for energy sampling
+  dsNintervals:  50,                // number of energy intervals
+  dsEnergySpacing: 'LOG',           // 'LOG' | 'LINEAR'
 
   /*  3-D density sampling parameters (used when calcQuantity === 'DENSITY_3D').
    *  Forward-models particle transport in 3-D geospace, sampling the

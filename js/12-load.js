@@ -185,7 +185,7 @@ const KEYWORD_MAP = [
   { kw: 'PI_EMAIL',             prop: 'piEmail',           type: 'str',  step: 1,  desc: 'PI email' },
 
   // ═══════ STEP 2: Calculation Mode ═══════
-  { kw: 'CALC_TARGET',          prop: 'calcQuantity',      type: 'str',  step: 2,  desc: 'CUTOFF_RIGIDITY|FLUX|DENSITY_3D' },
+  { kw: 'CALC_TARGET',          prop: 'calcQuantity',      type: 'str',  step: 2,  desc: 'CUTOFF_RIGIDITY|DENSITY_SPECTRUM|DENSITY_3D' },
   { kw: 'FIELD_EVAL_METHOD',    prop: 'fieldMethod',       type: 'str',  step: 2,  desc: 'GRIDLESS|GRID_3D' },
   { kw: 'GRID_NX',             prop: 'gridNx',            type: 'int',  step: 2,  desc: 'Grid cells X' },
   { kw: 'GRID_NY',             prop: 'gridNy',            type: 'int',  step: 2,  desc: 'Grid cells Y' },
@@ -204,6 +204,10 @@ const KEYWORD_MAP = [
   { kw: 'DENS_EMAX',           prop: 'densEmax',          type: 'num',  step: 2,  desc: 'Density Emax [MeV]' },
   { kw: 'DENS_NENERGY',        prop: 'densNenergy',       type: 'int',  step: 2,  desc: 'Density energy bins' },
   { kw: 'DENS_ENERGY_SPACING', prop: 'densEnergySpacing', type: 'str',  step: 2,  desc: 'LOG|LINEAR' },
+  { kw: 'DS_EMIN',             prop: 'dsEmin',            type: 'num',  step: 2,  desc: 'Density-spectrum Emin [MeV]' },
+  { kw: 'DS_EMAX',             prop: 'dsEmax',            type: 'num',  step: 2,  desc: 'Density-spectrum Emax [MeV]' },
+  { kw: 'DS_NINTERVALS',       prop: 'dsNintervals',      type: 'int',  step: 2,  desc: 'Energy intervals' },
+  { kw: 'DS_ENERGY_SPACING',   prop: 'dsEnergySpacing',   type: 'str',  step: 2,  desc: 'LOG|LINEAR' },
 
   // ═══════ STEP 3: B-Field  (SPECIES handled in special cases) ═══════
   { kw: 'FIELD_MODEL',          prop: 'fieldModel',        type: 'str',  step: 3,  desc: 'B-field model name' },
@@ -423,7 +427,7 @@ function syncAllUI(kv) {
   setVal('pi-email', S.piEmail || ''); setVal('pi-inst', S.institution || '');
 
   // ── Step 2: Calc Mode ──
-  const calcCards = { CUTOFF_RIGIDITY:'calc-cutoff-card', FLUX:'calc-flux-card', DENSITY_3D:'calc-density-card' };
+  const calcCards = { CUTOFF_RIGIDITY:'calc-cutoff-card', DENSITY_SPECTRUM:'calc-densspec-card', DENSITY_3D:'calc-density-card' };
   if (calcCards[S.calcQuantity]) setCalcQuantity(S.calcQuantity, $(calcCards[S.calcQuantity]));
   if (S.fieldMethod === 'GRID_3D') setFieldMethod('GRID_3D', $('fm-grid3d-card'));
   else setFieldMethod('GRIDLESS', $('fm-gridless-card'));
@@ -438,6 +442,9 @@ function syncAllUI(kv) {
   setVal('dens-emin', S.densEmin); setVal('dens-emax', S.densEmax); setVal('dens-nenergy', S.densNenergy);
   const dss = $('dens-energy-spacing'); if (dss) dss.value = S.densEnergySpacing;
   if (typeof densityParamChange === 'function') densityParamChange();
+  setVal('ds-emin', S.dsEmin); setVal('ds-emax', S.dsEmax); setVal('ds-nintervals', S.dsNintervals);
+  if (typeof setDsSpacing === 'function') setDsSpacing(S.dsEnergySpacing || 'LOG');
+  if (typeof dsParamChange === 'function') dsParamChange();
 
   // ── Step 3: Species + B-Field ──
   if (typeof selectSpecies === 'function') selectSpecies(S.species, $('sp-' + S.species));

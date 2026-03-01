@@ -188,7 +188,7 @@ GRID_ZMAX              ${f(S.gridZmax,1)}`:'',
 
 /* ── Conditional: cutoff rigidity parameters ──
  *  Emitted when CALC_TARGET is CUTOFF_RIGIDITY.
- *  Omitted for FLUX and DENSITY_3D (no cutoff computation). */
+ *  Omitted for DENSITY_SPECTRUM and DENSITY_3D (no cutoff computation). */
 (S.calcQuantity==='CUTOFF_RIGIDITY')?`
 ! ── Cutoff rigidity scan (Step 2, Section C) ───────────────────
 ! Energy range and particle budget for backward-tracing cutoff search.
@@ -198,11 +198,23 @@ CUTOFF_EMAX            ${f(S.cutoffEmax,1)}       ! MeV/n
 CUTOFF_MAX_PARTICLES   ${S.cutoffMaxParticles}              ! per injection point
 CUTOFF_NENERGY         ${S.cutoffNenergy}               ! log-spaced energy bins`:'',
 
+/* ── Conditional: density-spectrum sampling parameters ──
+ *  Emitted only when CALC_TARGET is DENSITY_SPECTRUM.
+ *  Backward-traces across energy grid, folds with boundary spectrum. */
+S.calcQuantity==='DENSITY_SPECTRUM'?`
+! ── Density & spectrum sampling (Step 2, Section D) ───────────────
+! Backward-trace energy grid + boundary spectrum folding.
+#DENSITY_SPECTRUM
+DS_EMIN                ${f(S.dsEmin,1)}          ! MeV/n
+DS_EMAX                ${f(S.dsEmax,1)}       ! MeV/n
+DS_NINTERVALS          ${S.dsNintervals}               ! energy intervals
+DS_ENERGY_SPACING      ${S.dsEnergySpacing}           ! LOG or LINEAR`:'',
+
 /* ── Conditional: 3-D ion density sampling parameters ──
  *  Emitted only when CALC_TARGET is DENSITY_3D.
  *  Defines the energy binning for energy-resolved density output. */
 S.calcQuantity==='DENSITY_3D'?`
-! ── 3-D ion density sampling (Step 2, Section D) ──────────────
+! ── 3-D ion density sampling (Step 2, Section E) ──────────────
 ! Energy-resolved density bins for forward-modeled particle transport.
 #DENSITY_3D
 DENS_EMIN              ${f(S.densEmin,1)}          ! MeV/n
@@ -426,10 +438,12 @@ function buildValidation(){
      *  a grid, but gridless was selected).
      *  The DENSITY_3D checks ensure grid mode is active and that the
      *  density energy range is valid. */
-    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','FLUX','DENSITY_3D'].includes(S.calcQuantity)},
+    {l:'Calc target selected',   ok:['CUTOFF_RIGIDITY','DENSITY_SPECTRUM','DENSITY_3D'].includes(S.calcQuantity)},
     {l:'Field method selected',  ok:['GRIDLESS','GRID_3D'].includes(S.fieldMethod)},
     {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffEmin<S.cutoffEmax)},
     {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxParticles>=50)},
+    {l:'DS Emin < Emax',         ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsEmin<S.dsEmax)},
+    {l:'DS intervals ≥ 2',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsNintervals>=2)},
     {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
     {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
     {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
@@ -491,7 +505,7 @@ function updateSidebar(){
    *  label for the sidebar badge. */
   const prettyCalcTarget = {
     CUTOFF_RIGIDITY: 'CUTOFF RIGIDITY',
-    FLUX: 'PARTICLE FLUX',
+    DENSITY_SPECTRUM: 'SPECTRUM & DENSITY',
     DENSITY_3D: '3-D ION DENSITY'
   };
   set('sb-calc-target', prettyCalcTarget[S.calcQuantity] || S.calcQuantity, 'g');
