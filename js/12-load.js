@@ -207,6 +207,7 @@ const KEYWORD_MAP = [
   { kw: 'DS_EMIN',             prop: 'dsEmin',            type: 'num',  step: 2,  desc: 'Density-spectrum Emin [MeV]' },
   { kw: 'DS_EMAX',             prop: 'dsEmax',            type: 'num',  step: 2,  desc: 'Density-spectrum Emax [MeV]' },
   { kw: 'DS_NINTERVALS',       prop: 'dsNintervals',      type: 'int',  step: 2,  desc: 'Energy intervals' },
+  { kw: 'DS_MAX_PARTICLES',    prop: 'dsMaxParticles',    type: 'int',  step: 2,  desc: 'Particles per point' },
   { kw: 'DS_ENERGY_SPACING',   prop: 'dsEnergySpacing',   type: 'str',  step: 2,  desc: 'LOG|LINEAR' },
 
   // ═══════ STEP 3: B-Field  (SPECIES handled in special cases) ═══════
@@ -443,6 +444,7 @@ function syncAllUI(kv) {
   const dss = $('dens-energy-spacing'); if (dss) dss.value = S.densEnergySpacing;
   if (typeof densityParamChange === 'function') densityParamChange();
   setVal('ds-emin', S.dsEmin); setVal('ds-emax', S.dsEmax); setVal('ds-nintervals', S.dsNintervals);
+  setVal('ds-max-particles', S.dsMaxParticles);
   if (typeof setDsSpacing === 'function') setDsSpacing(S.dsEnergySpacing || 'LOG');
   if (typeof dsParamChange === 'function') dsParamChange();
 

@@ -208,6 +208,7 @@ S.calcQuantity==='DENSITY_SPECTRUM'?`
 DS_EMIN                ${f(S.dsEmin,1)}          ! MeV/n
 DS_EMAX                ${f(S.dsEmax,1)}       ! MeV/n
 DS_NINTERVALS          ${S.dsNintervals}               ! energy intervals
+DS_MAX_PARTICLES       ${S.dsMaxParticles}              ! per observation point
 DS_ENERGY_SPACING      ${S.dsEnergySpacing}           ! LOG or LINEAR`:'',
 
 /* ── Conditional: 3-D ion density sampling parameters ──
@@ -444,6 +445,7 @@ function buildValidation(){
     {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxParticles>=50)},
     {l:'DS Emin < Emax',         ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsEmin<S.dsEmax)},
     {l:'DS intervals ≥ 2',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsNintervals>=2)},
+    {l:'DS particles ≥ 50',      ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsMaxParticles>=50)},
     {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
     {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
     {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},

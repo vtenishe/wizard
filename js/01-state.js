@@ -184,10 +184,12 @@ const S = {
    *    #DENSITY_SPECTRUM
    *    DS_EMIN / DS_EMAX     = <float> MeV/n
    *    DS_NINTERVALS         = <int>
+   *    DS_MAX_PARTICLES      = <int>
    *    DS_ENERGY_SPACING     = LOG | LINEAR */
   dsEmin:        1.0,               // [MeV/n] lower bound for energy sampling
   dsEmax:     1000.0,               // [MeV/n] upper bound for energy sampling
   dsNintervals:  50,                // number of energy intervals
+  dsMaxParticles: 500,              // total test particles per observation point
   dsEnergySpacing: 'LOG',           // 'LOG' | 'LINEAR'
 
   /*  3-D density sampling parameters (used when calcQuantity === 'DENSITY_3D').

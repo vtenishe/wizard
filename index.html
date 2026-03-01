@@ -1066,6 +1066,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
          Parameters control the energy sampling grid:
            Emin / Emax:       Energy range [MeV/n].
            Nintervals:        Number of energy intervals in [Emin, Emax].
+           MaxParticles:      Total test particles injected per observation point.
            Spacing:           LOG (logarithmic) or LINEAR.
 
          AMPS_PARAM.in keywords:
@@ -1073,6 +1074,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
            DS_EMIN              = <float> MeV/n
            DS_EMAX              = <float> MeV/n
            DS_NINTERVALS        = <int>
+           DS_MAX_PARTICLES     = <int>
            DS_ENERGY_SPACING    = LOG | LINEAR
     ══════════════════════════════════════════════════════════════════ -->
     <div class="subsection" id="densspec-params-section" style="display:none;">
@@ -1094,6 +1096,11 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         </div>
       </div>
       <div class="frow c2">
+        <div class="field"><label>Max Particles per Point <span style="font-size:10px;color:var(--text-dim)">(total injected)</span></label>
+          <input id="ds-max-particles" type="number" value="500" min="50" max="50000" step="50" onchange="dsParamChange()"/>
+          <div class="hint">Total test particles injected from each observation point across the full energy range.
+            More particles = finer angular resolution of the transmission function but longer runtime. Typical: 200–2000.</div>
+        </div>
         <div class="field"><label>Number of Sampling Intervals</label>
           <input id="ds-nintervals" type="number" value="50" min="2" max="500" step="1" onchange="dsParamChange()"/>
           <div class="hint">Energy intervals spanning [E<sub>min</sub>, E<sub>max</sub>].
@@ -1122,6 +1129,8 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <span id="ds-intervals-label">50 intervals</span>
           &nbsp;&middot;&nbsp;
           <span id="ds-spacing-label">log-spaced</span>
+          &nbsp;&middot;&nbsp;
+          <span id="ds-particles-label">500 particles/point</span>
         </div>
         <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(45,212,160,.08),rgba(26,136,212,.15),rgba(139,111,247,.15));border-radius:4px;overflow:hidden;">
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
@@ -1138,6 +1147,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div><span class="kw-key">DS_EMIN</span>              <span class="kw-val" id="kw-ds-emin">1.0</span>       <span class="kw-comment">  ! MeV/n</span></div>
         <div><span class="kw-key">DS_EMAX</span>              <span class="kw-val" id="kw-ds-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
         <div><span class="kw-key">DS_NINTERVALS</span>        <span class="kw-val" id="kw-ds-nint">50</span></div>
+        <div><span class="kw-key">DS_MAX_PARTICLES</span>     <span class="kw-val" id="kw-ds-maxp">500</span></div>
         <div><span class="kw-key">DS_ENERGY_SPACING</span>    <span class="kw-val" id="kw-ds-spacing">LOG</span></div>
       </div>
     </div>

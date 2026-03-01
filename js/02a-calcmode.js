@@ -696,21 +696,24 @@ function setDensSpacing(mode) {
  *      and spectral intensity.
  */
 function dsParamChange() {
-  S.dsEmin        = parseFloat($('ds-emin')?.value)       || S.dsEmin;
-  S.dsEmax        = parseFloat($('ds-emax')?.value)       || S.dsEmax;
-  S.dsNintervals  = parseInt($('ds-nintervals')?.value)   || S.dsNintervals;
+  S.dsEmin          = parseFloat($('ds-emin')?.value)          || S.dsEmin;
+  S.dsEmax          = parseFloat($('ds-emax')?.value)          || S.dsEmax;
+  S.dsNintervals    = parseInt($('ds-nintervals')?.value)      || S.dsNintervals;
+  S.dsMaxParticles  = parseInt($('ds-max-particles')?.value)   || S.dsMaxParticles;
 
   /* ── Update keyword preview elements ── */
   const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
   setKw('kw-ds-emin', S.dsEmin.toFixed(1));
   setKw('kw-ds-emax', S.dsEmax.toFixed(1));
   setKw('kw-ds-nint', S.dsNintervals);
+  setKw('kw-ds-maxp', S.dsMaxParticles);
 
   /* ── Update visual labels ── */
   const spacingLabel = S.dsEnergySpacing === 'LOG' ? 'log-spaced' : 'linear';
   setKw('ds-range-label',     `${S.dsEmin.toFixed(1)} – ${S.dsEmax.toFixed(1)} MeV/n`);
   setKw('ds-intervals-label', `${S.dsNintervals} intervals`);
   setKw('ds-spacing-label',   spacingLabel);
+  setKw('ds-particles-label', `${S.dsMaxParticles} particles/point`);
 
   /* ── Update energy bar endpoint labels ── */
   setKw('ds-emin-bar',        `${S.dsEmin.toFixed(1)} MeV/n`);
