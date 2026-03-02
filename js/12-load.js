@@ -474,17 +474,23 @@ function syncAllUI(kv) {
   if (typeof ta15Change === 'function') ta15Change();
 
   // ── Step 5: Boundary ──
-  if (typeof bndSet === 'function') bndSet(S.boundaryType);
+  // IMPORTANT: populate inputs BEFORE bndSet() because bndSet → bndBoxUpdate
+  // reads values from the DOM.  If we call bndSet first, it overwrites S with
+  // stale DOM defaults.
   if (S.boundaryType === 'BOX') {
     setVal('box-xmax', S.boxXmax); setVal('box-xmin', S.boxXmin);
     setVal('box-ymax', S.boxYmax); setVal('box-ymin', S.boxYmin);
     setVal('box-zmax', S.boxZmax); setVal('box-zmin', S.boxZmin);
     setVal('box-rinner', S.boxRinner);
+  } else {
+    if (S.shueMode === 'manual') { setVal('shue-r0-in', S.shueR0); setVal('shue-alpha-in', S.shueAlpha); }
+    setVal('shue-rinner', S.shueRinner); setVal('shue-xtail', S.xtail);
+  }
+  if (typeof bndSet === 'function') bndSet(S.boundaryType);
+  if (S.boundaryType === 'BOX') {
     if (typeof bndBoxUpdate === 'function') bndBoxUpdate();
   } else {
     if (typeof shueMode === 'function') shueMode(S.shueMode);
-    if (S.shueMode === 'manual') { setVal('shue-r0-in', S.shueR0); setVal('shue-alpha-in', S.shueAlpha); }
-    setVal('shue-rinner', S.shueRinner); setVal('shue-xtail', S.xtail);
     if (typeof bndShueUpdate === 'function') bndShueUpdate();
   }
 
