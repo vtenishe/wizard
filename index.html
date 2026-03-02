@@ -1020,6 +1020,14 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
             At each bin, particles are injected isotropically. Typical: 50–100.</div>
         </div>
       </div>
+      <div class="frow c2">
+        <div class="field"><label>Max Trajectory Tracking Time <span style="font-size:10px;color:var(--text-dim)">[sec]</span></label>
+          <input id="cutoff-max-traj-time" type="number" value="600" min="1" max="36000" step="10" onchange="cutoffParamChange()"/>
+          <div class="hint">Maximum integration time for each test particle trajectory before it is classified as trapped.
+            Longer = more accurate penumbra but slower. Typical: 300–1000 s.</div>
+        </div>
+        <div class="field"></div>
+      </div>
 
       <!-- Visual: energy scan range bar -->
       <div style="margin-top:12px;padding:12px 14px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);">
@@ -1031,6 +1039,8 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <span id="cutoff-bins-label">50 bins (log-spaced)</span>
           &nbsp;&middot;&nbsp;
           <span id="cutoff-particles-label">500 particles/point</span>
+          &nbsp;&middot;&nbsp;
+          <span id="cutoff-traj-time-label">600 s max tracking</span>
         </div>
         <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(45,212,160,.08),rgba(26,136,212,.15),rgba(139,111,247,.15));border-radius:4px;overflow:hidden;">
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
@@ -1048,6 +1058,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div><span class="kw-key">CUTOFF_EMAX</span>         <span class="kw-val" id="kw-cutoff-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
         <div><span class="kw-key">CUTOFF_MAX_PARTICLES</span> <span class="kw-val" id="kw-cutoff-maxp">500</span></div>
         <div><span class="kw-key">CUTOFF_NENERGY</span>      <span class="kw-val" id="kw-cutoff-nen">50</span></div>
+        <div><span class="kw-key">CUTOFF_MAX_TRAJ_TIME</span> <span class="kw-val" id="kw-cutoff-trajt">600</span> <span class="kw-comment">  ! sec</span></div>
       </div>
     </div>
 
@@ -1106,6 +1117,13 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <div class="hint">Energy intervals spanning [E<sub>min</sub>, E<sub>max</sub>].
             At each interval boundary, particles are backward-traced isotropically. Typical: 30–100.</div>
         </div>
+      </div>
+      <div class="frow c2">
+        <div class="field"><label>Max Trajectory Tracking Time <span style="font-size:10px;color:var(--text-dim)">[sec]</span></label>
+          <input id="ds-max-traj-time" type="number" value="600" min="1" max="36000" step="10" onchange="dsParamChange()"/>
+          <div class="hint">Maximum integration time for each test particle trajectory before it is classified as trapped.
+            Longer = more accurate transmission function but slower. Typical: 300–1000 s.</div>
+        </div>
         <div class="field"><label>Energy Interval Spacing</label>
           <div class="tog" style="width:fit-content;">
             <button class="tog-btn on" id="ds-log-btn" onclick="setDsSpacing('LOG')">
@@ -1131,6 +1149,8 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <span id="ds-spacing-label">log-spaced</span>
           &nbsp;&middot;&nbsp;
           <span id="ds-particles-label">500 particles/point</span>
+          &nbsp;&middot;&nbsp;
+          <span id="ds-traj-time-label">600 s max tracking</span>
         </div>
         <div style="position:relative;height:20px;background:linear-gradient(90deg,rgba(45,212,160,.08),rgba(26,136,212,.15),rgba(139,111,247,.15));border-radius:4px;overflow:hidden;">
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
@@ -1148,6 +1168,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div><span class="kw-key">DS_EMAX</span>              <span class="kw-val" id="kw-ds-emax">1000.0</span>    <span class="kw-comment">  ! MeV/n</span></div>
         <div><span class="kw-key">DS_NINTERVALS</span>        <span class="kw-val" id="kw-ds-nint">50</span></div>
         <div><span class="kw-key">DS_MAX_PARTICLES</span>     <span class="kw-val" id="kw-ds-maxp">500</span></div>
+        <div><span class="kw-key">DS_MAX_TRAJ_TIME</span>     <span class="kw-val" id="kw-ds-trajt">600</span>  <span class="kw-comment">  ! sec</span></div>
         <div><span class="kw-key">DS_ENERGY_SPACING</span>    <span class="kw-val" id="kw-ds-spacing">LOG</span></div>
       </div>
     </div>

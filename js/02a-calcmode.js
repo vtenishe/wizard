@@ -568,6 +568,7 @@ function cutoffParamChange() {
   S.cutoffEmax         = parseFloat($('cutoff-emax')?.value)          || S.cutoffEmax;
   S.cutoffMaxParticles = parseInt($('cutoff-max-particles')?.value)   || S.cutoffMaxParticles;
   S.cutoffNenergy      = parseInt($('cutoff-nenergy')?.value)         || S.cutoffNenergy;
+  S.cutoffMaxTrajTime  = parseInt($('cutoff-max-traj-time')?.value)   || S.cutoffMaxTrajTime;
 
   /* ── Update keyword preview elements ── */
   const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
@@ -575,13 +576,13 @@ function cutoffParamChange() {
   setKw('kw-cutoff-emax', S.cutoffEmax.toFixed(1));
   setKw('kw-cutoff-maxp', S.cutoffMaxParticles);
   setKw('kw-cutoff-nen',  S.cutoffNenergy);
+  setKw('kw-cutoff-trajt', S.cutoffMaxTrajTime);
 
-  /* ── Update visual labels ──
-   *  These are displayed above the gradient energy-range bar
-   *  in Section C of the panel-2 HTML. */
+  /* ── Update visual labels ── */
   setKw('cutoff-range-label',     `${S.cutoffEmin.toFixed(1)} – ${S.cutoffEmax.toFixed(1)} MeV/n`);
   setKw('cutoff-bins-label',      `${S.cutoffNenergy} bins (log-spaced)`);
   setKw('cutoff-particles-label', `${S.cutoffMaxParticles} particles/point`);
+  setKw('cutoff-traj-time-label', `${S.cutoffMaxTrajTime} s max tracking`);
 
   /* ── Update energy bar endpoint labels ── */
   setKw('cutoff-emin-bar',        `${S.cutoffEmin.toFixed(1)} MeV/n`);
@@ -700,6 +701,7 @@ function dsParamChange() {
   S.dsEmax          = parseFloat($('ds-emax')?.value)          || S.dsEmax;
   S.dsNintervals    = parseInt($('ds-nintervals')?.value)      || S.dsNintervals;
   S.dsMaxParticles  = parseInt($('ds-max-particles')?.value)   || S.dsMaxParticles;
+  S.dsMaxTrajTime   = parseInt($('ds-max-traj-time')?.value)   || S.dsMaxTrajTime;
 
   /* ── Update keyword preview elements ── */
   const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
@@ -707,6 +709,7 @@ function dsParamChange() {
   setKw('kw-ds-emax', S.dsEmax.toFixed(1));
   setKw('kw-ds-nint', S.dsNintervals);
   setKw('kw-ds-maxp', S.dsMaxParticles);
+  setKw('kw-ds-trajt', S.dsMaxTrajTime);
 
   /* ── Update visual labels ── */
   const spacingLabel = S.dsEnergySpacing === 'LOG' ? 'log-spaced' : 'linear';
@@ -714,6 +717,7 @@ function dsParamChange() {
   setKw('ds-intervals-label', `${S.dsNintervals} intervals`);
   setKw('ds-spacing-label',   spacingLabel);
   setKw('ds-particles-label', `${S.dsMaxParticles} particles/point`);
+  setKw('ds-traj-time-label', `${S.dsMaxTrajTime} s max tracking`);
 
   /* ── Update energy bar endpoint labels ── */
   setKw('ds-emin-bar',        `${S.dsEmin.toFixed(1)} MeV/n`);

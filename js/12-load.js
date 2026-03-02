@@ -200,6 +200,7 @@ const KEYWORD_MAP = [
   { kw: 'CUTOFF_EMAX',         prop: 'cutoffEmax',        type: 'num',  step: 2,  desc: 'Cutoff Emax [MeV/n]' },
   { kw: 'CUTOFF_MAX_PARTICLES',prop: 'cutoffMaxParticles', type: 'int', step: 2,  desc: 'Max particles' },
   { kw: 'CUTOFF_NENERGY',      prop: 'cutoffNenergy',     type: 'int',  step: 2,  desc: 'Energy bins' },
+  { kw: 'CUTOFF_MAX_TRAJ_TIME', prop: 'cutoffMaxTrajTime', type: 'int', step: 2,  desc: 'Max traj time [sec]' },
   { kw: 'DENS_EMIN',           prop: 'densEmin',          type: 'num',  step: 2,  desc: 'Density Emin [MeV]' },
   { kw: 'DENS_EMAX',           prop: 'densEmax',          type: 'num',  step: 2,  desc: 'Density Emax [MeV]' },
   { kw: 'DENS_NENERGY',        prop: 'densNenergy',       type: 'int',  step: 2,  desc: 'Density energy bins' },
@@ -208,6 +209,7 @@ const KEYWORD_MAP = [
   { kw: 'DS_EMAX',             prop: 'dsEmax',            type: 'num',  step: 2,  desc: 'Density-spectrum Emax [MeV]' },
   { kw: 'DS_NINTERVALS',       prop: 'dsNintervals',      type: 'int',  step: 2,  desc: 'Energy intervals' },
   { kw: 'DS_MAX_PARTICLES',    prop: 'dsMaxParticles',    type: 'int',  step: 2,  desc: 'Particles per point' },
+  { kw: 'DS_MAX_TRAJ_TIME',    prop: 'dsMaxTrajTime',     type: 'int',  step: 2,  desc: 'Max traj time [sec]' },
   { kw: 'DS_ENERGY_SPACING',   prop: 'dsEnergySpacing',   type: 'str',  step: 2,  desc: 'LOG|LINEAR' },
 
   // ═══════ STEP 3: B-Field  (SPECIES handled in special cases) ═══════
@@ -439,12 +441,14 @@ function syncAllUI(kv) {
   if (typeof gridParamChange === 'function') gridParamChange();
   setVal('cutoff-emin', S.cutoffEmin); setVal('cutoff-emax', S.cutoffEmax);
   setVal('cutoff-max-particles', S.cutoffMaxParticles); setVal('cutoff-nenergy', S.cutoffNenergy);
+  setVal('cutoff-max-traj-time', S.cutoffMaxTrajTime);
   if (typeof cutoffParamChange === 'function') cutoffParamChange();
   setVal('dens-emin', S.densEmin); setVal('dens-emax', S.densEmax); setVal('dens-nenergy', S.densNenergy);
   const dss = $('dens-energy-spacing'); if (dss) dss.value = S.densEnergySpacing;
   if (typeof densityParamChange === 'function') densityParamChange();
   setVal('ds-emin', S.dsEmin); setVal('ds-emax', S.dsEmax); setVal('ds-nintervals', S.dsNintervals);
   setVal('ds-max-particles', S.dsMaxParticles);
+  setVal('ds-max-traj-time', S.dsMaxTrajTime);
   if (typeof setDsSpacing === 'function') setDsSpacing(S.dsEnergySpacing || 'LOG');
   if (typeof dsParamChange === 'function') dsParamChange();
 

@@ -163,6 +163,7 @@ const S = {
   cutoffEmax:     1000.0,           // [MeV/n] upper bound of energy scan
   cutoffMaxParticles: 500,          // total test particles per injection point
   cutoffNenergy:      50,           // log-spaced energy bins in [Emin, Emax]
+  cutoffMaxTrajTime: 600,           // [sec] max trajectory integration time per particle
 
   /*  3-D interpolation grid parameters (used when fieldMethod === 'GRID_3D').
    *  The grid is a regular Cartesian mesh in GSM coordinates.
@@ -190,6 +191,7 @@ const S = {
   dsEmax:     1000.0,               // [MeV/n] upper bound for energy sampling
   dsNintervals:  50,                // number of energy intervals
   dsMaxParticles: 500,              // total test particles per observation point
+  dsMaxTrajTime: 600,               // [sec] max trajectory integration time per particle
   dsEnergySpacing: 'LOG',           // 'LOG' | 'LINEAR'
 
   /*  3-D density sampling parameters (used when calcQuantity === 'DENSITY_3D').

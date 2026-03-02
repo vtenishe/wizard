@@ -196,7 +196,8 @@ GRID_ZMAX              ${f(S.gridZmax,1)}`:'',
 CUTOFF_EMIN            ${f(S.cutoffEmin,1)}          ! MeV/n
 CUTOFF_EMAX            ${f(S.cutoffEmax,1)}       ! MeV/n
 CUTOFF_MAX_PARTICLES   ${S.cutoffMaxParticles}              ! per injection point
-CUTOFF_NENERGY         ${S.cutoffNenergy}               ! log-spaced energy bins`:'',
+CUTOFF_NENERGY         ${S.cutoffNenergy}               ! log-spaced energy bins
+CUTOFF_MAX_TRAJ_TIME   ${S.cutoffMaxTrajTime}               ! sec — max trajectory integration time`:'',
 
 /* ── Conditional: density-spectrum sampling parameters ──
  *  Emitted only when CALC_TARGET is DENSITY_SPECTRUM.
@@ -209,6 +210,7 @@ DS_EMIN                ${f(S.dsEmin,1)}          ! MeV/n
 DS_EMAX                ${f(S.dsEmax,1)}       ! MeV/n
 DS_NINTERVALS          ${S.dsNintervals}               ! energy intervals
 DS_MAX_PARTICLES       ${S.dsMaxParticles}              ! per observation point
+DS_MAX_TRAJ_TIME       ${S.dsMaxTrajTime}               ! sec — max trajectory integration time
 DS_ENERGY_SPACING      ${S.dsEnergySpacing}           ! LOG or LINEAR`:'',
 
 /* ── Conditional: 3-D ion density sampling parameters ──
@@ -443,9 +445,11 @@ function buildValidation(){
     {l:'Field method selected',  ok:['GRIDLESS','GRID_3D'].includes(S.fieldMethod)},
     {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffEmin<S.cutoffEmax)},
     {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxParticles>=50)},
+    {l:'Cutoff traj time > 0',   ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxTrajTime>0)},
     {l:'DS Emin < Emax',         ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsEmin<S.dsEmax)},
     {l:'DS intervals ≥ 2',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsNintervals>=2)},
     {l:'DS particles ≥ 50',      ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsMaxParticles>=50)},
+    {l:'DS traj time > 0',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsMaxTrajTime>0)},
     {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
     {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
     {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
