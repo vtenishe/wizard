@@ -247,6 +247,8 @@ MASS_AMU               ${S.mass}           ! atomic mass units
 
 #BACKGROUND_FIELD
 FIELD_MODEL            ${S.fieldModel}
+${S.fieldModel==='DIPOLE'?`DIPOLE_MOMENT          ${Number(S.dipoleMoment||1).toFixed(2)}         ! multiples of M_E
+DIPOLE_TILT            ${Number(S.dipoleTilt||0).toFixed(1)}          ! deg from GSM Z-axis`:`\
 DST                    ${f(S.dst,1)}         ! nT ring current index (Dst)
 PDYN                   ${f(S.pdyn,2)}          ! nPa solar-wind dynamic pressure
 IMF_BZ                 ${f(S.bz,2)}         ! nT IMF Bz (GSM)
@@ -307,7 +309,7 @@ EPOCH                  ${S.epoch}  ! UTC snapshot
 ! TA16_N_INDEX           ${Number(S.ta16Nidx||0).toFixed(4)}
 ! TA16_B_INDEX           ${Number(S.ta16Bidx||0).toFixed(4)}
 ! TA16_SYMHC             ${Number(S.ta16SymHc||0).toFixed(1)}
-! TA16_EPOCH             ${S.ta16Epoch||''}
+! TA16_EPOCH             ${S.ta16Epoch||''}`}
 
 #DOMAIN_BOUNDARY
 BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
@@ -452,7 +454,8 @@ function buildValidation(){
     {l:'DS traj time > 0',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsMaxTrajTime>0)},
     {l:'Density Emin < Emax',    ok:S.calcQuantity!=='DENSITY_3D'||(S.densEmin<S.densEmax)},
     {l:'Density → 3-D Grid required', ok:S.calcQuantity!=='DENSITY_3D'||S.fieldMethod==='GRID_3D'},
-    {l:'Gridless → Tsyganenko only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
+    {l:'Gridless → analytical models only', ok:S.fieldMethod!=='GRIDLESS'||!['BATSRUS','GAMERA'].includes(S.fieldModel)},
+    {l:'Dipole moment > 0',  ok:S.fieldModel!=='DIPOLE'||(S.dipoleMoment>0)},
 
     /* ── Step 3–5: Field, boundary ── */
     {l:'Dst in TS05 range',      ok:S.dst>=-600&&S.dst<=50},
@@ -532,7 +535,8 @@ function updateSidebar(){
     TA15: 'TA15 (Tsyganenko & Andreeva 2015)',
     TA16RBF: 'TA16RBF (Tsyganenko & Andreeva 2016)',
     BATSRUS: 'BATSRUS (MHD input)',
-    GAMERA:  'GAMERA (MHD input)'
+    GAMERA:  'GAMERA (MHD input)',
+    DIPOLE:  'Dipole (pure tilted)'
   };
   set('sb-field-model', prettyField[S.fieldModel] || S.fieldModel || '—', 'g');
 

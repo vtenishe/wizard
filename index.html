@@ -1683,8 +1683,27 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
     </div>
 
-    <!-- Row 3: TA16RBF -->
+    <!-- Row 3: Dipole + TA16RBF -->
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px;">
+
+      <!-- Dipole: pure tilted magnetic dipole (no external currents) -->
+      <div class="model-sel-card" id="msc-dipole" onclick="selectFieldModel('DIPOLE')">
+        <div class="msc-icon" style="line-height:1;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Dipole field lines -->
+          <path d="M14 4 C8 4,4 9,4 14 C4 19,8 24,14 24" stroke="rgba(45,212,160,.7)" stroke-width="1.5" fill="none"/>
+          <path d="M14 4 C20 4,24 9,24 14 C24 19,20 24,14 24" stroke="rgba(45,212,160,.7)" stroke-width="1.5" fill="none"/>
+          <path d="M14 6 C10 6,7 10,7 14 C7 18,10 22,14 22" stroke="rgba(26,136,212,.5)" stroke-width="1.2" fill="none"/>
+          <path d="M14 6 C18 6,21 10,21 14 C21 18,18 22,14 22" stroke="rgba(26,136,212,.5)" stroke-width="1.2" fill="none"/>
+          <!-- N/S poles -->
+          <circle cx="14" cy="4" r="2.2" fill="var(--red,#e05555)"/>
+          <circle cx="14" cy="24" r="2.2" fill="var(--accent-bright,#1a88d4)"/>
+          <text x="14" y="5.5" text-anchor="middle" font-size="3.2" font-weight="bold" fill="white">N</text>
+          <text x="14" y="25.5" text-anchor="middle" font-size="3.2" font-weight="bold" fill="white">S</text>
+        </svg></div>
+        <div class="msc-title">Dipole <span style="font-size:9px;background:rgba(45,212,160,.2);color:var(--green);padding:1px 5px;border-radius:3px;">Simple</span></div>
+        <div class="msc-sub">Pure tilted magnetic dipole. No ring current, tail, or magnetopause corrections. Useful for idealized studies, code verification, and analytic comparison. Two parameters: dipole moment strength and tilt angle.</div>
+        <div class="msc-badge" style="margin-top:7px;"><code style="font-size:10px;color:var(--green);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;">FIELD_MODEL = DIPOLE</code></div>
+      </div>
 
       <!-- TA16RBF: empirical RBF model (TA16) -->
       <div class="model-sel-card" id="msc-ta16rbf" onclick="selectFieldModel('TA16RBF')">
@@ -2243,6 +2262,30 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
     </div><!-- /mhd-form -->
 
+    <!-- ── Dipole form (moment + tilt) ── -->
+    <div id="dipole-form" style="display:none;">
+      <div id="dipole-label" style="font-size:11px;font-weight:700;color:var(--accent-bright);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Dipole Driving Parameters</div>
+      <div class="infobox info-blue" style="margin-bottom:10px;">
+        <b>Pure tilted dipole</b> — the background magnetic field is a centred dipole
+        with no external current systems (ring current, tail, magnetopause).
+        Specify the dipole <b>moment</b> (in units of Earth's dipole moment,
+        <i>M<sub>E</sub></i>&nbsp;≈&nbsp;8.0&times;10<sup>15</sup>&nbsp;T&middot;m&sup3;)
+        and the <b>tilt angle</b> of the magnetic axis relative to the GSM Z-axis.
+      </div>
+      <div class="frow c4">
+        <div class="field"><label>Dipole Moment <span class="unit">[M<sub>E</sub>]</span></label>
+          <input id="dipole-moment" type="number" value="1.0" step="0.01" min="0.01" max="100" class="valid" oninput="dipoleChange()"/>
+          <div id="dipole-moment-status" class="field-note" style="color:var(--green);">&#10003; Earth-like</div>
+          <div class="hint">Multiples of Earth's dipole moment (M<sub>E</sub> ≈ 8.0×10<sup>15</sup> T·m³). Set 1.0 for Earth. Values &lt; 1 weaken the field; &gt; 1 strengthen it.</div>
+        </div>
+        <div class="field"><label>Dipole Tilt <span class="unit">[deg]</span></label>
+          <input id="dipole-tilt" type="number" value="0.0" step="0.5" min="-90" max="90" class="valid" oninput="dipoleChange()"/>
+          <div id="dipole-tilt-status" class="field-note" style="color:var(--green);">&#10003; Aligned</div>
+          <div class="hint">Angle between the magnetic dipole axis and the GSM Z-axis. 0° = aligned. Positive = north magnetic pole tilted sunward. Earth's range: ±34°.</div>
+        </div>
+      </div>
+    </div><!-- /dipole-form -->
+
     <!-- ── AMPS_PARAM.in keyword preview (all models) ── -->
     <div class="kw-strip" id="ts05-kw-preview">
 <span class="kw-section">#BACKGROUND_FIELD</span>
@@ -2324,6 +2367,10 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
 <!-- MHD rows — hidden unless BATSRUS/GAMERA selected -->
 <span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_FILE</span>        <span class="kw-val" id="kv-mhd-file">(upload required)</span>
 </span><span class="mhd-kw-row" style="display:none;"><span class="kw-key">MHD_INTERP</span>      <span class="kw-val" id="kv-mhd-interp">LINEAR</span>   <span class="kw-comment">! LINEAR | CUBIC</span>
+</span>
+<!-- Dipole rows — hidden unless DIPOLE selected -->
+<span class="dipole-kw-row" style="display:none;"><span class="kw-key">DIPOLE_MOMENT</span>   <span class="kw-val" id="kv-dipole-moment">1.0</span>      <span class="kw-comment">! multiples of M_E</span>
+</span><span class="dipole-kw-row" style="display:none;"><span class="kw-key">DIPOLE_TILT</span>     <span class="kw-val" id="kv-dipole-tilt">0.0</span>      <span class="kw-comment">! deg from GSM Z-axis</span>
 </span></div>
   </div>
 </div>

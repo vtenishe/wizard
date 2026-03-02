@@ -289,6 +289,9 @@ const S = {
   ta15Nidx:    0.25,
   ta15Bidx:    0.25,
   ta15Epoch:  '2017-09-10T16:00',
+  // Dipole driver set:
+  dipoleMoment: 1.0,            // [M_E] multiples of Earth's dipole moment
+  dipoleTilt:   0.0,            // [deg] tilt of magnetic axis from GSM Z-axis
 
   /* ── Step 4 · Domain boundary ──────────────────────────────────────── */
   boundaryType: 'SHUE',     // 'BOX' or 'SHUE'

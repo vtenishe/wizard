@@ -274,6 +274,9 @@ const KEYWORD_MAP = [
   { kw: 'TA16_B_INDEX',  prop: 'ta16Bidx',    type: 'num', step: 3 },
   { kw: 'TA16_SYMHC',    prop: 'ta16SymHc',   type: 'num', step: 3 },
   { kw: 'TA16_EPOCH',    prop: 'ta16Epoch',   type: 'str', step: 3 },
+  // Dipole
+  { kw: 'DIPOLE_MOMENT', prop: 'dipoleMoment', type: 'num', step: 3, desc: 'Dipole moment [M_E]' },
+  { kw: 'DIPOLE_TILT',   prop: 'dipoleTilt',   type: 'num', step: 3, desc: 'Dipole tilt [deg]' },
 
   // ═══════ STEP 5: Boundary  (R_INNER,SHUE auto/manual in special cases) ═══════
   { kw: 'BOUNDARY_TYPE',  prop: 'boundaryType', type: 'str',  step: 5 },
@@ -472,6 +475,8 @@ function syncAllUI(kv) {
   setVal('ta15-np', S.ta15Np); setVal('ta15-temp', S.ta15Temp); setVal('ta15-symh', S.ta15SymH);
   setVal('ta15-pdyn', S.ta15Pdyn); setVal('ta15-nidx', S.ta15Nidx); setVal('ta15-bidx', S.ta15Bidx);
   if (typeof ta15Change === 'function') ta15Change();
+  setVal('dipole-moment', S.dipoleMoment); setVal('dipole-tilt', S.dipoleTilt);
+  if (typeof dipoleChange === 'function') dipoleChange();
 
   // ── Step 5: Boundary ──
   // IMPORTANT: populate inputs BEFORE bndSet() because bndSet → bndBoxUpdate

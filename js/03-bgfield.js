@@ -66,6 +66,12 @@ LAST UPDATED: 2026-02-21
                Upload GAMERA .h5 output.  Beta support.
                FIELD_MODEL = GAMERA
 
+     DIPOLE  — Pure tilted magnetic dipole.
+               No external current systems (ring current, tail, magnetopause).
+               Two parameters: dipole moment strength [M_E] and tilt [deg].
+               Useful for idealized studies and code verification.
+               FIELD_MODEL = DIPOLE
+
    PUBLIC API (called from HTML)
      liveUpdate()            — sync Step 1 text fields to S on keyup
      goalHint(v)             — show/hide goal hint text
@@ -78,6 +84,7 @@ LAST UPDATED: 2026-02-21
      t01Change()             — sync T01 inputs → S
      ta15Change()            — sync TA15 inputs → S
      ta16Change()            — sync TA16RBF inputs → S
+     dipoleChange()          — sync Dipole inputs → S
      mhdChange()             — sync MHD file-upload inputs → S
      validateTs05()          — flag out-of-range TS05 parameter inputs
      updateKwPreview()       — refresh AMPS_PARAM.in keyword-preview strip
@@ -704,7 +711,7 @@ function selectFieldModel(model) {
   if (card) card.classList.add('sel');
 
   // ── Show/hide model-specific driving-parameter forms ──
-  const forms = { ts05: 'ts05-form', t96: 't96-form', t01: 't01-form', ta15: 'ta15-form', ta16: 'ta16-form', mhd: 'mhd-form' };
+  const forms = { ts05: 'ts05-form', t96: 't96-form', t01: 't01-form', ta15: 'ta15-form', ta16: 'ta16-form', mhd: 'mhd-form', dipole: 'dipole-form' };
   Object.values(forms).forEach(id => {
     const el = $(id);
     if (el) el.style.display = 'none';
@@ -716,6 +723,7 @@ function selectFieldModel(model) {
   const isT01  = (model === 'T01');
   const isTA15 = (model === 'TA15');
   const isTA16 = (model === 'TA16RBF');
+  const isDipole = (model === 'DIPOLE');
 
   if (isTs05) {
     $('ts05-form').style.display = 'block';
@@ -729,6 +737,8 @@ function selectFieldModel(model) {
     $('ta15-form').style.display = 'block';
   } else if (isTA16) {
     $('ta16-form').style.display = 'block';
+  } else if (isDipole) {
+    $('dipole-form').style.display = 'block';
   } else if (isMhd) {
     $('mhd-form').style.display = 'block';
     const lbl = $('mhd-model-label');
@@ -742,6 +752,7 @@ function selectFieldModel(model) {
   document.querySelectorAll('.ta15-kw-row').forEach(r => r.style.display = model==='TA15' ? '' : 'none');
   document.querySelectorAll('.ta16-kw-row').forEach(r => r.style.display = model==='TA16RBF' ? '' : 'none');
   document.querySelectorAll('.mhd-kw-row').forEach(r  => r.style.display = isMhd ? '' : 'none');
+  document.querySelectorAll('.dipole-kw-row').forEach(r => r.style.display = isDipole ? '' : 'none');
 
   // ── Update field-model value in KW strip ──
   const kv = $('kv-field-model');
@@ -756,6 +767,7 @@ function selectFieldModel(model) {
     TA16RBF: '! Tsyganenko & Andreeva (2016)',
     BATSRUS:'! MHD (Block-Adaptive Tree)',
     GAMERA: '! MHD (Grid Agnostic)',
+    DIPOLE: '! Pure tilted magnetic dipole',
   };
   const cmt = $('kv-field-model-comment');
   if (cmt) cmt.textContent = commentMap[model] || '! field model';
@@ -1628,6 +1640,60 @@ function mhdChange() {
   S.mhdInterp = $('mhd-interp')?.value || S.mhdInterp;
   const set = (id,v) => { const e=$(id); if(e) e.textContent=v; };
   set('kv-mhd-interp', S.mhdInterp);
+  updateSidebar();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   DIPOLE MODEL  —  pure tilted magnetic dipole
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * dipoleChange — called on dipole moment/tilt input change.
+ *
+ * Updates S.dipoleMoment and S.dipoleTilt, refreshes keyword preview
+ * and field-note status indicators.
+ */
+function dipoleChange() {
+  S.dipoleMoment = parseFloat($('dipole-moment')?.value) || S.dipoleMoment;
+  const rawTilt  = parseFloat($('dipole-tilt')?.value);
+  if (isFinite(rawTilt)) S.dipoleTilt = rawTilt;
+
+  /* ── Keyword preview ── */
+  const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+  set('kv-dipole-moment', S.dipoleMoment.toFixed(2));
+  set('kv-dipole-tilt',   S.dipoleTilt.toFixed(1));
+
+  /* ── Status indicators ── */
+  const mSt = $('dipole-moment-status');
+  if (mSt) {
+    if (S.dipoleMoment >= 0.8 && S.dipoleMoment <= 1.2) {
+      mSt.innerHTML = '&#10003; Earth-like';
+      mSt.style.color = 'var(--green)';
+    } else if (S.dipoleMoment > 0) {
+      mSt.innerHTML = '&#10003; Custom strength';
+      mSt.style.color = 'var(--accent-bright)';
+    } else {
+      mSt.innerHTML = '&#10007; Must be > 0';
+      mSt.style.color = 'var(--red)';
+    }
+  }
+
+  const tSt = $('dipole-tilt-status');
+  if (tSt) {
+    const absT = Math.abs(S.dipoleTilt);
+    if (absT < 0.1) {
+      tSt.innerHTML = '&#10003; Aligned';
+      tSt.style.color = 'var(--green)';
+    } else if (absT <= 34) {
+      tSt.innerHTML = '&#10003; Within Earth range';
+      tSt.style.color = 'var(--green)';
+    } else {
+      tSt.innerHTML = '&#9888; Beyond Earth range (±34°)';
+      tSt.style.color = 'var(--orange)';
+    }
+  }
+
   updateSidebar();
 }
 
