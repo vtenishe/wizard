@@ -247,69 +247,114 @@ MASS_AMU               ${S.mass}           ! atomic mass units
 
 #BACKGROUND_FIELD
 FIELD_MODEL            ${S.fieldModel}
-${S.fieldModel==='DIPOLE'?`DIPOLE_MOMENT          ${Number(S.dipoleMoment||1).toFixed(2)}         ! multiples of M_E
-DIPOLE_TILT            ${Number(S.dipoleTilt||0).toFixed(1)}          ! deg from GSM Z-axis`:`\
-DST                    ${f(S.dst,1)}         ! nT ring current index (Dst)
-PDYN                   ${f(S.pdyn,2)}          ! nPa solar-wind dynamic pressure
-IMF_BZ                 ${f(S.bz,2)}         ! nT IMF Bz (GSM)
-SW_VX                  ${f(S.vx,1)}       ! km/s solar-wind Vx
-SW_N                   ${f(S.nsw,2)}         ! cm-3 solar-wind proton density
-IMF_BY                 ${f(S.by,2)}          ! nT IMF By
-IMF_BX                 ${f(S.bx,2)}          ! nT IMF Bx
-EPOCH                  ${S.epoch}  ! UTC snapshot
-! TS05 advanced inputs (optional; for reproducibility / TS05 W-variable runs)
-! TS05_TILT_RAD          ${Number(S.ts05TiltRad||0).toFixed(4)}
-! TS05_IMFFLAG           ${S.ts05ImfFlag==null?'':S.ts05ImfFlag}
-! TS05_ISWFLAG           ${S.ts05SwFlag==null?'':S.ts05SwFlag}
-! TS05_W1                ${S.ts05W1==null?'':Number(S.ts05W1).toFixed(2)}
-! TS05_W2                ${S.ts05W2==null?'':Number(S.ts05W2).toFixed(2)}
-! TS05_W3                ${S.ts05W3==null?'':Number(S.ts05W3).toFixed(2)}
-! TS05_W4                ${S.ts05W4==null?'':Number(S.ts05W4).toFixed(2)}
-! TS05_W5                ${S.ts05W5==null?'':Number(S.ts05W5).toFixed(2)}
-! TS05_W6                ${S.ts05W6==null?'':Number(S.ts05W6).toFixed(2)}
-
-! T96_TILT_DEG           ${Number(S.t96Tilt||0).toFixed(1)}
-! T01_TILT_DEG           ${Number(S.t01Tilt||0).toFixed(1)}
-! T01_G1                 ${Number(S.t01G1||0).toFixed(1)}
-! T01_G2                 ${Number(S.t01G2||0).toFixed(1)}
-! T01_EPOCH              ${S.t01Epoch||''}
-
-! TA15 (optional full driver set; official OMNI-style inputs)
-! TA15_BX_GSW            ${Number(S.ta15Bx||0).toFixed(2)}
-! TA15_BY_GSW            ${Number(S.ta15By||0).toFixed(2)}
-! TA15_BZ_GSW            ${Number(S.ta15Bz||0).toFixed(2)}
-! TA15_VX_GSE            ${Number(S.ta15Vx||0).toFixed(1)}
-! TA15_VY_GSE            ${Number(S.ta15Vy||0).toFixed(1)}
-! TA15_VZ_GSE            ${Number(S.ta15Vz||0).toFixed(1)}
-! TA15_NP                ${Number(S.ta15Np||0).toFixed(2)}
-! TA15_T_K               ${Math.round(Number(S.ta15Temp||0))}
-! TA15_SYMH              ${Number(S.ta15SymH||0).toFixed(1)}
-! TA15_IMF_FLAG          ${S.ta15ImfFlag==null?'':S.ta15ImfFlag}
-! TA15_SW_FLAG           ${S.ta15SwFlag==null?'':S.ta15SwFlag}
-! TA15_TILT_RAD          ${Number(S.ta15TiltRad||0).toFixed(4)}
-! TA15_PDYN              ${Number(S.ta15Pdyn||0).toFixed(2)}
-! TA15_N_INDEX           ${Number(S.ta15Nidx||0).toFixed(4)}
-! TA15_B_INDEX           ${Number(S.ta15Bidx||0).toFixed(4)}
-! TA15_EPOCH             ${S.ta15Epoch||''}
-
-! TA16RBF (optional full driver set; TA16 OMNI-style inputs + SymHc)
-! TA16_BX_GSW            ${Number(S.ta16Bx||0).toFixed(2)}
-! TA16_BY_GSW            ${Number(S.ta16By||0).toFixed(2)}
-! TA16_BZ_GSW            ${Number(S.ta16Bz||0).toFixed(2)}
-! TA16_VX_GSE            ${Number(S.ta16Vx||0).toFixed(1)}
-! TA16_VY_GSE            ${Number(S.ta16Vy||0).toFixed(1)}
-! TA16_VZ_GSE            ${Number(S.ta16Vz||0).toFixed(1)}
-! TA16_NP                ${Number(S.ta16Np||0).toFixed(2)}
-! TA16_T_K               ${Math.round(Number(S.ta16Temp||0))}
-! TA16_SYMH              ${Number(S.ta16SymH||0).toFixed(1)}
-! TA16_IMF_FLAG          ${S.ta16ImfFlag==null?'':S.ta16ImfFlag}
-! TA16_SW_FLAG           ${S.ta16SwFlag==null?'':S.ta16SwFlag}
-! TA16_TILT_RAD          ${Number(S.ta16TiltRad||0).toFixed(4)}
-! TA16_PDYN              ${Number(S.ta16Pdyn||0).toFixed(2)}
-! TA16_N_INDEX           ${Number(S.ta16Nidx||0).toFixed(4)}
-! TA16_B_INDEX           ${Number(S.ta16Bidx||0).toFixed(4)}
-! TA16_SYMHC             ${Number(S.ta16SymHc||0).toFixed(1)}
-! TA16_EPOCH             ${S.ta16Epoch||''}`}
+${(()=>{
+  const m = S.fieldModel;
+  const lines = [];
+  /* ── TS05 ─────────────────────────────────────────────────────── */
+  if (m === 'TS05') {
+    lines.push(
+      `DST                    ${f(S.dst,1)}         ! nT ring current index (Dst)`,
+      `PDYN                   ${f(S.pdyn,2)}          ! nPa solar-wind dynamic pressure`,
+      `IMF_BZ                 ${f(S.bz,2)}         ! nT IMF Bz (GSM)`,
+      `SW_VX                  ${f(S.vx,1)}       ! km/s solar-wind Vx`,
+      `SW_N                   ${f(S.nsw,2)}         ! cm-3 solar-wind proton density`,
+      `IMF_BY                 ${f(S.by,2)}          ! nT IMF By`,
+      `IMF_BX                 ${f(S.bx,2)}          ! nT IMF Bx`,
+      `EPOCH                  ${S.epoch}  ! UTC snapshot`,
+      `! TS05 advanced inputs (optional; for reproducibility / TS05 W-variable runs)`,
+      `! TS05_TILT_RAD          ${Number(S.ts05TiltRad||0).toFixed(4)}`,
+      `! TS05_IMFFLAG           ${S.ts05ImfFlag==null?'':S.ts05ImfFlag}`,
+      `! TS05_ISWFLAG           ${S.ts05SwFlag==null?'':S.ts05SwFlag}`,
+      `! TS05_W1                ${S.ts05W1==null?'':Number(S.ts05W1).toFixed(2)}`,
+      `! TS05_W2                ${S.ts05W2==null?'':Number(S.ts05W2).toFixed(2)}`,
+      `! TS05_W3                ${S.ts05W3==null?'':Number(S.ts05W3).toFixed(2)}`,
+      `! TS05_W4                ${S.ts05W4==null?'':Number(S.ts05W4).toFixed(2)}`,
+      `! TS05_W5                ${S.ts05W5==null?'':Number(S.ts05W5).toFixed(2)}`,
+      `! TS05_W6                ${S.ts05W6==null?'':Number(S.ts05W6).toFixed(2)}`
+    );
+  }
+  /* ── T96 ─────────────────────────────────────────────────────── */
+  if (m === 'T96') {
+    lines.push(
+      `DST                    ${f(S.t96Dst,1)}         ! nT`,
+      `PDYN                   ${f(S.t96Pdyn,2)}          ! nPa`,
+      `IMF_BZ                 ${f(S.t96Bz,2)}         ! nT GSM`,
+      `IMF_BY                 ${f(S.t96By,2)}          ! nT`,
+      `TILT                   ${Number(S.t96Tilt||0).toFixed(1)}          ! deg dipole tilt`,
+      `EPOCH                  ${S.t96Epoch||S.epoch}  ! UTC snapshot`
+    );
+  }
+  /* ── T01 ─────────────────────────────────────────────────────── */
+  if (m === 'T01') {
+    lines.push(
+      `DST                    ${f(S.t01Dst,1)}         ! nT`,
+      `PDYN                   ${f(S.t01Pdyn,2)}          ! nPa`,
+      `IMF_BZ                 ${f(S.t01Bz,2)}         ! nT GSM`,
+      `IMF_BY                 ${f(S.t01By,2)}          ! nT`,
+      `TILT                   ${Number(S.t01Tilt||0).toFixed(1)}          ! deg dipole tilt`,
+      `G1                     ${Number(S.t01G1||0).toFixed(1)}          ! IMF-history index`,
+      `G2                     ${Number(S.t01G2||0).toFixed(1)}          ! SW/IMF coupling index`,
+      `EPOCH                  ${S.t01Epoch||S.epoch}  ! UTC snapshot`
+    );
+  }
+  /* ── TA15 ────────────────────────────────────────────────────── */
+  if (m === 'TA15') {
+    lines.push(
+      `IMF_BX                 ${Number(S.ta15Bx||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `IMF_BY                 ${Number(S.ta15By||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `IMF_BZ                 ${Number(S.ta15Bz||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `SW_VX                  ${Number(S.ta15Vx||0).toFixed(1)}   ! km/s (GSE)`,
+      `SW_VY                  ${Number(S.ta15Vy||0).toFixed(1)}      ! km/s (GSE)`,
+      `SW_VZ                  ${Number(S.ta15Vz||0).toFixed(1)}      ! km/s (GSE)`,
+      `SW_NP                  ${Number(S.ta15Np||0).toFixed(2)}     ! cm^-3 proton density`,
+      `SW_T                   ${Math.round(Number(S.ta15Temp||0))}  ! K proton temperature`,
+      `SYMH                   ${Number(S.ta15SymH||0).toFixed(1)}   ! nT`,
+      `IMF_FLAG               ${S.ta15ImfFlag==null?'':S.ta15ImfFlag}      ! 1 measured | 2 interpolated`,
+      `SW_FLAG                ${S.ta15SwFlag==null?'':S.ta15SwFlag}       ! 1 measured | 2 interpolated`,
+      `TILT                   ${Number(S.ta15TiltRad||0).toFixed(4)} ! rad (GSW)`,
+      `PDYN                   ${Number(S.ta15Pdyn||0).toFixed(2)}     ! nPa`,
+      `N_INDEX                ${Number(S.ta15Nidx||0).toFixed(4)}    ! 30-min trailing avg`,
+      `B_INDEX                ${Number(S.ta15Bidx||0).toFixed(4)}    ! 30-min trailing avg`,
+      `EPOCH                  ${S.ta15Epoch||S.epoch} ! UTC snapshot`
+    );
+  }
+  /* ── TA16RBF ─────────────────────────────────────────────────── */
+  if (m === 'TA16RBF') {
+    lines.push(
+      `IMF_BX                 ${Number(S.ta16Bx||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `IMF_BY                 ${Number(S.ta16By||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `IMF_BZ                 ${Number(S.ta16Bz||0).toFixed(2)}      ! nT (GSW; 30-min trail)`,
+      `SW_VX                  ${Number(S.ta16Vx||0).toFixed(1)}   ! km/s (GSE)`,
+      `SW_VY                  ${Number(S.ta16Vy||0).toFixed(1)}      ! km/s (GSE)`,
+      `SW_VZ                  ${Number(S.ta16Vz||0).toFixed(1)}      ! km/s (GSE)`,
+      `SW_NP                  ${Number(S.ta16Np||0).toFixed(2)}     ! cm^-3 proton density`,
+      `SW_T                   ${Math.round(Number(S.ta16Temp||0))}  ! K proton temperature`,
+      `SYMH                   ${Number(S.ta16SymH||0).toFixed(1)}   ! nT`,
+      `IMF_FLAG               ${S.ta16ImfFlag==null?'':S.ta16ImfFlag}      ! 1 measured | 2 interpolated`,
+      `SW_FLAG                ${S.ta16SwFlag==null?'':S.ta16SwFlag}       ! 1 measured | 2 interpolated`,
+      `TILT                   ${Number(S.ta16TiltRad||0).toFixed(4)} ! rad (GSW)`,
+      `PDYN                   ${Number(S.ta16Pdyn||0).toFixed(2)}     ! nPa`,
+      `N_INDEX                ${Number(S.ta16Nidx||0).toFixed(4)}    ! 30-min trailing avg`,
+      `B_INDEX                ${Number(S.ta16Bidx||0).toFixed(4)}    ! 30-min trailing avg`,
+      `SYMHc                  ${Number(S.ta16SymHc||0).toFixed(1)}   ! centered 30-min sliding avg`,
+      `EPOCH                  ${S.ta16Epoch||S.epoch} ! UTC snapshot`
+    );
+  }
+  /* ── BATSRUS / GAMERA ────────────────────────────────────────── */
+  if (m === 'BATSRUS' || m === 'GAMERA') {
+    lines.push(
+      `MHD_INTERP             ${S.mhdInterp||'LINEAR'}   ! LINEAR | CUBIC`
+    );
+  }
+  /* ── DIPOLE ──────────────────────────────────────────────────── */
+  if (m === 'DIPOLE') {
+    lines.push(
+      `DIPOLE_MOMENT          ${Number(S.dipoleMoment||1).toFixed(2)}         ! multiples of M_E`,
+      `DIPOLE_TILT            ${Number(S.dipoleTilt||0).toFixed(1)}          ! deg from GSM Z-axis`
+    );
+  }
+  return lines.join('\n');
+})()}
 
 #DOMAIN_BOUNDARY
 BOUNDARY_TYPE          ${S.boundaryType}${S.boundaryType==='SHUE'?'  ! Shue et al. 1998 magnetopause':'  ! rectangular box in GSM'}`,
