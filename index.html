@@ -1016,7 +1016,52 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
           <div class="hint">Maximum integration time for each test particle trajectory before it is classified as trapped.
             Longer = more accurate penumbra but slower. Typical: 300–1000 s.</div>
         </div>
-        <div class="field"></div>
+        <div class="field"><label>Cutoff Sampling</label>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="toggle-btn on" id="cutoff-samp-vert"
+              onclick="setCutoffSampling('VERTICAL')">Vertical</button>
+            <button type="button" class="toggle-btn" id="cutoff-samp-iso"
+              onclick="setCutoffSampling('ISOTROPIC')">Isotropic</button>
+          </div>
+          <div class="hint"><b>Vertical:</b> inject along the local radial direction — standard vertical cutoff R<sub>c</sub>.
+            <b>Isotropic:</b> inject over the full upper hemisphere — effective (omnidirectional) cutoff.</div>
+        </div>
+      </div>
+
+      <!-- ── Directional cutoff rigidity map ──────────────────────────────
+           Available only when output mode is POINTS or TRAJECTORY.
+           When enabled, AMPS scans a longitude × latitude grid of arrival
+           directions at each observation point to produce a full sky-map
+           of directional cutoff rigidity.
+           Visibility is toggled by updateDirMapVisibility() in 02a-calcmode.js.
+      ──────────────────────────────────────────────────────────────────── -->
+      <div id="dirmap-section" style="margin-top:14px;padding:14px 16px;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="cutoff-dirmap" onchange="setDirectionalMap(this.checked)" style="accent-color:var(--accent);"/>
+            Compute directional cutoff rigidity map at each point
+          </label>
+        </div>
+        <div class="hint" style="margin-bottom:10px;">
+          For each observation point, scan a grid of arrival directions (longitude × latitude over the upper hemisphere)
+          and compute the cutoff rigidity in each direction. Produces a full-sky map of directional R<sub>c</sub>.
+          <b>Available for POINTS and TRAJECTORY output modes.</b>
+        </div>
+        <div id="dirmap-resolution" style="display:none;">
+          <div class="frow c2">
+            <div class="field"><label>Longitude Resolution <span style="font-size:10px;color:var(--text-dim)">[deg]</span></label>
+              <input id="dirmap-lon-res" type="number" value="10" min="1" max="90" step="1" onchange="cutoffParamChange()"/>
+              <div class="hint">Angular step in longitude (azimuth). Typical: 5–15°. Finer = larger map.</div>
+            </div>
+            <div class="field"><label>Latitude Resolution <span style="font-size:10px;color:var(--text-dim)">[deg]</span></label>
+              <input id="dirmap-lat-res" type="number" value="10" min="1" max="90" step="1" onchange="cutoffParamChange()"/>
+              <div class="hint">Angular step in latitude (elevation). Typical: 5–15°. Finer = larger map.</div>
+            </div>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:var(--text-dim);">
+            Sky-map size: <b style="color:var(--accent-bright);" id="dirmap-size-label">36 × 9 = 324 directions</b> per observation point.
+          </div>
+        </div>
       </div>
 
       <!-- Visual: energy scan range bar -->
@@ -1049,6 +1094,10 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div><span class="kw-key">CUTOFF_MAX_PARTICLES</span> <span class="kw-val" id="kw-cutoff-maxp">500</span></div>
         <div><span class="kw-key">CUTOFF_NENERGY</span>      <span class="kw-val" id="kw-cutoff-nen">50</span></div>
         <div><span class="kw-key">CUTOFF_MAX_TRAJ_TIME</span> <span class="kw-val" id="kw-cutoff-trajt">600</span> <span class="kw-comment">  ! sec</span></div>
+        <div><span class="kw-key">CUTOFF_SAMPLING</span>     <span class="kw-val" id="kw-cutoff-samp">VERTICAL</span></div>
+        <div id="kw-dirmap-row" style="display:none;"><span class="kw-key">DIRECTIONAL_MAP</span>     <span class="kw-val" id="kw-dirmap">T</span></div>
+        <div id="kw-dirmap-lon-row" style="display:none;"><span class="kw-key">DIRMAP_LON_RES</span>      <span class="kw-val" id="kw-dirmap-lon">10</span> <span class="kw-comment">  ! deg</span></div>
+        <div id="kw-dirmap-lat-row" style="display:none;"><span class="kw-key">DIRMAP_LAT_RES</span>      <span class="kw-val" id="kw-dirmap-lat">10</span> <span class="kw-comment">  ! deg</span></div>
       </div>
     </div>
 

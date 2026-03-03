@@ -201,6 +201,10 @@ const KEYWORD_MAP = [
   { kw: 'CUTOFF_MAX_PARTICLES',prop: 'cutoffMaxParticles', type: 'int', step: 2,  desc: 'Max particles' },
   { kw: 'CUTOFF_NENERGY',      prop: 'cutoffNenergy',     type: 'int',  step: 2,  desc: 'Energy bins' },
   { kw: 'CUTOFF_MAX_TRAJ_TIME', prop: 'cutoffMaxTrajTime', type: 'int', step: 2,  desc: 'Max traj time [sec]' },
+  { kw: 'CUTOFF_SAMPLING',     prop: 'cutoffSampling',    type: 'str',  step: 2,  desc: 'VERTICAL|ISOTROPIC' },
+  { kw: 'DIRECTIONAL_MAP',     prop: 'directionalMap',    type: 'bool', step: 2,  desc: 'Directional Rc map' },
+  { kw: 'DIRMAP_LON_RES',      prop: 'dirMapLonRes',      type: 'int',  step: 2,  desc: 'Directional map lon res [deg]' },
+  { kw: 'DIRMAP_LAT_RES',      prop: 'dirMapLatRes',      type: 'int',  step: 2,  desc: 'Directional map lat res [deg]' },
   { kw: 'DENS_EMIN',           prop: 'densEmin',          type: 'num',  step: 2,  desc: 'Density Emin [MeV]' },
   { kw: 'DENS_EMAX',           prop: 'densEmax',          type: 'num',  step: 2,  desc: 'Density Emax [MeV]' },
   { kw: 'DENS_NENERGY',        prop: 'densNenergy',       type: 'int',  step: 2,  desc: 'Density energy bins' },
@@ -445,6 +449,11 @@ function syncAllUI(kv) {
   setVal('cutoff-emin', S.cutoffEmin); setVal('cutoff-emax', S.cutoffEmax);
   setVal('cutoff-max-particles', S.cutoffMaxParticles); setVal('cutoff-nenergy', S.cutoffNenergy);
   setVal('cutoff-max-traj-time', S.cutoffMaxTrajTime);
+  if (typeof setCutoffSampling === 'function') setCutoffSampling(S.cutoffSampling || 'VERTICAL');
+  const dirmapCb = $('cutoff-dirmap'); if (dirmapCb) dirmapCb.checked = !!S.directionalMap;
+  setVal('dirmap-lon-res', S.dirMapLonRes); setVal('dirmap-lat-res', S.dirMapLatRes);
+  if (typeof setDirectionalMap === 'function') setDirectionalMap(!!S.directionalMap);
+  if (typeof updateDirMapVisibility === 'function') updateDirMapVisibility();
   if (typeof cutoffParamChange === 'function') cutoffParamChange();
   setVal('dens-emin', S.densEmin); setVal('dens-emax', S.densEmax); setVal('dens-nenergy', S.densNenergy);
   const dss = $('dens-energy-spacing'); if (dss) dss.value = S.densEnergySpacing;

@@ -132,6 +132,11 @@ function init() {
    *  Defined in: js/02a-calcmode.js */
   applyFieldMethodConstraints();
 
+  /* ── 10c. Initialize directional map visibility (added 2026-03-03) ──
+   *  Show/hide the directional cutoff map option based on output mode.
+   *  Defined in: js/02a-calcmode.js */
+  if (typeof updateDirMapVisibility === 'function') updateDirMapVisibility();
+
   /* ── 11. Navigate to step 1 ── */
   goStep(1);
 }

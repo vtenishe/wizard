@@ -197,7 +197,13 @@ CUTOFF_EMIN            ${f(S.cutoffEmin,1)}          ! MeV/n
 CUTOFF_EMAX            ${f(S.cutoffEmax,1)}       ! MeV/n
 CUTOFF_MAX_PARTICLES   ${S.cutoffMaxParticles}              ! per injection point
 CUTOFF_NENERGY         ${S.cutoffNenergy}               ! log-spaced energy bins
-CUTOFF_MAX_TRAJ_TIME   ${S.cutoffMaxTrajTime}               ! sec — max trajectory integration time`:'',
+CUTOFF_MAX_TRAJ_TIME   ${S.cutoffMaxTrajTime}               ! sec — max trajectory integration time
+CUTOFF_SAMPLING        ${S.cutoffSampling}           ! VERTICAL or ISOTROPIC`
++ (S.directionalMap && (S.outputMode==='POINTS'||S.outputMode==='TRAJECTORY') ? `
+DIRECTIONAL_MAP        T                 ! compute directional Rc sky-map
+DIRMAP_LON_RES         ${f(S.dirMapLonRes,0)}                ! deg — longitude resolution
+DIRMAP_LAT_RES         ${f(S.dirMapLatRes,0)}                ! deg — latitude resolution` : '')
+:'',
 
 /* ── Conditional: density-spectrum sampling parameters ──
  *  Emitted only when CALC_TARGET is DENSITY_SPECTRUM.
@@ -493,6 +499,8 @@ function buildValidation(){
     {l:'Cutoff Emin < Emax',     ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffEmin<S.cutoffEmax)},
     {l:'Cutoff particles ≥ 50',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxParticles>=50)},
     {l:'Cutoff traj time > 0',   ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||(S.cutoffMaxTrajTime>0)},
+    {l:'Cutoff sampling valid',  ok:S.calcQuantity!=='CUTOFF_RIGIDITY'||['VERTICAL','ISOTROPIC'].includes(S.cutoffSampling)},
+    {l:'Dirmap resolution > 0',  ok:!S.directionalMap||(S.dirMapLonRes>0&&S.dirMapLatRes>0)},
     {l:'DS Emin < Emax',         ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsEmin<S.dsEmax)},
     {l:'DS intervals ≥ 2',       ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsNintervals>=2)},
     {l:'DS particles ≥ 50',      ok:S.calcQuantity!=='DENSITY_SPECTRUM'||(S.dsMaxParticles>=50)},

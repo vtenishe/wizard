@@ -165,6 +165,27 @@ const S = {
   cutoffNenergy:      50,           // log-spaced energy bins in [Emin, Emax]
   cutoffMaxTrajTime: 600,           // [sec] max trajectory integration time per particle
 
+  /*  Cutoff sampling mode:
+   *  VERTICAL:   inject test particles along the local vertical (radial)
+   *              direction only — yields the standard "vertical cutoff rigidity".
+   *  ISOTROPIC:  inject test particles isotropically over the upper hemisphere
+   *              — yields the "effective" (omnidirectional) cutoff rigidity.
+   *  AMPS_PARAM.in keyword: CUTOFF_SAMPLING = VERTICAL | ISOTROPIC */
+  cutoffSampling: 'VERTICAL',       // 'VERTICAL' | 'ISOTROPIC'
+
+  /*  Directional cutoff rigidity map:
+   *  When enabled (and output mode is POINTS or TRAJECTORY), AMPS computes
+   *  a full sky-map of directional cutoff rigidity at each observation point,
+   *  scanning a longitude × latitude grid over the upper hemisphere.
+   *  The map resolution is set by dirMapLonRes and dirMapLatRes (degrees).
+   *  AMPS_PARAM.in keywords:
+   *    DIRECTIONAL_MAP        = T | F
+   *    DIRMAP_LON_RES         = <float>  degrees
+   *    DIRMAP_LAT_RES         = <float>  degrees */
+  directionalMap:  false,            // compute directional cutoff map?
+  dirMapLonRes:    10,               // [deg] longitude resolution for directional map
+  dirMapLatRes:    10,               // [deg] latitude resolution for directional map
+
   /*  3-D interpolation grid parameters (used when fieldMethod === 'GRID_3D').
    *  The grid is a regular Cartesian mesh in GSM coordinates.
    *  Memory ≈ 6 components × 8 bytes × Nx × Ny × Nz.

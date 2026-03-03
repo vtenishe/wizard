@@ -285,6 +285,9 @@ function setCalcQuantity(target, card) {
 
   /* ── 8. Refresh sidebar summary ── */
   updateSidebar();
+
+  /* ── 9. Update directional map visibility (depends on calc target) ── */
+  if (typeof updateDirMapVisibility === 'function') updateDirMapVisibility();
 }
 
 
@@ -574,6 +577,10 @@ function cutoffParamChange() {
   S.cutoffNenergy      = parseInt($('cutoff-nenergy')?.value)         || S.cutoffNenergy;
   S.cutoffMaxTrajTime  = parseInt($('cutoff-max-traj-time')?.value)   || S.cutoffMaxTrajTime;
 
+  /* ── Sync directional map resolution inputs ── */
+  S.dirMapLonRes       = parseInt($('dirmap-lon-res')?.value)         || S.dirMapLonRes;
+  S.dirMapLatRes       = parseInt($('dirmap-lat-res')?.value)         || S.dirMapLatRes;
+
   /* ── Update keyword preview elements ── */
   const setKw = (id, v) => { const el = $(id); if (el) el.textContent = v; };
   setKw('kw-cutoff-emin', S.cutoffEmin.toFixed(1));
@@ -581,6 +588,26 @@ function cutoffParamChange() {
   setKw('kw-cutoff-maxp', S.cutoffMaxParticles);
   setKw('kw-cutoff-nen',  S.cutoffNenergy);
   setKw('kw-cutoff-trajt', S.cutoffMaxTrajTime);
+  setKw('kw-cutoff-samp', S.cutoffSampling);
+
+  /* ── Update directional map keyword previews ── */
+  const showDirKw = S.directionalMap && (S.outputMode === 'POINTS' || S.outputMode === 'TRAJECTORY');
+  const kwDirRow    = $('kw-dirmap-row');
+  const kwDirLonRow = $('kw-dirmap-lon-row');
+  const kwDirLatRow = $('kw-dirmap-lat-row');
+  if (kwDirRow)    kwDirRow.style.display    = showDirKw ? '' : 'none';
+  if (kwDirLonRow) kwDirLonRow.style.display = showDirKw ? '' : 'none';
+  if (kwDirLatRow) kwDirLatRow.style.display = showDirKw ? '' : 'none';
+  if (showDirKw) {
+    setKw('kw-dirmap',     'T');
+    setKw('kw-dirmap-lon', S.dirMapLonRes);
+    setKw('kw-dirmap-lat', S.dirMapLatRes);
+  }
+
+  /* ── Update directional map sky-map size label ── */
+  const nLon = Math.floor(360 / S.dirMapLonRes);
+  const nLat = Math.floor(90  / S.dirMapLatRes);
+  setKw('dirmap-size-label', `${nLon} × ${nLat} = ${nLon * nLat} directions`);
 
   /* ── Update visual labels ── */
   setKw('cutoff-range-label',     `${S.cutoffEmin.toFixed(1)} – ${S.cutoffEmax.toFixed(1)} MeV/n`);
@@ -594,6 +621,93 @@ function cutoffParamChange() {
 
   /* ── Refresh sidebar ── */
   updateSidebar();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   CUTOFF SAMPLING MODE  (VERTICAL / ISOTROPIC)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * setCutoffSampling — toggle between vertical and isotropic cutoff sampling.
+ *
+ * VERTICAL:  inject test particles along the local radial (vertical)
+ *            direction only — yields the standard "vertical cutoff rigidity".
+ * ISOTROPIC: inject test particles isotropically over the upper hemisphere
+ *            — yields the "effective" (omnidirectional) cutoff rigidity.
+ *
+ * @param {'VERTICAL'|'ISOTROPIC'} mode — cutoff sampling mode
+ */
+function setCutoffSampling(mode) {
+  S.cutoffSampling = mode;
+
+  /* ── Toggle button visual state ── */
+  const vertBtn = $('cutoff-samp-vert');
+  const isoBtn  = $('cutoff-samp-iso');
+  if (vertBtn) vertBtn.classList.toggle('on', mode === 'VERTICAL');
+  if (isoBtn)  isoBtn.classList.toggle('on',  mode === 'ISOTROPIC');
+
+  /* ── Refresh keyword preview and sidebar ── */
+  cutoffParamChange();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   DIRECTIONAL CUTOFF RIGIDITY MAP
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * setDirectionalMap — toggle the directional cutoff rigidity map option.
+ *
+ * When enabled, AMPS scans a longitude × latitude grid of arrival
+ * directions at each observation point to produce a full sky-map
+ * of directional cutoff rigidity.  Only available for POINTS and
+ * TRAJECTORY output modes.
+ *
+ * @param {boolean} on — whether to enable the directional map
+ */
+function setDirectionalMap(on) {
+  S.directionalMap = !!on;
+
+  /* ── Show/hide resolution inputs ── */
+  const resDiv = $('dirmap-resolution');
+  if (resDiv) resDiv.style.display = on ? '' : 'none';
+
+  /* ── Refresh keyword preview and sidebar ── */
+  cutoffParamChange();
+}
+
+
+/**
+ * updateDirMapVisibility — show or hide the directional map section
+ * based on the current output mode.
+ *
+ * The directional map option is only meaningful when the output mode
+ * is POINTS or TRAJECTORY (each point gets its own directional sky-map).
+ * For SHELLS mode, the concept does not apply (shells are already
+ * spatially resolved; directional maps would be redundant).
+ *
+ * Called from:
+ *   - setOutputMode() in js/07-spectrum-output.js
+ *   - init() boot sequence
+ *   - cutoffParamChange() indirectly via updateSidebar
+ */
+function updateDirMapVisibility() {
+  const section   = $('dirmap-section');
+  const eligible  = S.calcQuantity === 'CUTOFF_RIGIDITY' &&
+                    (S.outputMode === 'POINTS' || S.outputMode === 'TRAJECTORY');
+  if (section) section.style.display = eligible ? '' : 'none';
+
+  /* If output mode changed to SHELLS while dirmap was on, disable it */
+  if (!eligible && S.directionalMap) {
+    S.directionalMap = false;
+    const cb = $('cutoff-dirmap');
+    if (cb) cb.checked = false;
+    const resDiv = $('dirmap-resolution');
+    if (resDiv) resDiv.style.display = 'none';
+  }
+
+  cutoffParamChange();
 }
 
 

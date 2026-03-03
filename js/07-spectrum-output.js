@@ -308,6 +308,9 @@ function setMode(m, card) {
   });
 
   updateSidebar();
+
+  /* Update directional map availability (depends on output mode) */
+  if (typeof updateDirMapVisibility === 'function') updateDirMapVisibility();
 }
 
 /**
