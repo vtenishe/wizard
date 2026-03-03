@@ -543,9 +543,10 @@ function finalSubmit(){
  *  global `set()` in 01-state.js, but adds a 'sb-v' class prefix
  *  for sidebar-specific CSS styling (green/orange/red badges).
  *
- *  Progress bar: the bar fill is (done steps / 10) × 100%.
- *  There are 10 completable steps (1–10); step 11 is Review and is
- *  not itself "completable" — it's the terminal state.
+ *  Progress bar: the bar fill is (done steps / completableSteps()) × 100%.
+ *  completableSteps() returns the number of non-review entries in
+ *  WIZARD_STEPS (defined in js/02-wizard.js).  The review step is
+ *  the terminal state and is not itself "completable".
  * ──────────────────────────────────────────────────────────────────── */
 function updateSidebar(){
   const set=(id,v,cls)=>{ const e=$(id); if(e){e.textContent=v;if(cls)e.className='sb-v '+cls;} };
@@ -617,10 +618,12 @@ function updateSidebar(){
   set('sb-output-mode', S.outputMode.replace('_',' '),'g');
 
   /* ── Progress bar ──
-   *  Denominator is 10: steps 1–10 are completable; step 11 (Review)
-   *  is the terminal state and is not included in the progress count.
-   *  (Changed from 9 to 10 when Step 2 "Calc Mode" was inserted.) */
-  const pct=Math.round((S.done.size/10)*100);
+   *  Denominator is completableSteps() — the number of non-review
+   *  steps in WIZARD_STEPS.  The review step is the destination,
+   *  not a completable task, so it's excluded from the count.
+   *  completableSteps() is defined in js/02-wizard.js. */
+  const denom = (typeof completableSteps === 'function') ? completableSteps() : 9;
+  const pct=Math.round((S.done.size/denom)*100);
   const pf=$('progress-fill'); if(pf) pf.style.width=pct+'%';
   const pp=$('progress-pct'); if(pp) pp.textContent=pct+'%';
 }

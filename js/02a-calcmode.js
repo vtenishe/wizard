@@ -434,28 +434,32 @@ function applyFieldMethodConstraints() {
   if (efOverlay) efOverlay.style.display = isGridless ? '' : 'none';
 
   /* ── 3. Update the E-field wizard step indicator ─────────────────
-   *  The wizard strip is an ordered list of .wz-step elements.
-   *  Step 6 (E-Field) is the 6th element (0-indexed: [5]).
+   *  Find the E-Field step dynamically from WIZARD_STEPS rather than
+   *  hardcoding an index.  This keeps working if steps are added,
+   *  removed, or reordered in the WIZARD_STEPS config array.
+   *
    *  In gridless mode we add .step-disabled CSS class and a title
    *  tooltip.  The actual step-skip during navigation is handled
-   *  by goStep() in js/02-wizard.js.
+   *  by shouldSkipStep() in js/02-wizard.js.
    *
-   *  IMPORTANT: we do NOT set inline style.opacity here — all
-   *  visual treatment is CSS-only via .step-disabled (01-tokens.css).
-   *
-   *  We do NOT add step 6 to S.done.  The .step-disabled CSS class
-   *  provides its own distinct "N/A" visual (dim text + strikethrough
-   *  + dashed gray underline) that is separate from both the "done"
-   *  (green) and "unvisited" (default gray) states.  This makes the
-   *  skipped step clearly distinguishable from steps the user has
-   *  actually configured.
+   *  We do NOT add the E-field step to S.done.  The .step-disabled
+   *  CSS class provides its own distinct "N/A" visual (dim text +
+   *  strikethrough + dashed gray underline) that is separate from
+   *  both the "done" (green) and "unvisited" (default gray) states.
    *
    *  When switching back to GRID_3D, we remove .step-disabled so
-   *  step 6 reverts to its normal unvisited state and the user is
-   *  prompted to configure E-field. */
-  const wzSteps = document.querySelectorAll('.wz-step');
-  if (wzSteps.length >= 6) {
-    const efStep = wzSteps[5];   // 0-indexed; step 6 = index 5
+   *  the step reverts to its normal unvisited state. */
+  const wzSteps = document.querySelectorAll('#wizard-strip .wz-step');
+  /* Find the index of the E-Field step (panel-6) in WIZARD_STEPS.
+   * If WIZARD_STEPS exists (defined in 02-wizard.js), use it;
+   * otherwise fall back to index 5 for backwards compatibility. */
+  let efIdx = 5;   // fallback: 0-based index for original step 6
+  if (typeof WIZARD_STEPS !== 'undefined') {
+    const found = WIZARD_STEPS.findIndex(s => s.panel === 'panel-6');
+    if (found >= 0) efIdx = found;
+  }
+  if (wzSteps.length > efIdx) {
+    const efStep = wzSteps[efIdx];
     if (isGridless) {
       efStep.classList.add('step-disabled');
       efStep.title = 'Electric field is excluded in gridless mode';

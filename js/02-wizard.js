@@ -1,163 +1,385 @@
 /*
 =====================================================================
 FILE: js/02-wizard.js
-INTENT:
-  JavaScript logic for the AMPS web wizard (static site). This module
-  implements a focused part of the UI: state updates, model selection,
-  preview rendering, or navigation.
+PURPOSE:
+  Data-driven wizard navigation for the AMPS CCMC Submission Interface.
 
-METHODS / DESIGN:
-  - Reads/writes the shared state object `S` (defined in js/01-state.js).
-  - Uses direct DOM manipulation (no framework) for portability.
-  - Functions are intentionally small and side-effectful: they update `S`
-    and then update the DOM so the UI always reflects the current state.
+  The wizard step bar, panel visibility, Next/Prev navigation, and
+  progress tracking are ALL driven by a single configuration array
+  called WIZARD_STEPS (defined below).  To add, remove, or reorder
+  steps you only need to edit that array — the rest of the code
+  adapts automatically.  See README.md § "Adding / Removing Wizard
+  Steps" for a complete walkthrough.
 
-IMPLEMENTATION NOTES:
-  - Prefer pure helpers for formatting and mapping, but keep UI updates
-    local so it’s clear which elements are affected.
-  - Avoid introducing new global names unless necessary; when you do,
-    document them here and in-line.
-  - Keep behavior consistent between modular (index.html + js/*.js) and
-    standalone (AMPS_Interface.html) entrypoints.
+ARCHITECTURE:
+  ┌─────────────────────────────────────────────────────────────┐
+  │  WIZARD_STEPS  (config array — edit this to change steps)   │
+  │  ┌─────────┬───────────┬───────────────┬──────────────────┐ │
+  │  │  panel   │  label    │  skipWhen     │  isReview        │ │
+  │  │ 'panel-1'│'Run Info' │  (optional)   │  false (default) │ │
+  │  │ 'panel-6'│'E-Field'  │  fn → bool    │  false           │ │
+  │  │ 'panel-11│'Review'   │  —            │  true            │ │
+  │  └─────────┴───────────┴───────────────┴──────────────────┘ │
+  │                          │                                   │
+  │              buildWizardStrip() reads array,                 │
+  │              generates <div class="wz-step"> elements        │
+  │                          │                                   │
+  │              goStep(n) uses array index (1-based)            │
+  │              to show/hide panels and update strip             │
+  └─────────────────────────────────────────────────────────────┘
 
-LAST UPDATED: 2026-02-21
+  Step numbers shown in the UI are 1-based indices into WIZARD_STEPS.
+  Panel HTML elements keep their original ids (panel-1 … panel-11),
+  so existing CSS and JS that reference those ids still work.
+
+PUBLIC API (called from HTML onclick / keyboard handlers):
+  buildWizardStrip() — generate wizard step bar from WIZARD_STEPS
+  goStep(n)          — navigate to wizard step n (1-based index)
+  nextStep()         — advance one step (skips conditional steps)
+  prevStep()         — go back one step (skips conditional steps)
+  goToReview()       — jump to the review/submit step
+  wizClick(n)        — step bar click handler (delegates to goStep)
+  toggleSection(id)  — collapse/expand an accordion section card
+  stepCount()        — total number of steps in WIZARD_STEPS
+  completableSteps() — number of non-review steps (for progress bar)
+
+DEPENDS ON: 01-state.js (S, $, updateSidebar, buildReview)
+LAST UPDATED: 2026-03-03
 =====================================================================
 */
-/* =============================================================================
-   FILE:    js/02-wizard.js
-   PROJECT: AMPS CCMC Submission Interface  v3
-   PURPOSE: Wizard navigation — step transitions, DOM panel visibility,
-            section accordion collapse/expand, and step-indicator strip updates.
 
-   PUBLIC API (called from HTML onclick / keyboard handlers)
-     goStep(n)        — navigate to wizard step n (1–11)
-     nextStep()       — advance one step
-     prevStep()       — go back one step
-     goToReview()     — jump directly to step 11 (review & submit)
-     toggleSection(id)— collapse or expand an accordion section card
 
-   BEHAVIOUR
-     · When navigating to step n:
-         – S.done marks the current step as completed
-         – The .panel-{n} element becomes visible; all others hidden
-         – Wizard step indicators in .wz-step update: done / active / default
-         – Prev button disabled on step 1; Next button hidden on step 11
-         – Page scrolls to top (smooth)
-         – Sidebar summary refreshes
-         – Review step (11) triggers buildReview()
-     · Step 6 (E-Field) is automatically skipped when S.fieldMethod
-       is 'GRIDLESS' (set in Step 2).  See goStep() for details.
-     · toggleSection flips the 'closed' CSS class which hides .sect-body
-       and rotates the chevron icon via CSS transform.
+/* ═══════════════════════════════════════════════════════════════════
+   WIZARD_STEPS — the single source of truth for wizard navigation.
+   ═══════════════════════════════════════════════════════════════════
 
-   DEPENDS ON: 01-state.js (S, $, updateSidebar, buildReview)
-=============================================================================*/
+   Each entry is an object with these fields:
+
+     panel    (string, required)
+              The id of the HTML <div class="step-panel"> that this
+              step controls.  Example: 'panel-1', 'panel-9'.
+              The panel div must already exist in index.html.
+
+     label    (string, required)
+              The text shown in the wizard step bar.  Keep it short
+              (1–2 words) so it fits the horizontal strip.
+
+     skipWhen (function → boolean, optional)
+              If present, this function is called by nextStep() and
+              prevStep().  When it returns true the step is silently
+              skipped during sequential navigation (Next / Prev
+              buttons).  The step is still reachable by clicking its
+              label in the strip (wizClick).
+
+              Example: The E-Field step is physically meaningless
+              in gridless mode, so its skipWhen returns true when
+              S.fieldMethod === 'GRIDLESS'.
+
+     isReview (boolean, optional, default false)
+              Marks this step as the terminal "Review & Submit" step.
+              When navigating to a review step, goStep() calls
+              buildReview() to regenerate the AMPS_PARAM.in preview.
+              The review step is excluded from the progress bar
+              denominator (it's the destination, not a completable
+              task).  There should be exactly one review step, and
+              it should be the LAST entry in the array.
+
+   ─────────────────────────────────────────────────────────────────
+   HOW TO ADD A NEW STEP:
+     1. Create its <div id="panel-XX" class="step-panel"> in
+        index.html (anywhere inside <div class="main-col">).
+     2. Add an entry to WIZARD_STEPS at the desired position.
+     3. That's it — the strip, numbering, navigation, and progress
+        bar all update automatically.
+   See README.md for the full checklist.
+   ───────────────────────────────────────────────────────────────── */
+const WIZARD_STEPS = [
+
+  /* 1 */ { panel: 'panel-1',  label: 'Run Info' },
+  /* 2 */ { panel: 'panel-2',  label: 'Calc Mode' },
+  /* 3 */ { panel: 'panel-3',  label: 'Particle' },
+  /* 4 */ { panel: 'panel-4',  label: 'Bkg B-Field' },
+  /* 5 */ { panel: 'panel-5',  label: 'Boundary' },
+
+  /* 6 — E-Field: skipped in sequential navigation when gridless,
+         because the electric field is physically excluded from the
+         simulation.  Still reachable by direct click on the strip
+         (shows a "gridless overlay" explaining why). */
+  { panel: 'panel-6',  label: 'E-Field',
+    skipWhen: () => S.fieldMethod === 'GRIDLESS' },
+
+  /* 7 */ { panel: 'panel-7',  label: 'Temporal' },
+  /* 8 */ { panel: 'panel-8',  label: 'Spectrum' },
+  /* 9 */ { panel: 'panel-9',  label: 'Output Domain' },
+
+  /* Output Options (panel-10) has been removed from the wizard bar.
+     The panel-10 HTML still exists in index.html but is not shown
+     in the step strip and is not reachable via navigation.
+     To re-enable it, uncomment the line below:
+  */
+  // { panel: 'panel-10', label: 'Output Options' },
+
+  /* Review & Submit — terminal step.  Triggers buildReview()
+     to regenerate the AMPS_PARAM.in preview.  Excluded from the
+     progress bar denominator. */
+  { panel: 'panel-11', label: 'Review & Submit', isReview: true },
+];
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   HELPER FUNCTIONS — derived from WIZARD_STEPS
+   ═══════════════════════════════════════════════════════════════════ */
 
 /**
- * Navigate the wizard to step n.
- * Marks the current step as done, activates panel n,
- * updates the step-indicator strip, and scrolls to top.
- *
- * GRIDLESS E-FIELD HANDLING (added 2026-02-21):
- *   When S.fieldMethod === 'GRIDLESS' (set in Step 2), the electric
- *   field is physically excluded from the simulation.  Step 6 (E-Field)
- *   is still navigable by direct click on the wizard strip — this
- *   shows the panel with a gridless-overlay message explaining why
- *   E-field is excluded and how to enable it (switch to GRID_3D).
- *
- *   However, the sequential Next/Prev buttons skip step 6 automatically
- *   so the user doesn't have to click through an empty step during
- *   the normal linear workflow.  This skip is implemented in
- *   nextStep() and prevStep(), NOT in goStep() itself.
- *
- * @param {number} n - target step (1–11)
+ * stepCount — total number of wizard steps.
+ * The UI shows step numbers 1 … stepCount().
  */
-function goStep(n) {
-  if (n < 1 || n > 11) return;
+function stepCount() { return WIZARD_STEPS.length; }
 
-  S.done.add(S.step);   // mark current step completed before leaving
+/**
+ * completableSteps — number of steps that count toward progress.
+ * Excludes review steps (isReview: true) because the review step
+ * is the destination, not a completable task.  The progress bar
+ * uses this as its denominator.
+ */
+function completableSteps() {
+  return WIZARD_STEPS.filter(s => !s.isReview).length;
+}
+
+/**
+ * panelIdForStep — return the HTML panel id for step n (1-based).
+ * Example: panelIdForStep(1) → 'panel-1'
+ */
+function panelIdForStep(n) {
+  const entry = WIZARD_STEPS[n - 1];
+  return entry ? entry.panel : null;
+}
+
+/**
+ * isReviewStep — true if step n is the review/submit step.
+ */
+function isReviewStep(n) {
+  const entry = WIZARD_STEPS[n - 1];
+  return entry ? !!entry.isReview : false;
+}
+
+/**
+ * shouldSkipStep — true if step n should be skipped in sequential
+ * navigation (Next/Prev buttons).  Always false for steps without
+ * a skipWhen function.
+ */
+function shouldSkipStep(n) {
+  const entry = WIZARD_STEPS[n - 1];
+  return entry && typeof entry.skipWhen === 'function' && entry.skipWhen();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   buildWizardStrip — generate the step bar HTML from WIZARD_STEPS.
+   ═══════════════════════════════════════════════════════════════════
+
+   Called once during initialisation (from js/09-init.js).
+
+   For each entry in WIZARD_STEPS, creates a clickable step element:
+     <div class="wz-step" role="button" tabindex="0"
+          onclick="wizClick(N)" onkeydown="…">
+       <div class="wz-num">N</div>
+       <span class="wz-label">Label</span>
+     </div>
+
+   The first step gets the 'active' class.  Step numbers in the UI
+   are sequential 1, 2, 3 … regardless of the underlying panel ids.
+   ═══════════════════════════════════════════════════════════════════ */
+function buildWizardStrip() {
+  const container = $('wizard-strip');
+  if (!container) return;
+
+  /* Clear any previous content (idempotent — safe to call twice) */
+  container.innerHTML = '';
+
+  WIZARD_STEPS.forEach((entry, idx) => {
+    /* idx is 0-based; step numbers shown to the user are 1-based */
+    const n = idx + 1;
+
+    /* Create the step element */
+    const div = document.createElement('div');
+    div.className = 'wz-step' + (n === 1 ? ' active' : '');
+    div.setAttribute('role', 'button');
+    div.setAttribute('tabindex', '0');
+
+    /* Click handler: navigate to this step */
+    div.onclick = () => wizClick(n);
+
+    /* Keyboard handler: Enter or Space triggers the same action */
+    div.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        wizClick(n);
+      }
+    };
+
+    /* Step number circle + label text */
+    div.innerHTML =
+      '<div class="wz-num">' + n + '</div>' +
+      '<span class="wz-label">' + entry.label + '</span>';
+
+    container.appendChild(div);
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   goStep — navigate the wizard to step n (1-based).
+   ═══════════════════════════════════════════════════════════════════
+
+   What it does:
+     1. Marks the current step as "done" (completed).
+     2. Updates S.step to n.
+     3. Shows the HTML panel for step n; hides all others.
+        (Iterates ALL step-panels in the DOM, not just those in
+        WIZARD_STEPS, so orphan panels like panel-10 stay hidden.)
+     4. Updates the step-indicator strip (done / active styling).
+     5. Manages Prev / Next / Submit button visibility.
+     6. Scrolls to top and refreshes the sidebar.
+     7. If n is the review step, calls buildReview().
+
+   @param {number} n — target step (1 … stepCount())
+   ═══════════════════════════════════════════════════════════════════ */
+function goStep(n) {
+  const N = stepCount();
+
+  /* Guard: ignore out-of-range step numbers */
+  if (n < 1 || n > N) return;
+
+  /* ── 1. Mark current step as completed before leaving ── */
+  S.done.add(S.step);
   S.step = n;
 
-  /* ── Show/hide step content panels ── */
-  for (let i = 1; i <= 11; i++) {
-    const panel = $(`panel-${i}`);
-    if (panel) panel.classList.toggle('active', i === n);
-  }
-
-  /* ── Update wizard step-indicator strip ── */
-  const steps = document.querySelectorAll('.wz-step');
-  steps.forEach((el, idx) => {
-    const stepNum = idx + 1;
-    el.classList.remove('done', 'active');
-    if (S.done.has(stepNum)) el.classList.add('done');
-    else if (stepNum === n) el.classList.add('active');
+  /* ── 2. Show/hide ALL step-panel elements in the DOM ──
+   *  We iterate every panel in the page, not just those listed
+   *  in WIZARD_STEPS.  This ensures orphaned panels (e.g. panel-10
+   *  after removing Output Options) stay hidden.  The active panel
+   *  is determined by looking up the panel id from WIZARD_STEPS. */
+  const activePanelId = panelIdForStep(n);
+  document.querySelectorAll('.step-panel').forEach(el => {
+    el.classList.toggle('active', el.id === activePanelId);
   });
 
-  /* ── Action bar buttons ── */
+  /* ── 3. Update wizard step-indicator strip ──
+   *  Each .wz-step element in the strip corresponds to one entry
+   *  in WIZARD_STEPS (same order, same count).  We set 'done' for
+   *  completed steps and 'active' for the current step. */
+  const stepEls = document.querySelectorAll('#wizard-strip .wz-step');
+  stepEls.forEach((el, idx) => {
+    const stepNum = idx + 1;
+    el.classList.remove('done', 'active');
+    if (S.done.has(stepNum))  el.classList.add('done');
+    else if (stepNum === n)   el.classList.add('active');
+  });
+
+  /* ── 4. Action bar buttons ──
+   *  - Prev is disabled on the first step.
+   *  - Next is hidden on the last step (review).
+   *  - Submit is shown only on the review step. */
   const btnPrev   = $('btn-prev');
   const btnNext   = $('btn-next');
   const btnSubmit = $('btn-submit');
-  if (btnPrev)   btnPrev.disabled                = (n === 1);
-  if (btnNext)   btnNext.style.display           = n < 11 ? 'inline-flex' : 'none';
-  if (btnSubmit) btnSubmit.style.display         = n === 11 ? 'inline-flex' : 'none';
+  if (btnPrev)   btnPrev.disabled          = (n === 1);
+  if (btnNext)   btnNext.style.display     = (n < N) ? 'inline-flex' : 'none';
+  if (btnSubmit) btnSubmit.style.display   = isReviewStep(n) ? 'inline-flex' : 'none';
 
-  /* ── Side effects ── */
+  /* ── 5. Side effects ── */
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateSidebar();
-  if (n === 11) buildReview();  // re-render the param-file preview
+
+  /* If this is the review step, regenerate the AMPS_PARAM.in preview */
+  if (isReviewStep(n) && typeof buildReview === 'function') {
+    buildReview();
+  }
 }
 
-/** Advance one wizard step.
- *  In gridless mode, skip step 6 (E-Field is excluded). */
+
+/* ═══════════════════════════════════════════════════════════════════
+   nextStep / prevStep — sequential navigation with skip logic.
+   ═══════════════════════════════════════════════════════════════════
+
+   These are called by the "Next Step →" and "← Previous" buttons.
+   They advance/retreat by one step, but automatically skip any step
+   whose skipWhen function returns true.
+
+   Example: In gridless mode, step 6 (E-Field) has
+     skipWhen: () => S.fieldMethod === 'GRIDLESS'
+   so pressing Next from step 5 jumps directly to step 7.
+
+   Safety: the while loop is bounded by stepCount() to prevent
+   infinite loops if ALL steps have skipWhen returning true (which
+   should never happen, but defensive coding is good).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** Advance one wizard step, skipping conditional steps. */
 function nextStep() {
+  const N = stepCount();
   let next = S.step + 1;
-  if (next === 6 && S.fieldMethod === 'GRIDLESS') next = 7;
-  goStep(next);
+
+  /* Skip steps whose skipWhen returns true */
+  while (next <= N && shouldSkipStep(next)) next++;
+
+  /* Navigate if still in range */
+  if (next <= N) goStep(next);
 }
 
-/** Go back one wizard step.
- *  In gridless mode, skip step 6 (E-Field is excluded). */
+/** Go back one wizard step, skipping conditional steps. */
 function prevStep() {
   let prev = S.step - 1;
-  if (prev === 6 && S.fieldMethod === 'GRIDLESS') prev = 5;
-  goStep(prev);
+
+  /* Skip steps whose skipWhen returns true */
+  while (prev >= 1 && shouldSkipStep(prev)) prev--;
+
+  /* Navigate if still in range */
+  if (prev >= 1) goStep(prev);
 }
 
-/** Jump directly to the Review & Submit step. */
-function goToReview() { goStep(11); }
 
-/* ── Wizard step label click handlers (generated in HTML) ── */
-/**
- * Jump to a step by clicking its label in the wizard strip.
- * Only allowed for already-completed steps or the next sequential step.
- * @param {number} n - target step number
- */
+/* ═══════════════════════════════════════════════════════════════════
+   goToReview — jump directly to the review/submit step.
+   ═══════════════════════════════════════════════════════════════════
+   Finds the last step marked isReview and navigates to it.
+   Called by the "Review & Submit" button in the action bar.
+   ═══════════════════════════════════════════════════════════════════ */
+function goToReview() {
+  /* Find the review step (search from end — it's usually last) */
+  for (let i = WIZARD_STEPS.length - 1; i >= 0; i--) {
+    if (WIZARD_STEPS[i].isReview) {
+      goStep(i + 1);    /* +1 because goStep uses 1-based index */
+      return;
+    }
+  }
+  /* Fallback: go to the last step */
+  goStep(stepCount());
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   wizClick — step bar click handler.
+   ═══════════════════════════════════════════════════════════════════
+   Called when the user clicks a step label in the wizard strip.
+   Allows random access to any step (no gating).
+
+   @param {number} n — step number (1-based index into WIZARD_STEPS)
+   ═══════════════════════════════════════════════════════════════════ */
 function wizClick(n) {
-  /*
-   * INDEX.HTML (modular build) originally enforced a linear “wizard order”
-   * by allowing navigation only to:
-   *   - the current step,
-   *   - the next step, or
-   *   - previously completed steps (tracked in S.done).
-   *
-   * However, the standalone version allows RANDOM ACCESS to any step, and
-   * that interaction is preferred for development + power-user workflows.
-   *
-   * We therefore remove gating here: any step label can jump directly to
-   * that step. The rest of the wizard still:
-   *   - marks the current step “done” when leaving (goStep adds S.step to S.done)
-   *   - updates step strip styling (done/active)
-   *   - rebuilds Review (step 10) on entry
-   */
   goStep(n);
 }
 
-/* ── Section accordion ──────────────────────────────────────────────── */
-/**
- * Toggle the collapsed/expanded state of a .sect accordion card.
- * Toggling the 'closed' CSS class hides .sect-body and rotates .chevron.
- * @param {string} id - element ID of the .sect container
- */
+
+/* ═══════════════════════════════════════════════════════════════════
+   toggleSection — collapse/expand a .sect accordion card.
+   ═══════════════════════════════════════════════════════════════════
+   Toggling the 'closed' CSS class hides .sect-body and rotates
+   the .chevron icon via CSS transform.
+
+   @param {string} id — element ID of the .sect container
+   ═══════════════════════════════════════════════════════════════════ */
 function toggleSection(id) {
   const el = $(id);
   if (el) el.classList.toggle('closed');

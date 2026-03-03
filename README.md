@@ -1,176 +1,240 @@
-# AMPS Geospace Cutoff/Flux Wizard (Static Website)
+# AMPS v2025 — CCMC Runs-on-Request Web Wizard
 
-This repository contains a **static, client-side** wizard used to configure runs for
-**geomagnetic cutoff rigidity** and **SEP/GCR flux** calculations in geospace, and to
-export a plain-text run configuration file (`AMPS_PARAM.in`) suitable for downstream tools.
-
-The site is designed to be **easy to run locally** (no build step required) and to be
-robust during development via clean separation of concerns (HTML layout + CSS tokens +
-small JS modules).
-
----
-
-## Quick start
-
-### Option A: open locally (recommended: serve with a tiny HTTP server)
-Some browsers enforce stricter policies when opening files via `file://` URLs.
-To avoid surprises, serve the directory:
-
-```bash
-cd <repo_root>
-python -m http.server 8000
-```
-
-Then open:
-
-- `http://localhost:8000/index.html`
-
-### Option B: open directly
-You can usually double-click `index.html`, but if any browser security policies block
-resources, use Option A instead.
-
----
-
-## What the wizard configures
-
-### A) What to compute
-You can choose one or both:
-
-- **Cutoff Rigidity**
-- **Flux (SEP/GCR)**
-
-### B) Field evaluation mode
-Two execution modes are supported at the configuration level:
-
-1) **Gridless**  
-   - Background **magnetic field** is evaluated directly from **empirical models**
-     (e.g., Tsyganenko family + internal field such as IGRF) at the particle location.
-   - **Electric field is disabled** by design (typical for many cutoff workflows).
-
-2) **3-D Grid (interpolated)**  
-   - A 3-D field grid is used for interpolation to particle location.
-   - Intended for **MHD fields** and/or **time-dependent E-fields**.
-
-> Note: The website enforces basic consistency. For example, Gridless mode disables
-> electric-field inputs and disallows MHD background sources that require gridded fields.
-
-### C) Cutoff-rigidity scanning controls
-When **Cutoff Rigidity** is selected, the UI exposes:
-
-- **Energy min/max** for the particle scan (MeV)
-- **Maximum particles per point** (hard cap for injected trajectories per point)
-
-### D) Output domain specification
-The site supports output domains as:
-
-- **Individual points** (POINTS)
-- **Trajectories** (file-based)
-- **Spherical shells** (SHELLS)
-
-For spherical shells, the **angular resolution** options include:
-`1×1`, `2×2`, `5×5`, `10×10`, `15×15`, `20×20` degrees.
-
-The Review/Export step writes the domain parameters into the generated `AMPS_PARAM.in`.
-
----
-
-## Documentation (Docs menu)
-
-The site ships **paper-style documentation** as PDF files in `doc/`, with LaTeX sources
-in `doc/latex/`. The top-bar **Docs** menu links directly to the PDFs.
-
-Current docs include:
-
-- `doc/overview_calculation_pipeline.pdf`
-- `doc/cutoff_rigidity.pdf`
-- `doc/flux_and_spectrum_definitions.pdf`
-- `doc/goes18_19_spectrum_reconstruction.pdf`
-- `doc/electric_field_models.pdf`
-- `doc/magnetic_field_models.pdf`
-- `doc/temporal_setup.pdf`
-- `doc/output_domains_and_trajectories.pdf`
-- `doc/rigidity_cutoff_methods_survey.pdf`
-
-### Rebuilding the PDFs
-From the repo root:
-
-```bash
-cd doc/latex
-pdflatex rigidity_cutoff_methods_survey.tex
-# repeat for other .tex files, or write a small loop
-```
-
-> `doc/view.html` is a small optional PDF viewer wrapper. Docs links currently point
-> directly to PDFs; whether they open inside the browser or in an external viewer is
-> controlled by the browser/user settings.
-
----
-
-## Repository layout
+## Project Structure
 
 ```
-index.html                  Main entry point (modular site)
-panel_boundary.html         Reference panel markup (may not be dynamically loaded)
-panel_temporal.html         Reference panel markup (may not be dynamically loaded)
-
+index.html              Main page — all step panels, topbar, sidebar
 css/
-  01-tokens.css             Design tokens (colors, sizes)
-  02-layout.css             Layout primitives (grid/topbar/sections)
-  03-components.css         Buttons/cards/inputs styling
-  04-diagrams.css           Diagram/SVG styling
-
+  01-tokens.css         Design tokens (colours, fonts, spacing)
+  02-layout.css         Page grid, topbar, header, wizard strip
+  03-components.css     Cards, fields, toggles, badges, KW strip
+  04-diagrams.css       SVG/canvas diagram styles
 js/
-  01-state.js               Global state object + helpers
-  02-wizard.js              Step navigation + section expand/collapse logic
-  03-bgfield.js             Particle/background field selection logic
-  04-boundary.js            Boundary selection + diagram support
-  05-efield.js              Electric-field model UI and constraints
-  06-temporal.js            Steady-state vs time-varying (time series) UI logic
-  07-spectrum-output.js     Spectrum model UI + output-domain UI helpers
-  08-review.js              Builds `AMPS_PARAM.in` preview + sidebar summary
-  09-init.js                Initialization, event wiring, first render
-  10-help.js                Help menu (Physics Models / Input File / Parameters)
-  11-docs.js                Docs menu controller (PDF links)
-
-doc/
-  *.pdf                     Compiled documentation PDFs
-  latex/*.tex               LaTeX sources for the PDFs
+  01-state.js           Shared state object S and utility functions
+  02-wizard.js          ★ Wizard navigation — WIZARD_STEPS config lives here
+  02a-calcmode.js       Calculation mode constraints
+  03-bgfield.js         Background B-field model handlers
+  04-boundary.js        BOX / Shue boundary logic
+  05-efield.js          Electric field model handlers
+  06-temporal.js        Temporal variability options
+  07-spectrum-output.js Particle spectrum + output domain
+  08-review.js          AMPS_PARAM.in builder, sidebar, validation
+  09-init.js            Initialisation sequence (runs on DOMContentLoaded)
+  10-help.js            Help modal
+  11-docs.js            Documentation panel
+  12-load.js            AMPS_PARAM.in file parser / loader
+img/
+  AMPS_logo.png         Logo (transparent background)
 ```
 
----
-
-## Output: `AMPS_PARAM.in`
-
-The **Review** step generates a single text output intended to be copy/pasted or saved
-as `AMPS_PARAM.in`. It includes blocks for:
-
-- Run info and selected calculations
-- Particle selection
-- Background magnetic field model selection
-- Boundary selection
-- Electric field selection (disabled in Gridless mode)
-- Temporal setup (steady-state or time series)
-- Spectrum model selection and parameters
-- Output domain (POINTS / TRAJECTORY / SHELLS)
-- Output options
 
 ---
 
-## Development notes
+## Adding / Removing Wizard Steps
 
-### Style and maintainability
-- The codebase is intentionally **vanilla HTML/CSS/JS** for easy portability.
-- Comments are considered part of the interface contract:
-  **do not remove existing comments**; add new comments close to the logic they explain.
+The wizard step bar is **data-driven**.  All step definitions live in
+a single JavaScript array called `WIZARD_STEPS` at the top of
+`js/02-wizard.js`.  The step bar HTML, step numbering, Next/Prev
+navigation, and the progress bar all derive from this array
+automatically — there are no hardcoded step counts anywhere.
 
-### Recommended automated testing (future)
-For robust regression protection during development, consider:
-- **Playwright** (E2E) smoke tests: step navigation, spectrum preview, export output
-- **Vitest/Jest** for unit tests of param serialization and spectrum math
-- **html-validate** to catch malformed HTML that can break later steps
+
+### How WIZARD_STEPS works
+
+```js
+// js/02-wizard.js  (abbreviated)
+
+const WIZARD_STEPS = [
+  { panel: 'panel-1',  label: 'Run Info' },
+  { panel: 'panel-2',  label: 'Calc Mode' },
+  { panel: 'panel-3',  label: 'Particle' },
+  { panel: 'panel-4',  label: 'Bkg B-Field' },
+  { panel: 'panel-5',  label: 'Boundary' },
+  { panel: 'panel-6',  label: 'E-Field',
+    skipWhen: () => S.fieldMethod === 'GRIDLESS' },
+  { panel: 'panel-7',  label: 'Temporal' },
+  { panel: 'panel-8',  label: 'Spectrum' },
+  { panel: 'panel-9',  label: 'Output Domain' },
+  // { panel: 'panel-10', label: 'Output Options' },   ← disabled
+  { panel: 'panel-11', label: 'Review & Submit', isReview: true },
+];
+```
+
+Each entry has:
+
+| Field      | Required? | Description |
+|------------|-----------|-------------|
+| `panel`    | yes       | The `id` of the HTML `<div class="step-panel">` that this step shows/hides. Must already exist in `index.html`. |
+| `label`    | yes       | Short text shown in the wizard strip (1–2 words). |
+| `skipWhen` | no        | A function that returns `true` when this step should be skipped by the Next/Prev buttons. The step is still reachable by clicking its label in the strip. |
+| `isReview` | no        | Set to `true` for the terminal "Review & Submit" step. Triggers `buildReview()` on entry. Excluded from the progress bar denominator. Should be the last entry. |
+
+Step numbers in the UI (the circled digits 1, 2, 3 …) are the
+**array indices + 1**, assigned automatically.  There is no need to
+manually number anything.
+
+
+### Step-by-step: adding a new wizard step
+
+Suppose you want to add a "Diagnostics" step between Output Domain
+and Review.
+
+#### 1. Create the panel HTML in `index.html`
+
+Add a new `<div id="panel-XX" class="step-panel">` anywhere inside
+`<div class="main-col">`.  Pick any unused panel id (e.g. `panel-12`):
+
+```html
+<div id="panel-12" class="step-panel">
+  <div class="sect" id="s-diagnostics">
+    <div class="sect-hd" onclick="toggleSection('s-diagnostics')">
+      <div class="sect-icon" style="background:rgba(139,111,247,.15)">🔧</div>
+      <div>
+        <div class="sect-title">Diagnostics</div>
+        <div class="sect-sub">Optional diagnostic outputs</div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="sect-body">
+      <!-- your controls here -->
+    </div>
+  </div>
+</div>
+```
+
+#### 2. Add the entry to WIZARD_STEPS in `js/02-wizard.js`
+
+Insert it at the desired position in the array:
+
+```js
+const WIZARD_STEPS = [
+  { panel: 'panel-1',  label: 'Run Info' },
+  { panel: 'panel-2',  label: 'Calc Mode' },
+  { panel: 'panel-3',  label: 'Particle' },
+  { panel: 'panel-4',  label: 'Bkg B-Field' },
+  { panel: 'panel-5',  label: 'Boundary' },
+  { panel: 'panel-6',  label: 'E-Field',
+    skipWhen: () => S.fieldMethod === 'GRIDLESS' },
+  { panel: 'panel-7',  label: 'Temporal' },
+  { panel: 'panel-8',  label: 'Spectrum' },
+  { panel: 'panel-9',  label: 'Output Domain' },
+  { panel: 'panel-12', label: 'Diagnostics' },         // ← NEW
+  { panel: 'panel-11', label: 'Review & Submit', isReview: true },
+];
+```
+
+**That's it.**  The step bar, numbering, Next/Prev navigation, and
+progress bar all update automatically.  "Diagnostics" will appear as
+step 10, and "Review & Submit" will become step 11.
+
+#### 3. (Optional) Add state properties and param output
+
+If the new step has configurable parameters:
+
+- Add default values to the state object `S` in `js/01-state.js`.
+- Add param-file output lines in the `buildReview()` template
+  literal in `js/08-review.js`.
+- Add keyword-map entries in `js/12-load.js` so the loader can
+  parse them back.
+- Add sidebar display in `updateSidebar()` in `js/08-review.js`.
+- Add validation checks in the `checks` array in `buildReview()`.
+
+#### 4. (Optional) Make the step conditional
+
+If the step should be skipped in certain modes, add a `skipWhen`:
+
+```js
+{ panel: 'panel-12', label: 'Diagnostics',
+  skipWhen: () => S.calcQuantity === 'CUTOFF_RIGIDITY' },
+```
+
+When `skipWhen` returns `true`, the Next/Prev buttons will jump over
+this step.  The user can still reach it by clicking its label.
+
+
+### Removing a step
+
+To remove a step from the wizard bar, simply **comment out or delete**
+its entry from WIZARD_STEPS.  The panel HTML can stay in `index.html`
+(it will just never be shown) or you can delete it.
+
+Example — Output Options was removed like this:
+
+```js
+  // { panel: 'panel-10', label: 'Output Options' },
+```
+
+No other code changes are needed.
+
+
+### Re-enabling Output Options
+
+To bring back the Output Options step, uncomment the line in
+WIZARD_STEPS:
+
+```js
+  { panel: 'panel-10', label: 'Output Options' },
+```
+
+It will appear in the strip at whatever position you place it.
+
 
 ---
 
-## License
-This repository is a UI/configuration front-end. Any embedded scientific/model content
-should be attributed in the relevant PDFs under `doc/`.
+## How the wizard navigation works internally
+
+### Initialisation flow (js/09-init.js)
+
+```
+DOMContentLoaded
+  → init()
+    → … (state, handlers, constraints)
+    → buildWizardStrip()     ← generates step bar HTML
+    → goStep(1)              ← activates step 1
+```
+
+`buildWizardStrip()` reads WIZARD_STEPS and creates one
+`<div class="wz-step">` per entry inside `<div id="wizard-strip">`.
+Step numbers are assigned as array index + 1.
+
+### Navigation functions
+
+| Function         | Called by                  | Behaviour |
+|------------------|----------------------------|-----------|
+| `goStep(n)`      | All navigation paths       | Shows panel for step n, updates strip styling, manages Prev/Next/Submit buttons, calls `buildReview()` if review step |
+| `nextStep()`     | "Next Step →" button       | Advances by 1, skipping steps whose `skipWhen` returns true |
+| `prevStep()`     | "← Previous" button        | Retreats by 1, skipping steps whose `skipWhen` returns true |
+| `wizClick(n)`    | Clicking a step in the bar | Random access — calls `goStep(n)` directly |
+| `goToReview()`   | "Review & Submit" button   | Finds the step with `isReview: true` and navigates to it |
+
+### Progress bar
+
+The progress bar denominator is `completableSteps()`, which returns
+the count of WIZARD_STEPS entries where `isReview` is not true.
+This adapts automatically when steps are added or removed.
+
+```
+progress % = S.done.size / completableSteps() × 100
+```
+
+### Panel id decoupling
+
+Step numbers in the UI (1, 2, 3 …) are array indices, NOT panel ids.
+Panel ids (`panel-1`, `panel-11`, etc.) are stable HTML anchors that
+never change.  This means:
+
+- You can reorder steps without renaming panels.
+- You can have gaps in panel ids (e.g. no panel-10 in the strip).
+- You can add panel-12, panel-13, etc. without disrupting anything.
+
+
+---
+
+## Files modified for wizard data-driven refactor
+
+| File | Change |
+|------|--------|
+| `js/02-wizard.js` | Complete rewrite: WIZARD_STEPS config array, buildWizardStrip(), data-driven goStep/nextStep/prevStep/goToReview, helper functions |
+| `js/08-review.js` | Progress bar uses `completableSteps()` instead of hardcoded `10` |
+| `js/09-init.js` | Added `buildWizardStrip()` call before `goStep(1)` |
+| `index.html` | Replaced 11 hardcoded `<div class="wz-step">` elements with empty `<div id="wizard-strip">` container |

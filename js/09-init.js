@@ -113,19 +113,26 @@ function init() {
   /* ── 10. Sidebar summary ── */
   updateSidebar();
 
-  /* ── 10a. Apply calculation mode constraints (added 2026-02-21) ────
+  /* ── 10a. Build the wizard step bar from WIZARD_STEPS config ──
+   *  Must run BEFORE applyFieldMethodConstraints() and goStep(1)
+   *  so the step elements exist when those functions try to
+   *  add/remove CSS classes on them.
+   *  Defined in: js/02-wizard.js */
+  buildWizardStrip();
+
+  /* ── 10b. Apply calculation mode constraints (added 2026-02-21) ──
    *  The default field method is GRIDLESS (analytic Tsyganenko).
    *  applyFieldMethodConstraints() propagates the consequences:
    *    - MHD model cards (BATSRUS, GAMERA) in Step 4 are disabled.
    *    - E-field step indicator in the wizard strip is grayed out.
    *    - E-field overlay is shown inside the Step 6 panel.
    *    - S.eFieldCoro and S.eFieldConvModel are forced off.
-   *  This must run after updateSidebar() (so sidebar state is fresh)
+   *  Must run after buildWizardStrip() (so the strip elements exist)
    *  and before goStep(1) (so the wizard strip renders correctly).
    *  Defined in: js/02a-calcmode.js */
   applyFieldMethodConstraints();
 
-  /* ── 11. Wizard to step 1 ── */
+  /* ── 11. Navigate to step 1 ── */
   goStep(1);
 }
 
