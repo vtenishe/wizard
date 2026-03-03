@@ -71,6 +71,9 @@ LAST UPDATED: 2026-02-21
 .page-hd{background:linear-gradient(135deg,#0e1c30 0%,#070e1c 60%);border-bottom:1px solid var(--border);padding:20px 32px 18px;position:relative;overflow:hidden;}
 .page-hd::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(26,136,212,.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
 .page-hd-inner{position:relative;z-index:1;}
+.page-hd-row{display:flex;align-items:center;gap:24px;}
+.page-hd-text{flex:1;min-width:0;}
+.page-hd-logo{height:120px;flex-shrink:0;border-radius:8px;}
 .model-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(26,136,212,.1);border:1px solid rgba(26,136,212,.25);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;color:var(--accent-bright);letter-spacing:.3px;margin-bottom:10px;}
 .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-anim 2s infinite;flex-shrink:0;}
 @keyframes pulse-anim{0%,100%{opacity:1}50%{opacity:.25}}
