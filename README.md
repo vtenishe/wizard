@@ -238,3 +238,166 @@ never change.  This means:
 | `js/08-review.js` | Progress bar uses `completableSteps()` instead of hardcoded `10` |
 | `js/09-init.js` | Added `buildWizardStrip()` call before `goStep(1)` |
 | `index.html` | Replaced 11 hardcoded `<div class="wz-step">` elements with empty `<div id="wizard-strip">` container |
+
+
+---
+
+## Sidebar — Configuration Summary Panel
+
+The sidebar lives in `<div class="side-col">` (right column of the
+two-column layout).  It contains one or more **cards** (`sb-card`)
+that stay visible on-screen as the user navigates through wizard
+steps.  The sidebar is the persistent "dashboard" for the run.
+
+
+### Current sidebar structure
+
+```
+<div class="side-col">                   ← right column
+  <div class="sb-card">                  ← card 1: Configuration Summary
+    <div class="sb-title">…</div>       ← card heading
+    <div class="progress">…</div>       ← progress bar
+    <div class="sb-row">                 ← one row per tracked value
+      <div class="sb-k">Run name</div>  ← label (left)
+      <div class="sb-v" id="sb-…">…     ← value (right, coloured)
+      </div>
+    </div>
+    …more rows…
+  </div>
+  <!-- additional cards can be added here -->
+</div>
+```
+
+
+### How to add a new sidebar card
+
+#### Step 1 — Add the HTML
+
+Insert a new `<div class="sb-card">` inside `<div class="side-col">`
+in `index.html`.  Cards appear top-to-bottom in source order.
+
+```html
+<div class="sb-card">
+  <div class="sb-title">My New Section</div>
+
+  <div class="sb-row">
+    <div class="sb-k">Label A</div>
+    <div class="sb-v g" id="sb-my-label-a">default value</div>
+  </div>
+
+  <div class="sb-row">
+    <div class="sb-k">Label B</div>
+    <div class="sb-v" id="sb-my-label-b">—</div>
+  </div>
+</div>
+```
+
+#### Step 2 — Choose value colours
+
+The `<div class="sb-v">` element supports colour classes:
+
+| Class | Colour | Use for |
+|-------|--------|---------|
+| *(none)* | dim grey | default / unconfigured |
+| `g` | green | good / normal / configured |
+| `o` | orange | warning / pending / skipped |
+| `r` | red | error / out-of-range |
+
+Example: `<div class="sb-v o" id="sb-my-val">pending</div>`
+
+#### Step 3 — Update the value from JavaScript
+
+All sidebar updates happen in **`updateSidebar()`** in `js/08-review.js`.
+Use the existing `set()` helper (defined at the top of that function):
+
+```js
+// Inside updateSidebar() in js/08-review.js:
+
+/* ── My New Section ── */
+set('sb-my-label-a', S.myValueA || '(not set)', S.myValueA ? 'g' : 'o');
+set('sb-my-label-b', S.myValueB.toFixed(1) + ' km', 'g');
+```
+
+The `set(id, text, cssClass)` helper finds the element by id, sets
+its `textContent`, and optionally applies a colour class (`g`, `o`,
+`r`, or empty for default).
+
+#### Step 4 — (Optional) Add non-row content
+
+Cards can contain any HTML, not just key/value rows.  Examples:
+
+```html
+<!-- Mini progress bar inside a card -->
+<div class="sb-card">
+  <div class="sb-title">Upload Progress</div>
+  <div class="progress">
+    <div class="progress-fill" id="upload-fill" style="width:0%"></div>
+  </div>
+  <div style="font-size:10px;text-align:right;" id="upload-pct">0%</div>
+</div>
+
+<!-- Code preview inside a card -->
+<div class="sb-card">
+  <div class="sb-title">Quick Preview</div>
+  <pre id="sb-preview"
+       style="font-size:10px; max-height:200px; overflow:auto;
+              background:rgba(0,0,0,.3); padding:8px; border-radius:4px;">
+  </pre>
+</div>
+```
+
+#### Complete example — adding a "Run Estimates" card
+
+1. **HTML** (in `index.html`, inside `<div class="side-col">`):
+
+```html
+<div class="sb-card">
+  <div class="sb-title">Run Estimates</div>
+  <div class="sb-row">
+    <div class="sb-k">Queue time</div>
+    <div class="sb-v o" id="sb-est-queue">—</div>
+  </div>
+  <div class="sb-row">
+    <div class="sb-k">Compute cost</div>
+    <div class="sb-v" id="sb-est-sbu">—</div>
+  </div>
+  <div class="sb-row">
+    <div class="sb-k">Output size</div>
+    <div class="sb-v" id="sb-est-output">—</div>
+  </div>
+</div>
+```
+
+2. **JS** (in `updateSidebar()` in `js/08-review.js`):
+
+```js
+/* ── Run Estimates ── */
+set('sb-est-queue',  '4–8 h',     'o');
+set('sb-est-sbu',    '~5,000 SBU', '');
+set('sb-est-output', '~5.6 GB',    '');
+```
+
+3. **Done.** The card appears in the sidebar immediately.
+
+
+### Removing a sidebar card
+
+Delete or comment out the `<div class="sb-card">` block from the HTML.
+Remove or comment out the corresponding `set()` calls in
+`updateSidebar()`.  No other changes needed.
+
+
+### CSS reference
+
+| Selector | Description |
+|----------|-------------|
+| `.side-col` | Right column container (sticky positioning) |
+| `.sb-card` | Card wrapper (background, border, padding, border-radius) |
+| `.sb-title` | Card heading (uppercase, small, dim) |
+| `.sb-row` | Horizontal key/value row (flex, space-between) |
+| `.sb-k` | Row label (left side, dim text) |
+| `.sb-v` | Row value (right side); add `.g` / `.o` / `.r` for colour |
+| `.progress` | Progress bar track |
+| `.progress-fill` | Progress bar fill (set `width` via JS) |
+
+All styles are defined in `css/03-components.css`.
