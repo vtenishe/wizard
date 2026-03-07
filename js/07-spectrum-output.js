@@ -273,6 +273,12 @@ function drawSpec() {
   }
 
   ctx.stroke();
+
+  /* ── Trigger dashboard recompute (if auto-update enabled) ── */
+  if (S.vizAutoUpdate && typeof computePreview === 'function') {
+    clearTimeout(window._vizDebounce);
+    window._vizDebounce = setTimeout(computePreview, 250);
+  }
 }
 
 

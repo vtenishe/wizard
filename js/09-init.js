@@ -139,6 +139,12 @@ function init() {
 
   /* ── 11. Navigate to step 1 ── */
   goStep(1);
+
+  /* ── 12. Initialize Results / Dashboard (visualization layer) ──
+   *  Wire up the output file drop zone and prepare the dashboard.
+   *  These are no-ops if the dashboard modules aren't loaded. */
+  if (typeof initOutputDropzone === 'function') initOutputDropzone();
+  if (typeof initLonLatViewer   === 'function') initLonLatViewer();
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -388,6 +388,18 @@ const S = {
   outputFormat:  'NETCDF4',      // 'NETCDF4' | 'HDF5' | 'ASCII'
   outputCoords:  'GEO',          // 'GEO' | 'GSM' | 'SM'
   energyBins:    [1, 5, 10, 30, 100, 300, 1000],  // [MeV]
+
+  /* ── Visualization / Dashboard settings ──────────────────────────────
+     These properties control the Results dashboard (js/13-radcalc.js
+     through js/17-output-reader.js).  They do not affect AMPS_PARAM.in.
+   ──────────────────────────────────────────────────────────────────── */
+  vizShieldingSet: [0, 5, 10, 20],   // g/cm² Al-equivalent thicknesses
+  vizEgridN:       200,               // master energy grid points
+  vizEgridMin:     0.1,               // MeV
+  vizEgridMax:     1e4,               // MeV
+  vizAutoUpdate:   true,              // auto-recompute on spectrum change?
+  vizRcEstimate:   null,              // pre-run Rc estimate [GV] (filled by radbridge)
+  vizOutputLoaded: false,             // has an output file been loaded?
 };
 
 /* ── Convenience aliases ─────────────────────────────────────────────── */
