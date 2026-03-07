@@ -145,6 +145,7 @@ function init() {
    *  These are no-ops if the dashboard modules aren't loaded. */
   if (typeof initOutputDropzone === 'function') initOutputDropzone();
   if (typeof initLonLatViewer   === 'function') initLonLatViewer();
+  if (typeof initTrajectoryViewer === 'function') initTrajectoryViewer();
 }
 
 document.addEventListener('DOMContentLoaded', init);

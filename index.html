@@ -3887,6 +3887,65 @@ TEMPORAL_MODE   TIME_SERIES</pre>
       </div>
     </div>
 
+    <!-- PANEL 0b: Spacecraft Trajectory Viewer -->
+    <div class="dash-card dash-card-full" id="dash-traj-card">
+      <div class="dash-card-title">
+        <div class="dash-icon" style="background:rgba(45,212,160,0.12)">&#128752;</div>
+        Spacecraft Trajectory &amp; Associated Data
+      </div>
+
+      <div class="traj-top-row">
+        <div class="llmap-ctrl">
+          <label for="traj-file">Trajectory file (Tecplot format)</label>
+          <input id="traj-file" type="file" accept=".dat,.txt,.csv" />
+        </div>
+        <div class="traj-status-wrap">
+          <div class="llmap-status" id="traj-status">Load a trajectory file to visualize ground track and data products.</div>
+        </div>
+      </div>
+
+      <!-- Ground-track map -->
+      <div class="traj-section">
+        <div class="traj-section-hd">
+          <span class="traj-section-label">Ground Track Map</span>
+          <div class="traj-inline-ctrls">
+            <label for="traj-map-color" style="font-size:10px;color:var(--text-dim);">Color by</label>
+            <select id="traj-map-color" class="traj-sel"><option>Load file first</option></select>
+            <button class="btn-secondary btn-sm" id="traj-download-map">&#11015; PNG</button>
+          </div>
+        </div>
+        <div class="traj-plot-wrap" style="height:420px;">
+          <div id="traj-map-plot" style="width:100%;height:420px;"></div>
+        </div>
+      </div>
+
+      <!-- Time series -->
+      <div class="traj-section" style="margin-top:16px;">
+        <div class="traj-section-hd">
+          <span class="traj-section-label">Time Series</span>
+          <div class="traj-inline-ctrls">
+            <label for="traj-ts-var" style="font-size:10px;color:var(--text-dim);">Variable</label>
+            <select id="traj-ts-var" class="traj-sel"><option>Load file first</option></select>
+            <label for="traj-ts-scale" style="font-size:10px;color:var(--text-dim);">Scale</label>
+            <select id="traj-ts-scale" class="traj-sel">
+              <option value="linear" selected>Linear</option>
+              <option value="log">Log</option>
+            </select>
+            <label for="traj-thr-val" style="font-size:10px;color:var(--text-dim);">Threshold</label>
+            <input id="traj-thr-val" type="number" step="any" placeholder="none" class="traj-input" />
+            <select id="traj-thr-dir" class="traj-sel" style="max-width:80px;">
+              <option value="above" selected>Above</option>
+              <option value="below">Below</option>
+            </select>
+            <button class="btn-secondary btn-sm" id="traj-download-ts">&#11015; PNG</button>
+          </div>
+        </div>
+        <div class="traj-plot-wrap" style="height:340px;">
+          <div id="traj-ts-plot" style="width:100%;height:340px;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- PANEL 1: Scoreboard + S-scale -->
     <div class="dash-card">
       <div class="dash-card-title">
@@ -4016,5 +4075,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 <script src="js/17-output-reader.js"></script>
 <!-- 18. Lon/Lat structured-grid heatmap viewer (Tecplot ASCII) -->
 <script src="js/18-lonlat-viewer.js"></script>
+<!-- 19. Spacecraft trajectory viewer (ground track + time series) -->
+<script src="js/19-trajectory-viewer.js"></script>
 </body>
 </html>

@@ -101,6 +101,83 @@ LAST UPDATED: 2026-03-06
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   TRAJECTORY VIEWER
+   ═══════════════════════════════════════════════════════════════════ */
+
+.traj-top-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.traj-top-row .llmap-ctrl {
+  min-width: 240px;
+}
+.traj-status-wrap {
+  flex: 1;
+  min-width: 200px;
+}
+.traj-section {
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.15);
+  padding: 10px 12px;
+}
+.traj-section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.traj-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-dim, #6a7a9a);
+}
+.traj-inline-ctrls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.traj-sel {
+  background: var(--bg-inset, #0a1020);
+  color: var(--text, #e0e0e0);
+  border: 1px solid var(--border, #1a2a44);
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  max-width: 180px;
+}
+.traj-input {
+  background: var(--bg-inset, #0a1020);
+  color: var(--text, #e0e0e0);
+  border: 1px solid var(--border, #1a2a44);
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  width: 80px;
+}
+.traj-plot-wrap {
+  border-radius: 4px;
+  overflow: hidden;
+  background: #070e1c;
+}
+
+@media (max-width: 900px) {
+  .traj-inline-ctrls { flex-wrap: wrap; }
+  .traj-plot-wrap { height: auto !important; min-height: 280px; }
+  .traj-plot-wrap > div { height: 300px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    RESULTS VIEW — top-level container
    ═══════════════════════════════════════════════════════════════════ */
 
