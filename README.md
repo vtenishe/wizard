@@ -1,403 +1,596 @@
-# AMPS v2025 — CCMC Runs-on-Request Web Wizard
+# AMPS v2025 — Runs-on-Request Web Interface
 
-## Project Structure
-
-```
-index.html              Main page — all step panels, topbar, sidebar
-css/
-  01-tokens.css         Design tokens (colours, fonts, spacing)
-  02-layout.css         Page grid, topbar, header, wizard strip
-  03-components.css     Cards, fields, toggles, badges, KW strip
-  04-diagrams.css       SVG/canvas diagram styles
-js/
-  01-state.js           Shared state object S and utility functions
-  02-wizard.js          ★ Wizard navigation — WIZARD_STEPS config lives here
-  02a-calcmode.js       Calculation mode constraints
-  03-bgfield.js         Background B-field model handlers
-  04-boundary.js        BOX / Shue boundary logic
-  05-efield.js          Electric field model handlers
-  06-temporal.js        Temporal variability options
-  07-spectrum-output.js Particle spectrum + output domain
-  08-review.js          AMPS_PARAM.in builder, sidebar, validation
-  09-init.js            Initialisation sequence (runs on DOMContentLoaded)
-  10-help.js            Help modal
-  11-docs.js            Documentation panel
-  12-load.js            AMPS_PARAM.in file parser / loader
-img/
-  AMPS_logo.png         Logo (transparent background)
-```
-
+**Adaptive Mesh Particle Simulator — CCMC Submission Interface + Visualization Dashboard**
 
 ---
 
-## Adding / Removing Wizard Steps
+## 1. What This Is
 
-The wizard step bar is **data-driven**.  All step definitions live in
-a single JavaScript array called `WIZARD_STEPS` at the top of
-`js/02-wizard.js`.  The step bar HTML, step numbering, Next/Prev
-navigation, and the progress bar all derive from this array
-automatically — there are no hardcoded step counts anywhere.
+A fully static website (no server, no build step, no bundler) that serves two functions:
 
+1. **Configure** — A 10-step wizard for setting up AMPS geospace particle transport simulations (SEP and GCR). The wizard generates an `AMPS_PARAM.in` configuration file for submission to the CCMC Runs-on-Request system.
 
-### How WIZARD_STEPS works
+2. **Visualize & Analyze** — An interactive dashboard for viewing AMPS simulation outputs: cutoff rigidity maps, spacecraft trajectories with associated data products, and energy spectra. All visualization is browser-based using Plotly.js.
 
-```js
-// js/02-wizard.js  (abbreviated)
+The two modes are toggled via the topbar: **⚙ Configure** and **📊 Results**.
 
-const WIZARD_STEPS = [
-  { panel: 'panel-1',  label: 'Run Info' },
-  { panel: 'panel-2',  label: 'Calc Mode' },
-  { panel: 'panel-3',  label: 'Particle' },
-  { panel: 'panel-4',  label: 'Bkg B-Field' },
-  { panel: 'panel-5',  label: 'Boundary' },
-  { panel: 'panel-6',  label: 'E-Field',
-    skipWhen: () => S.fieldMethod === 'GRIDLESS' },
-  { panel: 'panel-7',  label: 'Temporal' },
-  { panel: 'panel-8',  label: 'Spectrum' },
-  { panel: 'panel-9',  label: 'Output Domain' },
-  // { panel: 'panel-10', label: 'Output Options' },   ← disabled
-  { panel: 'panel-11', label: 'Review & Submit', isReview: true },
-];
+---
+
+## 2. Quick Start
+
+1. Extract the tar archive.
+2. Open `index.html` in any modern browser (Chrome, Firefox, Safari, Edge).
+3. No installation, no server, no internet required for the wizard. The Results view needs internet on first use to load Plotly.js from CDN and continent outlines from world-atlas CDN; both are cached by the browser after that.
+
+Test data files:
+- **Cutoff rigidity maps:** Any Tecplot ASCII `.dat` file with `VARIABLES = "lon_deg" "lat_deg" "Rc_GV" ...` and `ZONE I=N, J=M, F=POINT`.
+- **Trajectories:** Tecplot file with quoted ISO timestamps, e.g., `"2026-02-07T00:00:00Z" -8.75 7.82 422.5 13.97 ...`.
+- **Spectra:** Multi-zone Tecplot file, one zone per time step, each containing an energy grid and spectral quantities.
+
+---
+
+## 3. Architecture Overview
+
+```
+index.html                    Single-page application (both views)
+├── css/
+│   ├── 01-tokens.css         Design tokens (colors, fonts, spacing)
+│   ├── 02-layout.css         Page layout (topbar, grid, sidebar, wizard strip)
+│   ├── 02-layout-0.css       Legacy/alternate layout (not referenced)
+│   ├── 03-components.css     UI components (buttons, inputs, cards, toggles)
+│   ├── 04-diagrams.css       SVG/Canvas diagram styles
+│   └── 05-dashboard.css      Dashboard + all viewer styles
+├── js/
+│   ├── 01-state.js           Global state object S + convenience helpers
+│   ├── 02-wizard.js          Wizard navigation (data-driven step system)
+│   ├── 02a-calcmode.js       Step 2: calculation mode + constraint propagation
+│   ├── 03-bgfield.js         Step 3–4: particle species + background B-field models
+│   ├── 04-boundary.js        Step 5: domain boundary (Shue/BOX) + SVG diagrams
+│   ├── 05-efield.js          Step 6: electric field models
+│   ├── 06-temporal.js        Step 7: temporal variability
+│   ├── 07-spectrum-output.js Steps 8–10: spectrum, output domain, output options
+│   ├── 08-review.js          Step 11: review, AMPS_PARAM.in builder, sidebar
+│   ├── 09-init.js            Boot sequence (DOMContentLoaded entry point)
+│   ├── 10-help.js            Help menu
+│   ├── 11-docs.js            Documentation menu
+│   ├── 12-load.js            Load/parse existing AMPS_PARAM.in files
+│   ├── 13-radcalc.js         Radiation computation engine (cookbook equations)
+│   ├── 14-radbridge.js       Bridge: wizard state → results object R
+│   ├── 15-charts.js          Canvas 2D chart primitives
+│   ├── 16-dashboard.js       Dashboard panel rendering + view toggle
+│   ├── 17-output-reader.js   AMPS output file parser
+│   ├── 18-lonlat-viewer.js   Lon/Lat map viewer (Plotly + TopoJSON coastlines)
+│   ├── 19-trajectory-viewer.js  Spacecraft trajectory viewer
+│   └── 20-spectrum-viewer.js Multi-zone energy spectrum viewer
+├── img/
+│   ├── AMPS_logo.png
+│   └── AMPS_logo_500.png
+└── js/data/
+    ├── AMPS_PARAM_Sep2017_storm.in   Sample parameter file
+    ├── trajectory_sample.txt          Sample trajectory
+    └── ts05_driving_sample.txt        Sample TS05 driving data
 ```
 
-Each entry has:
+### 3.1 Load Order
 
-| Field      | Required? | Description |
-|------------|-----------|-------------|
-| `panel`    | yes       | The `id` of the HTML `<div class="step-panel">` that this step shows/hides. Must already exist in `index.html`. |
-| `label`    | yes       | Short text shown in the wizard strip (1–2 words). |
-| `skipWhen` | no        | A function that returns `true` when this step should be skipped by the Next/Prev buttons. The step is still reachable by clicking its label in the strip. |
-| `isReview` | no        | Set to `true` for the terminal "Review & Submit" step. Triggers `buildReview()` on entry. Excluded from the progress bar denominator. Should be the last entry. |
+All scripts load via `<script>` tags in strict order (no ES modules, no bundler):
 
-Step numbers in the UI (the circled digits 1, 2, 3 …) are the
-**array indices + 1**, assigned automatically.  There is no need to
-manually number anything.
+```
+01-state.js          ← S object, $() helper (no dependencies)
+02-wizard.js         ← WIZARD_STEPS array, navigation
+02a-calcmode.js      ← constraint propagation
+03-bgfield.js        ← field model selection
+04-boundary.js       ← boundary geometry
+05-efield.js         ← electric field
+06-temporal.js       ← temporal config
+07-spectrum-output.js ← spectrum + output domain + bins
+08-review.js         ← AMPS_PARAM.in builder + sidebar
+09-init.js           ← boot sequence (calls init functions for all modules)
+10-help.js           ← help overlay
+11-docs.js           ← docs menu
+12-load.js           ← file load/parse
+13-radcalc.js        ← RAD.* pure computation functions
+14-radbridge.js      ← R results object, computePreview()
+15-charts.js         ← CHART.* Canvas 2D primitives
+16-dashboard.js      ← renderDashboard(), toggleView()
+17-output-reader.js  ← output file drop zone + ASCII parser
+18-lonlat-viewer.js  ← LLMAP.*, renderLonLatMap()
+19-trajectory-viewer.js ← TRAJ.*, renderTrajectory()
+20-spectrum-viewer.js   ← SPEC.*, renderSpectrumPlot()
+```
 
+### 3.2 External Dependencies
 
-### Step-by-step: adding a new wizard step
+| Dependency | Source | Purpose | Required? |
+|---|---|---|---|
+| Plotly.js v2.35.2 | `cdn.plot.ly/plotly-2.35.2.min.js` | Lon/lat maps, trajectory plots, spectra (zoom, contour, probe) | Yes, for Results view |
+| IBM Plex fonts | `fonts.googleapis.com` | Typography | Gracefully degrades to system fonts |
+| world-atlas TopoJSON | `cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json` | Continent outlines on maps | Optional; maps work without coastlines |
 
-Suppose you want to add a "Diagnostics" step between Output Domain
-and Review.
+The **wizard** (Configure view) works with zero external dependencies — even without internet.
 
-#### 1. Create the panel HTML in `index.html`
+### 3.3 Design Language
 
-Add a new `<div id="panel-XX" class="step-panel">` anywhere inside
-`<div class="main-col">`.  Pick any unused panel id (e.g. `panel-12`):
+"NASA Mission Control" dark theme:
+- Backgrounds: `#070e1c` (deep navy), `#0d1a2e` (panel), `#112240` (inset)
+- Accent: `#38c0ff` (electric cyan), `#1a88d4` (interactive blue)
+- Valid state: `#2dd4a0` (terminal green)
+- Warnings: `#ff9a3c` (amber)
+- Errors: `#ff5a5a` (red)
+- Typography: IBM Plex Sans (UI), IBM Plex Mono (data/code)
+
+All design tokens are in `css/01-tokens.css`. To reskin, edit only that file.
+
+---
+
+## 4. The Wizard (Configure View)
+
+### 4.1 State Model
+
+All configuration lives in a single global object `S` defined in `js/01-state.js`. Every wizard step reads from and writes to `S`. The sidebar summary, keyword previews, and AMPS_PARAM.in builder all read from `S`.
+
+Key property groups in `S`:
+- **Wizard meta:** `step`, `done` (completed steps)
+- **Run info:** `runName`, `piName`, `piEmail`, `institution`, `sciGoal`
+- **Calculation mode:** `calcQuantity` (CUTOFF_RIGIDITY / DENSITY_SPECTRUM / DENSITY_3D), `fieldMethod` (GRIDLESS / GRID_3D)
+- **Particle:** `species`, `charge`, `mass`
+- **Background field:** `fieldModel` (TS05/T96/T01/TA15/TA16RBF/DIPOLE/BATSRUS/GAMERA) + model-specific driver parameters
+- **Domain boundary:** `boundaryType` (BOX/SHUE), Shue parameters, box extents
+- **Electric field:** `eFieldCoro`, `eFieldConvModel`, Volland-Stern/Weimer parameters
+- **Temporal:** `tempMode`, event window, update cadences
+- **Spectrum:** `specType`, power-law/cutoff/LIS parameters
+- **Output:** `outputMode` (POINTS/TRAJECTORY/SHELLS), energy bins, format, coordinates
+- **Visualization:** `vizShieldingSet`, `vizEgridN`, `vizAutoUpdate`
+
+### 4.2 Wizard Navigation
+
+The `WIZARD_STEPS` array in `js/02-wizard.js` is the single source of truth for step ordering. Each entry specifies a panel ID, a label, and an optional `skipWhen` function. To add or reorder steps, edit this array — the step strip, numbering, progress bar, and Next/Prev navigation all adapt automatically.
+
+### 4.3 AMPS_PARAM.in Generation
+
+`buildReview()` in `js/08-review.js` reads the full `S` object and produces a complete, commented AMPS_PARAM.in text. It handles conditional sections (e.g., cutoff parameters only when `calcQuantity === 'CUTOFF_RIGIDITY'`), model-specific sub-blocks, and output domain formatting.
+
+---
+
+## 5. The Dashboard (Results View)
+
+### 5.1 View Toggle
+
+The topbar has two links: **⚙ Configure** and **📊 Results**. Clicking Results calls `toggleView('results')` (in `js/16-dashboard.js`), which hides the wizard layout and shows `<div id="results-view">`. State `S` and results `R` persist across toggles.
+
+### 5.2 Current Visualization Cards
+
+The Results view contains three full-width visualization cards in a CSS grid:
+
+#### Card 1: Lon/Lat Map Viewer (`js/18-lonlat-viewer.js`)
+
+**Purpose:** Display structured-grid 2D data on a lon/lat projection — primarily cutoff rigidity maps and other shell outputs from AMPS.
+
+**Data format:** Tecplot ASCII with `VARIABLES = "lon_deg" "lat_deg" "Rc_GV" "Emin_MeV"` and `ZONE I=72, J=37, F=POINT`. Single zone.
+
+**Features:**
+- Heatmap or contour-fill plot style (Plotly `heatmap` / `contour` trace types)
+- 13 colormaps (Turbo, Viridis, Plasma, Inferno, Magma, Cividis, Jet, Hot, Electric, Portland, RdBu, YlGnBu, Bluered) with reversal
+- Sharp (cell-by-cell) or smooth (bilinear interpolated) rendering
+- Adjustable color min/max with auto range
+- High-resolution continent outlines from TopoJSON (world-atlas CDN)
+- Configurable coastline color and line width
+- Longitude handling: 0–360 or ±180 (auto-sorts data when switching)
+- Lock lon/lat aspect ratio
+- Interactive zoom, pan, box-select, hover probe with lon/lat/value readout
+- PNG download
+
+**Controls:** Left sidebar (230px) with file input, field selector, colormap, plot style, longitude mode, color range, rendering options, coastline options.
+
+**Key functions:**
+- `LLMAP.parseTecplot(text)` — parse Tecplot ASCII → `{ fieldNames, I, J, rows }`
+- `LLMAP.buildGrid(ds, field, lonMode)` — build `{ lons, lats, z[][] }` from parsed data
+- `LLMAP.getCoastlines()` — fetch + decode TopoJSON → array of `{ rawLon, rawLat }` rings (cached)
+- `LLMAP.makeCoastTrace(raw, usePm180, color, width)` — build Plotly scatter trace for one coastline ring
+- `renderLonLatMap()` — master render: builds traces + layout, calls `Plotly.newPlot()`
+
+#### Card 2: Spacecraft Trajectory Viewer (`js/19-trajectory-viewer.js`)
+
+**Purpose:** Display spacecraft trajectory ground tracks and time-series of associated data products — cutoff rigidity, dose proxies, integral fluxes, etc. — with threshold exceedance highlighting.
+
+**Data format:** Tecplot ASCII with quoted ISO timestamps:
+```
+VARIABLES = "time_utc" "lon_deg" "lat_deg" "alt_km" "Rc_GV" "Ec_MeV" ...
+ZONE T="ISS_2026-02-07_to_2026-03-07", I=50, F=POINT
+"2026-02-07T00:00:00Z" -8.755 7.826 422.5 13.97 13060.8 ...
+```
+
+**Features — Ground Track Map:**
+- Trajectory plotted as colored markers on lon/lat projection
+- Color variable selectable from any data column (Rc_GV, alt_km, dose_proxy, etc.)
+- Turbo colormap with Plotly colorbar
+- Gray connecting line showing trajectory path
+- Green diamond START / red square END markers
+- TopoJSON continent outlines (reuses `LLMAP.getCoastlines()`)
+- 1:1 lon/lat aspect ratio
+- Full Plotly zoom/pan/hover
+
+**Features — Time Series:**
+- One variable at a time vs sequential time index
+- ~8 evenly-spaced UTC time labels on x-axis (nicely formatted as "Feb 10 14:00")
+- Linear or log Y-axis scale
+- Hover probe showing full ISO timestamp + precise value
+- **Threshold exceedance visualization:**
+  - Direction selector: "Above" or "Below" threshold
+  - Dashed red horizontal threshold line with labeled annotation
+  - Soft red filled region on triggering segments
+  - Red circle markers (larger, white-bordered) on triggering data points
+  - Hover on triggering points shows "ABOVE THRESHOLD" or "BELOW THRESHOLD"
+  - Legend distinguishes main data from triggering points
+
+**Key functions:**
+- `TRAJ.parse(text)` — parse Tecplot with quoted timestamps → `{ fieldNames, rows, timeField, title }`
+- `TRAJ._renderMap()` — build and render the ground track Plotly plot
+- `TRAJ._renderTimeSeries()` — build and render the time series Plotly plot
+- `renderTrajectory()` — master: calls both renderers
+
+#### Card 3: Energy Spectra Viewer (`js/20-spectrum-viewer.js`)
+
+**Purpose:** Display energy spectra from multi-zone Tecplot files where each zone represents one spectrum (e.g., one time step along a trajectory).
+
+**Data format:** Multi-zone Tecplot ASCII:
+```
+VARIABLES = "energy_MeV" "Jdiff_unshielded" "geomag_transmission" "Jdiff_local" ...
+ZONE T="2026-02-07T00:00:00Z", I=64, F=POINT
+1.000000 3.427e+00 0.0150 5.142e-02 ...
+...
+ZONE T="2026-02-07T13:42:51Z", I=64, F=POINT
+1.000000 5.620e+00 0.0150 8.432e-02 ...
+```
+
+**Features:**
+- X and Y variable selectable from any column (energy, flux, transmission, dose, etc.)
+- Independent linear/log controls for X and Y axes
+- **Zone selection modes:**
+  - **All** — show every zone
+  - **Show N zones** — evenly spaced selection (always includes first and last)
+  - **Every Nth** — fixed step through zones (always includes last)
+- Each spectrum in a distinct color (30-color palette, or HSL generation for >30)
+- Legend with zone title (timestamps) — auto-hidden for >30 zones
+- Hover probe showing zone title, X value, Y value
+- Title shows "Y vs X (N of M zones)"
+
+**Key functions:**
+- `SPEC.parse(text)` — parse multi-zone Tecplot → `{ fieldNames, zones[], globalTitle }`
+- `SPEC.selectZones(total, mode, param)` — return selected zone indices
+- `SPEC.getColor(idx, total)` — distinct color for each spectrum
+- `renderSpectrumPlot()` — master render
+
+### 5.3 Computation Engine (currently unused by active cards, available for future use)
+
+`js/13-radcalc.js` (RAD namespace) implements all equations from the "Space Radiation Cookbook":
+- Rigidity ↔ energy conversions (Eq. 1)
+- Integral fluxes, fluences, hardness index (Eqs. 2–5)
+- CSDA degraded spectrum behind parametric Al shielding (Eq. 6)
+- Dose proxy, TID proxy, LET spectrum, displacement damage, neutron equivalent (Eqs. 7–11)
+- Exceedance durations, spectral fitting, energy moments (Eqs. 12–15)
+- Embedded NIST PSTAR stopping-power tables for Al and Si
+
+`js/14-radbridge.js` provides `computePreview()` (from wizard state) and `computeFromTimeSeries()` (from loaded data) to populate the results object `R`. `js/15-charts.js` provides Canvas 2D chart primitives. `js/16-dashboard.js` has `renderDashboard()` for the Canvas-based panels.
+
+These modules are loaded and functional but the Canvas-based dashboard panels (scoreboard, effects-vs-shielding, LET, time series) have been removed from the current HTML. They can be re-added by restoring the card markup — see Section 7.
+
+---
+
+## 6. Data Formats
+
+### 6.1 Tecplot ASCII — Single Zone (Lon/Lat Maps)
+
+```
+VARIABLES = "lon_deg" "lat_deg" "Rc_GV" "Emin_MeV"
+ZONE I=72, J=37, F=POINT
+0.000000 -90.000000 0.1234 50.0
+5.000000 -90.000000 0.1256 51.2
+...
+```
+
+Rules:
+- `VARIABLES` line: variable names in double quotes, space-separated.
+- `ZONE` line: must have `I=` and `J=` for the 2D structured grid dimensions.
+- Data: one row per grid point, columns matching VARIABLES order. `I` varies fastest (row-major).
+- Comments: lines starting with `#` or `!` are skipped.
+
+### 6.2 Tecplot ASCII — Trajectory (Quoted Timestamps)
+
+```
+TITLE = "ISS trajectory test case"
+VARIABLES = "time_utc" "lon_deg" "lat_deg" "alt_km" "Rc_GV" ...
+ZONE T="ISS_2026-02-07_to_2026-03-07", I=50, F=POINT
+"2026-02-07T00:00:00Z" -8.755 7.826 422.5 13.97 ...
+```
+
+Rules:
+- First column is an ISO 8601 timestamp in double quotes.
+- Remaining columns are numeric, whitespace-separated.
+- The parser auto-detects the time column by matching variable names against `/time|utc|date/i`.
+- `TITLE` line is optional; displayed in status.
+- `ZONE T="..."` title is optional; used for metadata.
+
+### 6.3 Tecplot ASCII — Multi-Zone (Spectra)
+
+```
+TITLE = "Energy spectra (50 zones)"
+VARIABLES = "energy_MeV" "Jdiff" "geomag_transmission" ...
+ZONE T="2026-02-07T00:00:00Z", I=64, F=POINT
+1.000 3.427e+00 0.0150 ...
+1.170 3.388e+00 0.0150 ...
+...
+ZONE T="2026-02-07T13:42:51Z", I=64, F=POINT
+1.000 5.620e+00 0.0150 ...
+...
+```
+
+Rules:
+- Single `VARIABLES` line applies to all zones.
+- Multiple `ZONE` blocks, each with its own `T="title"` and `I=N`.
+- Each zone's data rows immediately follow its ZONE line.
+- The zone title (typically an ISO timestamp) becomes the legend label.
+
+---
+
+## 7. How to Add a New Visualization Card
+
+### 7.1 Overview
+
+Each card is self-contained across three files:
+
+| Layer | File | What to add |
+|---|---|---|
+| Logic | `js/NN-yourmodule.js` | Parser, computation, Plotly render function |
+| Markup | `index.html` | Card HTML inside `<div class="dash-grid">` |
+| Style | `css/05-dashboard.css` | Layout classes for your card's internal structure |
+| Init | `js/09-init.js` | One line: `if (typeof initYourViewer === 'function') initYourViewer();` |
+| Script | `index.html` | `<script src="js/NN-yourmodule.js"></script>` before `</body>` |
+
+### 7.2 Step-by-Step
+
+**Step 1: Create `js/NN-yourmodule.js`**
+
+Follow this template:
+
+```javascript
+var YOURNS = {};
+YOURNS.dataset = null;
+
+/* §1 PARSER */
+YOURNS.parse = function(text) {
+  // Return { fieldNames, data, ... }
+};
+
+/* §2 RENDER */
+function renderYourPlot() {
+  var ds = YOURNS.dataset;
+  if (!ds || typeof Plotly === 'undefined') return;
+  var plotDiv = document.getElementById('your-plot-id');
+  if (!plotDiv) return;
+
+  // Build traces and layout
+  var traces = [{ type: 'scatter', x: [...], y: [...], ... }];
+  var layout = {
+    paper_bgcolor: '#070e1c',
+    plot_bgcolor: '#0d1a2e',
+    font: { color: '#8899aa', family: 'IBM Plex Mono, monospace', size: 10 },
+    // ...
+  };
+  Plotly.newPlot(plotDiv, traces, layout, { responsive: true, displaylogo: false });
+}
+
+/* §3 INIT */
+function initYourViewer() {
+  // Wire change events on controls
+  ['your-ctrl-1', 'your-ctrl-2'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', function() { if (YOURNS.dataset) renderYourPlot(); });
+  });
+  // Wire file input
+  var fi = document.getElementById('your-file-input');
+  if (fi) fi.addEventListener('change', function(e) {
+    if (e.target.files[0]) loadYourFile(e.target.files[0]);
+  });
+}
+
+function loadYourFile(file) {
+  file.text().then(function(text) { loadYourText(text, file.name); });
+}
+
+function loadYourText(text, name) {
+  YOURNS.dataset = YOURNS.parse(text);
+  renderYourPlot();
+}
+```
+
+**Step 2: Add HTML card to `index.html`**
+
+Inside `<div class="dash-grid">`, add:
 
 ```html
-<div id="panel-12" class="step-panel">
-  <div class="sect" id="s-diagnostics">
-    <div class="sect-hd" onclick="toggleSection('s-diagnostics')">
-      <div class="sect-icon" style="background:rgba(139,111,247,.15)">🔧</div>
-      <div>
-        <div class="sect-title">Diagnostics</div>
-        <div class="sect-sub">Optional diagnostic outputs</div>
+<div class="dash-card dash-card-full" id="dash-your-card">
+  <div class="dash-card-title">
+    <div class="dash-icon" style="background:rgba(R,G,B,0.12)">EMOJI</div>
+    Your Card Title
+  </div>
+
+  <!-- File input + status -->
+  <div class="traj-top-row">
+    <div class="llmap-ctrl" style="min-width:240px;">
+      <label for="your-file-input">Data file</label>
+      <input id="your-file-input" type="file" accept=".dat,.txt,.csv" />
+    </div>
+    <div class="traj-status-wrap">
+      <div class="llmap-status" id="your-status">Load a file.</div>
+    </div>
+  </div>
+
+  <!-- Plot section with inline controls -->
+  <div class="traj-section">
+    <div class="traj-section-hd">
+      <span class="traj-section-label">Plot Title</span>
+      <div class="traj-inline-ctrls">
+        <label for="your-ctrl-1" style="font-size:10px;color:var(--text-dim);">Variable</label>
+        <select id="your-ctrl-1" class="traj-sel"><option>Load file</option></select>
+        <!-- more controls -->
       </div>
-      <span class="chevron">▼</span>
     </div>
-    <div class="sect-body">
-      <!-- your controls here -->
+    <div class="traj-plot-wrap" style="height:480px;">
+      <div id="your-plot-id" style="width:100%;height:480px;"></div>
     </div>
   </div>
 </div>
 ```
 
-#### 2. Add the entry to WIZARD_STEPS in `js/02-wizard.js`
+**Step 3: Add `<script>` tag**
 
-Insert it at the desired position in the array:
-
-```js
-const WIZARD_STEPS = [
-  { panel: 'panel-1',  label: 'Run Info' },
-  { panel: 'panel-2',  label: 'Calc Mode' },
-  { panel: 'panel-3',  label: 'Particle' },
-  { panel: 'panel-4',  label: 'Bkg B-Field' },
-  { panel: 'panel-5',  label: 'Boundary' },
-  { panel: 'panel-6',  label: 'E-Field',
-    skipWhen: () => S.fieldMethod === 'GRIDLESS' },
-  { panel: 'panel-7',  label: 'Temporal' },
-  { panel: 'panel-8',  label: 'Spectrum' },
-  { panel: 'panel-9',  label: 'Output Domain' },
-  { panel: 'panel-12', label: 'Diagnostics' },         // ← NEW
-  { panel: 'panel-11', label: 'Review & Submit', isReview: true },
-];
+After the last existing script, before `</body>`:
+```html
+<script src="js/NN-yourmodule.js"></script>
 ```
 
-**That's it.**  The step bar, numbering, Next/Prev navigation, and
-progress bar all update automatically.  "Diagnostics" will appear as
-step 10, and "Review & Submit" will become step 11.
+**Step 4: Add init hook**
 
-#### 3. (Optional) Add state properties and param output
-
-If the new step has configurable parameters:
-
-- Add default values to the state object `S` in `js/01-state.js`.
-- Add param-file output lines in the `buildReview()` template
-  literal in `js/08-review.js`.
-- Add keyword-map entries in `js/12-load.js` so the loader can
-  parse them back.
-- Add sidebar display in `updateSidebar()` in `js/08-review.js`.
-- Add validation checks in the `checks` array in `buildReview()`.
-
-#### 4. (Optional) Make the step conditional
-
-If the step should be skipped in certain modes, add a `skipWhen`:
-
-```js
-{ panel: 'panel-12', label: 'Diagnostics',
-  skipWhen: () => S.calcQuantity === 'CUTOFF_RIGIDITY' },
+In `js/09-init.js`, inside `init()`:
+```javascript
+if (typeof initYourViewer === 'function') initYourViewer();
 ```
 
-When `skipWhen` returns `true`, the Next/Prev buttons will jump over
-this step.  The user can still reach it by clicking its label.
+**Step 5: Verify**
 
-
-### Removing a step
-
-To remove a step from the wizard bar, simply **comment out or delete**
-its entry from WIZARD_STEPS.  The panel HTML can stay in `index.html`
-(it will just never be shown) or you can delete it.
-
-Example — Output Options was removed like this:
-
-```js
-  // { panel: 'panel-10', label: 'Output Options' },
+```bash
+node --check js/NN-yourmodule.js          # syntax check
+grep -c 'your-plot-id' index.html         # HTML ID exists
+grep -c 'your-plot-id' js/NN-yourmodule.js # JS references it
 ```
 
-No other code changes are needed.
+### 7.3 Reusable CSS Classes
 
+These classes from `css/05-dashboard.css` are designed for reuse across cards:
 
-### Re-enabling Output Options
+| Class | Purpose |
+|---|---|
+| `.dash-card` | Standard card container (background, border, padding, radius) |
+| `.dash-card-full` | Card spans full width (both grid columns) |
+| `.dash-card-title` | Card header with icon + title text |
+| `.traj-top-row` | Horizontal flex row for file input + status |
+| `.traj-section` | Bordered subsection within a card |
+| `.traj-section-hd` | Section header with label + inline controls |
+| `.traj-section-label` | Uppercase label text for section header |
+| `.traj-inline-ctrls` | Flex row of inline controls (selects, inputs, buttons) |
+| `.traj-sel` | Styled `<select>` for inline use |
+| `.traj-input` | Styled `<input>` for inline use |
+| `.traj-plot-wrap` | Container for Plotly div (dark background, rounded corners) |
+| `.llmap-ctrl` | Stacked label + input group |
+| `.llmap-status` | Status text line (for file load feedback) |
+| `.llmap-layout` | Two-column grid: controls sidebar (230px) + plot area |
+| `.llmap-controls` | Vertical stack of controls for sidebar layout |
+| `.llmap-check` | Checkbox label with inline flex alignment |
 
-To bring back the Output Options step, uncomment the line in
-WIZARD_STEPS:
+### 7.4 Reusable JS APIs from Existing Modules
 
-```js
-  { panel: 'panel-10', label: 'Output Options' },
+**Coastlines** (from `js/18-lonlat-viewer.js`):
+```javascript
+var coastData = await LLMAP.getCoastlines();   // fetches + caches TopoJSON
+var usePm180 = true;                            // or false for 0–360
+for (var c = 0; c < coastData.length; c++) {
+  traces.push(LLMAP.makeCoastTrace(coastData[c], usePm180, '#555555', 0.7));
+}
 ```
 
-It will appear in the strip at whatever position you place it.
+**Plotly dark-theme layout** (copy this baseline):
+```javascript
+var layout = {
+  paper_bgcolor: '#070e1c',
+  plot_bgcolor:  '#0d1a2e',
+  font: { color: '#8899aa', family: 'IBM Plex Mono, monospace', size: 10 },
+  xaxis: { zeroline: false, showgrid: true, gridcolor: 'rgba(255,255,255,0.06)', color: '#8899aa' },
+  yaxis: { zeroline: false, showgrid: true, gridcolor: 'rgba(255,255,255,0.06)', color: '#8899aa' },
+  margin: { l: 60, r: 20, t: 40, b: 50 }
+};
+```
 
+**Radiation computation** (from `js/13-radcalc.js`):
+```javascript
+RAD.rigidity(Ek)                      // MeV → GV
+RAD.cutoffEnergy(Rc)                  // GV → MeV
+RAD.integralFlux(j, Egrid, E0)        // J(>E0) from spectrum
+RAD.hardness(j, Egrid)                // H_{100/10}
+RAD.csdaDegraded(j, Egrid, T)         // CSDA transport behind T g/cm²
+RAD.doseProxy(jShielded, Egrid)       // dose rate in Si
+RAD.ddd(jShielded, Egrid)             // displacement damage dose
+RAD.neutronEquiv(dddVal)              // 1-MeV n_eq
+RAD.sScale(J10)                       // NOAA S-scale evaluation
+```
+
+### 7.5 Plotly vs Canvas Decision
+
+**Use Plotly** (already loaded) when you need: zoom/pan, contour lines, hover probes, 2D grids, high-quality PNG export. This is the recommended default for new cards.
+
+**Use Canvas 2D** (`js/15-charts.js`) when you need: maximum performance for real-time updates, zero-dependency mode, or custom rendering that Plotly can't handle.
 
 ---
 
-## How the wizard navigation works internally
+## 8. Namespace Conventions
 
-### Initialisation flow (js/09-init.js)
+Each module uses a namespace object to avoid global collisions:
 
-```
-DOMContentLoaded
-  → init()
-    → … (state, handlers, constraints)
-    → buildWizardStrip()     ← generates step bar HTML
-    → goStep(1)              ← activates step 1
-```
+| Namespace | Module | Purpose |
+|---|---|---|
+| `S` | `01-state.js` | Wizard configuration state |
+| `R` | `14-radbridge.js` | Computation results |
+| `RAD` | `13-radcalc.js` | Radiation physics functions |
+| `CHART` | `15-charts.js` | Canvas chart primitives |
+| `LLMAP` | `18-lonlat-viewer.js` | Lon/lat map viewer |
+| `TRAJ` | `19-trajectory-viewer.js` | Trajectory viewer |
+| `SPEC` | `20-spectrum-viewer.js` | Spectrum viewer |
 
-`buildWizardStrip()` reads WIZARD_STEPS and creates one
-`<div class="wz-step">` per entry inside `<div id="wizard-strip">`.
-Step numbers are assigned as array index + 1.
-
-### Navigation functions
-
-| Function         | Called by                  | Behaviour |
-|------------------|----------------------------|-----------|
-| `goStep(n)`      | All navigation paths       | Shows panel for step n, updates strip styling, manages Prev/Next/Submit buttons, calls `buildReview()` if review step |
-| `nextStep()`     | "Next Step →" button       | Advances by 1, skipping steps whose `skipWhen` returns true |
-| `prevStep()`     | "← Previous" button        | Retreats by 1, skipping steps whose `skipWhen` returns true |
-| `wizClick(n)`    | Clicking a step in the bar | Random access — calls `goStep(n)` directly |
-| `goToReview()`   | "Review & Submit" button   | Finds the step with `isReview: true` and navigates to it |
-
-### Progress bar
-
-The progress bar denominator is `completableSteps()`, which returns
-the count of WIZARD_STEPS entries where `isReview` is not true.
-This adapts automatically when steps are added or removed.
-
-```
-progress % = S.done.size / completableSteps() × 100
-```
-
-### Panel id decoupling
-
-Step numbers in the UI (1, 2, 3 …) are array indices, NOT panel ids.
-Panel ids (`panel-1`, `panel-11`, etc.) are stable HTML anchors that
-never change.  This means:
-
-- You can reorder steps without renaming panels.
-- You can have gaps in panel ids (e.g. no panel-10 in the strip).
-- You can add panel-12, panel-13, etc. without disrupting anything.
-
+Only public API functions (`initXxx`, `loadXxx`, `renderXxx`) are bare globals.
 
 ---
 
-## Files modified for wizard data-driven refactor
+## 9. File-by-File Reference
 
-| File | Change |
-|------|--------|
-| `js/02-wizard.js` | Complete rewrite: WIZARD_STEPS config array, buildWizardStrip(), data-driven goStep/nextStep/prevStep/goToReview, helper functions |
-| `js/08-review.js` | Progress bar uses `completableSteps()` instead of hardcoded `10` |
-| `js/09-init.js` | Added `buildWizardStrip()` call before `goStep(1)` |
-| `index.html` | Replaced 11 hardcoded `<div class="wz-step">` elements with empty `<div id="wizard-strip">` container |
-
+| File | Lines | Role |
+|------|-------|------|
+| `index.html` | 4068 | Single-page application: wizard markup + dashboard markup |
+| `css/01-tokens.css` | 199 | Design tokens (all colors, fonts, z-indices) |
+| `css/02-layout.css` | 203 | Page layout (topbar, wizard strip, two-column grid) |
+| `css/03-components.css` | 520 | UI components (buttons, inputs, cards, toggles, badges) |
+| `css/04-diagrams.css` | 231 | SVG/Canvas diagram styles |
+| `css/05-dashboard.css` | 531 | Dashboard + all viewer card styles |
+| `js/01-state.js` | 445 | Global state `S`, `$()`, `set()`, SVG constants |
+| `js/02-wizard.js` | 386 | `WIZARD_STEPS`, `goStep()`, `buildWizardStrip()` |
+| `js/02a-calcmode.js` | 866 | Calculation mode selection + constraint propagation |
+| `js/03-bgfield.js` | 1700 | Background B-field model selection + driver forms |
+| `js/04-boundary.js` | 556 | Domain boundary (Shue/BOX) + SVG cross-section diagrams |
+| `js/05-efield.js` | 418 | Electric field models (Volland-Stern, Weimer) |
+| `js/06-temporal.js` | 367 | Temporal variability configuration |
+| `js/07-spectrum-output.js` | 533 | Source spectrum + output domain + energy bins |
+| `js/08-review.js` | 640 | AMPS_PARAM.in builder, validation, sidebar summary |
+| `js/09-init.js` | 152 | Boot sequence (all init calls) |
+| `js/10-help.js` | 165 | Help overlay |
+| `js/11-docs.js` | 159 | Documentation menu |
+| `js/12-load.js` | 643 | Load/parse existing AMPS_PARAM.in files |
+| `js/13-radcalc.js` | 771 | Pure radiation computation engine (cookbook equations) |
+| `js/14-radbridge.js` | 370 | Bridge: `S` → `R`, `computePreview()`, export functions |
+| `js/15-charts.js` | 492 | Canvas 2D: `logLogPlot`, `linePlot`, `gantt` |
+| `js/16-dashboard.js` | 508 | Dashboard render + `toggleView()` |
+| `js/17-output-reader.js` | 252 | AMPS output file ASCII parser |
+| `js/18-lonlat-viewer.js` | 446 | Lon/lat map viewer (Plotly + TopoJSON) |
+| `js/19-trajectory-viewer.js` | 515 | Trajectory ground track + time series viewer |
+| `js/20-spectrum-viewer.js` | 369 | Multi-zone energy spectrum viewer |
+| **Total** | **~16,100** | |
 
 ---
 
-## Sidebar — Configuration Summary Panel
+## 10. References
 
-The sidebar lives in `<div class="side-col">` (right column of the
-two-column layout).  It contains one or more **cards** (`sb-card`)
-that stay visible on-screen as the user navigates through wizard
-steps.  The sidebar is the persistent "dashboard" for the run.
+- **AMPS:** Adaptive Mesh Particle Simulator, NASA/CCMC
+- **Space Radiation Cookbook v2** (2026-03-05): Spectrum→effects workflow for spacecraft operations
+- **NIST PSTAR:** Stopping-power and range tables for protons (embedded in `13-radcalc.js`)
+- **Plotly.js:** MIT-licensed interactive charting library, https://plotly.com/javascript/
+- **world-atlas:** TopoJSON country boundaries, https://github.com/topojson/world-atlas
+- **NOAA SWPC S-scale:** Space weather storm scales, https://www.swpc.noaa.gov/noaa-scales-explanation
 
-
-### Current sidebar structure
-
-```
-<div class="side-col">                   ← right column
-  <div class="sb-card">                  ← card 1: Configuration Summary
-    <div class="sb-title">…</div>       ← card heading
-    <div class="progress">…</div>       ← progress bar
-    <div class="sb-row">                 ← one row per tracked value
-      <div class="sb-k">Run name</div>  ← label (left)
-      <div class="sb-v" id="sb-…">…     ← value (right, coloured)
-      </div>
-    </div>
-    …more rows…
-  </div>
-  <!-- additional cards can be added here -->
-</div>
-```
-
-
-### How to add a new sidebar card
-
-#### Step 1 — Add the HTML
-
-Insert a new `<div class="sb-card">` inside `<div class="side-col">`
-in `index.html`.  Cards appear top-to-bottom in source order.
-
-```html
-<div class="sb-card">
-  <div class="sb-title">My New Section</div>
-
-  <div class="sb-row">
-    <div class="sb-k">Label A</div>
-    <div class="sb-v g" id="sb-my-label-a">default value</div>
-  </div>
-
-  <div class="sb-row">
-    <div class="sb-k">Label B</div>
-    <div class="sb-v" id="sb-my-label-b">—</div>
-  </div>
-</div>
-```
-
-#### Step 2 — Choose value colours
-
-The `<div class="sb-v">` element supports colour classes:
-
-| Class | Colour | Use for |
-|-------|--------|---------|
-| *(none)* | dim grey | default / unconfigured |
-| `g` | green | good / normal / configured |
-| `o` | orange | warning / pending / skipped |
-| `r` | red | error / out-of-range |
-
-Example: `<div class="sb-v o" id="sb-my-val">pending</div>`
-
-#### Step 3 — Update the value from JavaScript
-
-All sidebar updates happen in **`updateSidebar()`** in `js/08-review.js`.
-Use the existing `set()` helper (defined at the top of that function):
-
-```js
-// Inside updateSidebar() in js/08-review.js:
-
-/* ── My New Section ── */
-set('sb-my-label-a', S.myValueA || '(not set)', S.myValueA ? 'g' : 'o');
-set('sb-my-label-b', S.myValueB.toFixed(1) + ' km', 'g');
-```
-
-The `set(id, text, cssClass)` helper finds the element by id, sets
-its `textContent`, and optionally applies a colour class (`g`, `o`,
-`r`, or empty for default).
-
-#### Step 4 — (Optional) Add non-row content
-
-Cards can contain any HTML, not just key/value rows.  Examples:
-
-```html
-<!-- Mini progress bar inside a card -->
-<div class="sb-card">
-  <div class="sb-title">Upload Progress</div>
-  <div class="progress">
-    <div class="progress-fill" id="upload-fill" style="width:0%"></div>
-  </div>
-  <div style="font-size:10px;text-align:right;" id="upload-pct">0%</div>
-</div>
-
-<!-- Code preview inside a card -->
-<div class="sb-card">
-  <div class="sb-title">Quick Preview</div>
-  <pre id="sb-preview"
-       style="font-size:10px; max-height:200px; overflow:auto;
-              background:rgba(0,0,0,.3); padding:8px; border-radius:4px;">
-  </pre>
-</div>
-```
-
-#### Complete example — adding a "Run Estimates" card
-
-1. **HTML** (in `index.html`, inside `<div class="side-col">`):
-
-```html
-<div class="sb-card">
-  <div class="sb-title">Run Estimates</div>
-  <div class="sb-row">
-    <div class="sb-k">Queue time</div>
-    <div class="sb-v o" id="sb-est-queue">—</div>
-  </div>
-  <div class="sb-row">
-    <div class="sb-k">Compute cost</div>
-    <div class="sb-v" id="sb-est-sbu">—</div>
-  </div>
-  <div class="sb-row">
-    <div class="sb-k">Output size</div>
-    <div class="sb-v" id="sb-est-output">—</div>
-  </div>
-</div>
-```
-
-2. **JS** (in `updateSidebar()` in `js/08-review.js`):
-
-```js
-/* ── Run Estimates ── */
-set('sb-est-queue',  '4–8 h',     'o');
-set('sb-est-sbu',    '~5,000 SBU', '');
-set('sb-est-output', '~5.6 GB',    '');
-```
-
-3. **Done.** The card appears in the sidebar immediately.
-
-
-### Removing a sidebar card
-
-Delete or comment out the `<div class="sb-card">` block from the HTML.
-Remove or comment out the corresponding `set()` calls in
-`updateSidebar()`.  No other changes needed.
-
-
-### CSS reference
-
-| Selector | Description |
-|----------|-------------|
-| `.side-col` | Right column container (sticky positioning) |
-| `.sb-card` | Card wrapper (background, border, padding, border-radius) |
-| `.sb-title` | Card heading (uppercase, small, dim) |
-| `.sb-row` | Horizontal key/value row (flex, space-between) |
-| `.sb-k` | Row label (left side, dim text) |
-| `.sb-v` | Row value (right side); add `.g` / `.o` / `.r` for colour |
-| `.progress` | Progress bar track |
-| `.progress-fill` | Progress bar fill (set `width` via JS) |
-
-All styles are defined in `css/03-components.css`.
