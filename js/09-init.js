@@ -146,6 +146,7 @@ function init() {
   if (typeof initOutputDropzone === 'function') initOutputDropzone();
   if (typeof initLonLatViewer   === 'function') initLonLatViewer();
   if (typeof initTrajectoryViewer === 'function') initTrajectoryViewer();
+  if (typeof initSpectrumViewer   === 'function') initSpectrumViewer();
 }
 
 document.addEventListener('DOMContentLoaded', init);

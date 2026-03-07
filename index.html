@@ -3946,6 +3946,59 @@ TEMPORAL_MODE   TIME_SERIES</pre>
       </div>
     </div>
 
+    <!-- PANEL 0c: Energy Spectrum Viewer (multi-zone) -->
+    <div class="dash-card dash-card-full" id="dash-spec-card">
+      <div class="dash-card-title">
+        <div class="dash-icon" style="background:rgba(139,111,247,0.12)">&#128200;</div>
+        Energy Spectra Viewer
+      </div>
+
+      <div class="traj-top-row">
+        <div class="llmap-ctrl" style="min-width:240px;">
+          <label for="spec-file">Spectrum file (multi-zone Tecplot)</label>
+          <input id="spec-file" type="file" accept=".dat,.txt,.csv" />
+        </div>
+        <div class="traj-status-wrap">
+          <div class="llmap-status" id="spec-status">Load a multi-zone spectrum file. Each zone = one spectrum (e.g., one time step).</div>
+        </div>
+      </div>
+
+      <div class="traj-section">
+        <div class="traj-section-hd">
+          <span class="traj-section-label">Spectra Plot</span>
+          <div class="traj-inline-ctrls">
+            <label for="spec-x-var" style="font-size:10px;color:var(--text-dim);">X</label>
+            <select id="spec-x-var" class="traj-sel" style="max-width:170px;"><option>energy_MeV</option></select>
+            <label for="spec-y-var" style="font-size:10px;color:var(--text-dim);">Y</label>
+            <select id="spec-y-var" class="traj-sel" style="max-width:170px;"><option>Load file</option></select>
+            <label for="spec-x-scale" style="font-size:10px;color:var(--text-dim);">X</label>
+            <select id="spec-x-scale" class="traj-sel" style="max-width:65px;">
+              <option value="log" selected>Log</option><option value="linear">Lin</option>
+            </select>
+            <label for="spec-y-scale" style="font-size:10px;color:var(--text-dim);">Y</label>
+            <select id="spec-y-scale" class="traj-sel" style="max-width:65px;">
+              <option value="log" selected>Log</option><option value="linear">Lin</option>
+            </select>
+            <label for="spec-sel-mode" style="font-size:10px;color:var(--text-dim);">Zones</label>
+            <select id="spec-sel-mode" class="traj-sel" style="max-width:110px;">
+              <option value="all" selected>All</option>
+              <option value="count">Show N zones</option>
+              <option value="step">Every Nth</option>
+            </select>
+            <span id="spec-sel-param-wrap" style="display:none;">
+              <label id="spec-sel-param-label" for="spec-sel-param" style="font-size:10px;color:var(--text-dim);">N</label>
+              <input id="spec-sel-param" type="number" min="1" value="10" class="traj-input" style="width:55px;" />
+            </span>
+            <span id="spec-zone-info" style="font-size:9px;color:var(--text-dim);"></span>
+            <button class="btn-secondary btn-sm" id="spec-download-png">&#11015; PNG</button>
+          </div>
+        </div>
+        <div class="traj-plot-wrap" style="height:480px;">
+          <div id="spec-viewer-plot" style="width:100%;height:480px;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- PANEL 1: Scoreboard + S-scale -->
     <div class="dash-card">
       <div class="dash-card-title">
@@ -4077,5 +4130,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
 <script src="js/18-lonlat-viewer.js"></script>
 <!-- 19. Spacecraft trajectory viewer (ground track + time series) -->
 <script src="js/19-trajectory-viewer.js"></script>
+<!-- 20. Multi-zone energy spectrum viewer -->
+<script src="js/20-spectrum-viewer.js"></script>
 </body>
 </html>
