@@ -3792,11 +3792,13 @@ TEMPORAL_MODE   TIME_SERIES</pre>
   <div class="dash-grid">
 
     <!-- PANEL 0: Lon/Lat Map Viewer (Plotly — zoom, contour, probe) -->
-    <div class="dash-card dash-card-full" id="dash-lonlat-card">
-      <div class="dash-card-title">
+    <div class="dash-card dash-card-full collapsed" id="dash-lonlat-card">
+      <div class="dash-card-title" onclick="dashToggle('dash-lonlat-card')">
         <div class="dash-icon" style="background:rgba(56,192,255,0.12)">&#127758;</div>
         Lon/Lat Map Viewer &mdash; Cutoff Rigidity &amp; Environment Maps
+        <span class="dash-chevron">&#9660;</span>
       </div>
+      <div class="dash-card-body">
 
       <div class="llmap-layout">
         <!-- Controls sidebar -->
@@ -3885,14 +3887,17 @@ TEMPORAL_MODE   TIME_SERIES</pre>
           <div id="llmap-plot"></div>
         </div>
       </div>
+      </div><!-- /dash-card-body -->
     </div>
 
     <!-- PANEL 0b: Spacecraft Trajectory Viewer -->
-    <div class="dash-card dash-card-full" id="dash-traj-card">
-      <div class="dash-card-title">
+    <div class="dash-card dash-card-full collapsed" id="dash-traj-card">
+      <div class="dash-card-title" onclick="dashToggle('dash-traj-card')">
         <div class="dash-icon" style="background:rgba(45,212,160,0.12)">&#128752;</div>
         Spacecraft Trajectory &amp; Associated Data
+        <span class="dash-chevron">&#9660;</span>
       </div>
+      <div class="dash-card-body">
 
       <div class="traj-top-row">
         <div class="llmap-ctrl">
@@ -3944,14 +3949,17 @@ TEMPORAL_MODE   TIME_SERIES</pre>
           <div id="traj-ts-plot" style="width:100%;height:340px;"></div>
         </div>
       </div>
+      </div><!-- /dash-card-body -->
     </div>
 
     <!-- PANEL 0c: Energy Spectrum Viewer (multi-zone) -->
-    <div class="dash-card dash-card-full" id="dash-spec-card">
-      <div class="dash-card-title">
+    <div class="dash-card dash-card-full collapsed" id="dash-spec-card">
+      <div class="dash-card-title" onclick="dashToggle('dash-spec-card')">
         <div class="dash-icon" style="background:rgba(139,111,247,0.12)">&#128200;</div>
         Energy Spectra Viewer
+        <span class="dash-chevron">&#9660;</span>
       </div>
+      <div class="dash-card-body">
 
       <div class="traj-top-row">
         <div class="llmap-ctrl" style="min-width:240px;">
@@ -3997,90 +4005,10 @@ TEMPORAL_MODE   TIME_SERIES</pre>
           <div id="spec-viewer-plot" style="width:100%;height:480px;"></div>
         </div>
       </div>
-    </div>
-
-    <!-- PANEL 1: Scoreboard + S-scale -->
-    <div class="dash-card">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(56,192,255,0.12)">&#9889;</div>
-        Environment Scoreboard
-      </div>
-      <div id="dash-scoreboard">
-        <div style="color:var(--text-dim);font-size:12px;padding:20px;text-align:center;">
-          Click <strong>Recompute</strong> or adjust spectrum parameters to see results.
-        </div>
-      </div>
-    </div>
-
-    <!-- PANEL 2: Energy Spectrum -->
-    <div class="dash-card">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(45,212,160,0.12)">&#128200;</div>
-        Energy Spectrum &mdash; Source, Transmitted &amp; Shielded
-      </div>
-      <canvas id="dash-spectrum-canvas"></canvas>
-    </div>
-
-    <!-- PANEL 3: Cutoff Rigidity -->
-    <div class="dash-card">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(255,208,75,0.12)">&#127759;</div>
-        Cutoff Rigidity
-      </div>
-      <div id="dash-cutoff-info">
-        <div style="color:var(--text-dim);font-size:12px;padding:20px;text-align:center;">
-          Waiting for computation&hellip;
-        </div>
-      </div>
-    </div>
-
-    <!-- PANEL 4: Effects vs Shielding -->
-    <div class="dash-card dash-card-full">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(139,111,247,0.12)">&#128737;</div>
-        Effects Proxies vs Parametric Shielding (CSDA Tier 0)
-      </div>
-      <div class="dash-effects-grid">
-        <canvas id="dash-dose-canvas"></canvas>
-        <canvas id="dash-neq-canvas"></canvas>
-      </div>
-    </div>
-
-    <!-- PANEL 5: LET Spectrum -->
-    <div class="dash-card dash-card-full">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(255,107,171,0.12)">&#9883;</div>
-        Proton LET Spectrum (per shielding thickness)
-      </div>
-      <canvas id="dash-let-canvas"></canvas>
-      <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-style:italic;">
-        Proton-only. Heavy-ion LET spectra (critical for GCR SEE) require species-resolved transport.
-      </div>
-    </div>
-
-    <!-- PANEL 6: Time Series (post-run) -->
-    <div class="dash-card dash-card-full" id="dash-timeseries" style="display:none;">
-      <div class="dash-card-title">
-        <div class="dash-icon" style="background:rgba(255,154,60,0.12)">&#128339;</div>
-        Time Series (from loaded output)
-      </div>
-      <div class="dash-ts-grid">
-        <canvas id="dash-ts-flux-canvas"></canvas>
-        <canvas id="dash-ts-dose-canvas"></canvas>
-      </div>
-      <canvas id="dash-gantt-canvas" style="margin-top:12px;"></canvas>
+      </div><!-- /dash-card-body -->
     </div>
 
   </div><!-- /dash-grid -->
-
-  <!-- Caveats -->
-  <div class="dash-caveats" id="dash-caveats">
-    <strong>&#9888; Caveats &amp; Transport Tier</strong>
-    Transport: CSDA (Tier 0) &mdash; thin-target dose/DDD proxies only.<br>
-    Proton-only analysis. GCR heavy ions not included.<br>
-    Parametric Al-equivalent shielding; no spacecraft geometry assumed.<br>
-    R<sub>c</sub> estimated from Dst (Smart &amp; Shea) in preview mode. Run AMPS for traced values.
-  </div>
 
 </div><!-- /results-view -->
 

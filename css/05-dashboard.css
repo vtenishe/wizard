@@ -101,6 +101,28 @@ LAST UPDATED: 2026-03-06
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   COLLAPSIBLE DASH CARDS
+   Same pattern as wizard .sect accordion: click header to toggle.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dash-card-title .dash-chevron {
+  color: var(--text-dim, #6a7a9a);
+  font-size: 11px;
+  transition: transform 0.15s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.dash-card.collapsed .dash-chevron {
+  transform: rotate(-90deg);
+}
+.dash-card.collapsed .dash-card-body {
+  display: none;
+}
+.dash-card.collapsed .dash-card-title {
+  margin-bottom: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    TRAJECTORY VIEWER
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -241,6 +263,8 @@ LAST UPDATED: 2026-03-06
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+  user-select: none;
 }
 .dash-card-title .dash-icon {
   width: 22px;

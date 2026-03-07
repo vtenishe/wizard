@@ -588,7 +588,6 @@ Only public API functions (`initXxx`, `loadXxx`, `renderXxx`) are bare globals.
 ## 10. References
 
 - **AMPS:** Adaptive Mesh Particle Simulator, NASA/CCMC
-- **Space Radiation Cookbook v2** (2026-03-05): Spectrum→effects workflow for spacecraft operations
 - **NIST PSTAR:** Stopping-power and range tables for protons (embedded in `13-radcalc.js`)
 - **Plotly.js:** MIT-licensed interactive charting library, https://plotly.com/javascript/
 - **world-atlas:** TopoJSON country boundaries, https://github.com/topojson/world-atlas

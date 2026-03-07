@@ -19,6 +19,15 @@ LAST UPDATED: 2026-03-06
 */
 
 /* ═══════════════════════════════════════════════════════════════════
+   COLLAPSIBLE CARD TOGGLE
+   ═══════════════════════════════════════════════════════════════════ */
+
+function dashToggle(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('collapsed');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    VIEW TOGGLE — switch between Configure (wizard) and Results
    ═══════════════════════════════════════════════════════════════════ */
 
