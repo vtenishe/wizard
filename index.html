@@ -3942,6 +3942,19 @@ TEMPORAL_MODE   TIME_SERIES</pre>
               <option value="above" selected>Above</option>
               <option value="below">Below</option>
             </select>
+            <label for="traj-ts-bg-mode" style="font-size:10px;color:var(--text-dim);">Background</label>
+            <select id="traj-ts-bg-mode" class="traj-sel" style="max-width:115px;">
+              <option value="dark" selected>Dark</option>
+              <option value="custom">Custom</option>
+              <option value="transparent">Transparent</option>
+            </select>
+            <input id="traj-ts-bg-color" type="color" value="#0d1a2e" class="traj-input" style="width:46px;padding:4px 6px;" title="Plot background color" />
+            <label for="traj-ts-line-color" style="font-size:10px;color:var(--text-dim);">Line</label>
+            <input id="traj-ts-line-color" type="color" value="#38c0ff" class="traj-input" style="width:46px;padding:4px 6px;" title="Line and marker color" />
+            <label for="traj-ts-fill-color" style="font-size:10px;color:var(--text-dim);">Fill</label>
+            <input id="traj-ts-fill-color" type="color" value="#ff5a5a" class="traj-input" style="width:46px;padding:4px 6px;" title="Threshold shading color" />
+            <label for="traj-ts-fill-alpha" style="font-size:10px;color:var(--text-dim);">Fill α</label>
+            <input id="traj-ts-fill-alpha" type="number" min="0" max="1" step="0.05" value="0.12" class="traj-input" style="width:68px;" title="Threshold shading opacity" />
             <button class="btn-secondary btn-sm" id="traj-download-ts">&#11015; PNG</button>
           </div>
         </div>

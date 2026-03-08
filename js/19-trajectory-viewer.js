@@ -26,6 +26,47 @@ LAST UPDATED: 2026-03-07
 var TRAJ = {};
 TRAJ.dataset = null;
 
+/*
+CHANGE LOG — 2026-03-07 threshold/highlighting and style-control upgrade
+---------------------------------------------------------------------
+This file was extended in two related ways. These notes are intentionally
+detailed so future maintenance can distinguish the original plotting logic
+from the later bug-fix / usability work.
+
+1) Threshold shading bug fix
+   Earlier versions shaded threshold exceedance with a single Plotly trace
+   using `fill: 'tozeroy'` (or equivalent gap-based logic) and `null` values
+   outside the active range. Plotly can visually bridge across those gaps,
+   especially when the curve repeatedly crosses the threshold, which led to
+   red regions appearing where the data did *not* satisfy the selected
+   criterion. That behavior was visible for both `Above` and `Below`.
+
+   The current implementation no longer asks Plotly to infer the fill region
+   from a discontinuous 1-D trace. Instead, it explicitly computes each
+   contiguous threshold-satisfying interval and then draws one closed polygon
+   per interval. Each polygon is bounded above/below by the actual data curve
+   and closed back to the threshold line. When a segment crosses the
+   threshold between samples, the crossing location is linearly interpolated
+   in x so the shaded region begins and ends exactly at the crossing.
+
+2) Time-series style controls
+   The time-series panel now supports user-selected background mode/color,
+   main line color, shaded-fill color, and fill transparency. A small style
+   helper (`TRAJ._tsStyle`) centralizes those options so all plot elements
+   that should visually match — line, markers, threshold line, threshold
+   annotation border, and filled exceedance region — stay synchronized.
+
+   Background handling is split into three modes:
+     • dark        -> original mission-control dark palette
+     • custom      -> user supplied solid color
+     • transparent -> transparent paper and plot backgrounds for export
+
+Maintenance note
+   The threshold-segment builder and style helper are intentionally kept
+   generic so they can be reused later if similar threshold highlighting is
+   added to the lon/lat viewer, spectra viewer, or future dashboard cards.
+*/
+
 
 /* ═══════════════════════════════════════════════════════════════════
    §1  PARSER — Tecplot trajectory with quoted timestamps
@@ -174,6 +215,7 @@ TRAJ._renderMap = async function() {
   var lonField = TRAJ._findField(ds.fieldNames, [/^lon/i]) || ds.fieldNames[1];
   var latField = TRAJ._findField(ds.fieldNames, [/^lat/i]) || ds.fieldNames[2];
   var timeField = ds.timeField;
+  var styleCfg = TRAJ._tsStyle();
 
   var lons = TRAJ._col(ds, lonField);
   var lats = TRAJ._col(ds, latField);
@@ -249,8 +291,8 @@ TRAJ._renderMap = async function() {
   var layout = {
     title: { text: 'Ground Track — colored by ' + colorField, font: { color: '#38c0ff', size: 13, family: 'IBM Plex Sans, sans-serif' } },
     margin: { l: 55, r: 75, t: 40, b: 50 },
-    paper_bgcolor: '#070e1c',
-    plot_bgcolor: '#0d1a2e',
+    paper_bgcolor: styleCfg.paperBg,
+    plot_bgcolor: styleCfg.plotBg,
     font: { color: '#8899aa', family: 'IBM Plex Mono, monospace', size: 10 },
     xaxis: {
       title: { text: 'Longitude (deg)', font: { color: '#b0b8c8', size: 11 } },
@@ -273,6 +315,223 @@ TRAJ._renderMap = async function() {
    §4  RENDER — TIME SERIES WITH THRESHOLD EXCEEDANCE
    ═══════════════════════════════════════════════════════════════════ */
 
+
+/**
+ * Build contiguous segments where the curve satisfies the threshold test.
+ * Each returned segment has x[] and y[] arrays that already include any
+ * interpolated threshold-crossing endpoints.
+ */
+/*
+   Threshold shading geometry builder
+   -------------------------------
+   Inputs
+     xVals   : monotonically increasing plotting coordinates (here: sample index)
+     yVals   : plotted data values for the selected time-series variable
+     thrVal  : numeric threshold entered by the user
+     thrDir  : 'above' or 'below'
+
+   Output
+     Array of contiguous exceedance segments. Each segment stores only the
+     *curve-side* polyline (x[], y[]) that satisfies the threshold criterion.
+     The caller later closes each segment back to the threshold line to form
+     a filled polygon.
+
+   Why this exists
+     Plotly filled traces are convenient for broad areas but can produce
+     misleading artifacts when the active region is represented by a single
+     trace with gaps/nulls. For a threshold problem, the physically correct
+     filled area is piecewise: one island per contiguous interval where the
+     curve is on the triggering side of the threshold. This helper computes
+     those islands explicitly.
+
+   Crossing treatment
+     Whenever adjacent samples straddle the threshold, the exact crossing in
+     x is estimated by linear interpolation. That is the minimal assumption
+     consistent with the sampled line plot and is more accurate than snapping
+     the shading edge to either sample index.
+*/
+TRAJ._buildThresholdSegments = function(xVals, yVals, thrVal, thrDir) {
+  var isTriggered = (thrDir === 'below')
+    ? function(v) { return v <= thrVal; }
+    : function(v) { return v >= thrVal; };
+
+  var segs = [];
+  var curX = null;
+  var curY = null;
+
+  function ensureSegment() {
+    if (!curX) { curX = []; curY = []; }
+  }
+
+  function closeSegment() {
+    if (curX && curX.length >= 2) segs.push({ x: curX.slice(), y: curY.slice() });
+    curX = null;
+    curY = null;
+  }
+
+  function crossX(x0, y0, x1, y1) {
+    var dy = y1 - y0;
+    if (!isFinite(dy) || dy === 0) return 0.5 * (x0 + x1);
+    var f = (thrVal - y0) / dy;
+    if (!isFinite(f)) f = 0.5;
+    if (f < 0) f = 0;
+    if (f > 1) f = 1;
+    return x0 + f * (x1 - x0);
+  }
+
+  for (var i = 0; i < yVals.length - 1; i++) {
+    var x0 = xVals[i],   y0 = yVals[i];
+    var x1 = xVals[i+1], y1 = yVals[i+1];
+
+    if (!isFinite(y0) || !isFinite(y1)) {
+      closeSegment();
+      continue;
+    }
+
+    var c0 = isTriggered(y0);
+    var c1 = isTriggered(y1);
+
+    if (c0 && !curX) {
+      curX = [x0];
+      curY = [y0];
+    }
+
+    if (c0 && c1) {
+      ensureSegment();
+      if (curX.length === 0) {
+        curX.push(x0); curY.push(y0);
+      }
+      curX.push(x1); curY.push(y1);
+      continue;
+    }
+
+    if (c0 !== c1) {
+      var xc = crossX(x0, y0, x1, y1);
+      if (c0) {
+        ensureSegment();
+        if (curX.length === 0) {
+          curX.push(x0); curY.push(y0);
+        }
+        curX.push(xc); curY.push(thrVal);
+        closeSegment();
+      } else {
+        curX = [xc, x1];
+        curY = [thrVal, y1];
+      }
+      continue;
+    }
+
+    closeSegment();
+  }
+
+  if (yVals.length > 0 && isFinite(yVals[yVals.length - 1]) && isTriggered(yVals[yVals.length - 1])) {
+    ensureSegment();
+    var xl = xVals[xVals.length - 1], yl = yVals[yVals.length - 1];
+    if (curX.length === 0 || curX[curX.length - 1] !== xl || curY[curY.length - 1] !== yl) {
+      curX.push(xl); curY.push(yl);
+    }
+  }
+  closeSegment();
+  return segs;
+};
+
+
+/* Convert #rgb / #rrggbb to numeric RGB components.
+   Kept local to this viewer because the styling controls were added here
+   first, but it can be promoted to a shared utility later if other panels
+   gain user-selectable colors. */
+TRAJ._hexToRgb = function(hex) {
+  if (!hex || typeof hex !== 'string') return null;
+  var s = hex.trim();
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(s)) return null;
+  if (s.length === 4) s = '#' + s[1]+s[1] + s[2]+s[2] + s[3]+s[3];
+  return {
+    r: parseInt(s.slice(1,3), 16),
+    g: parseInt(s.slice(3,5), 16),
+    b: parseInt(s.slice(5,7), 16)
+  };
+};
+
+/* Build a Plotly-friendly rgba(...) string from a hex color plus alpha.
+   This is used for the shaded exceedance fill, threshold marker outline,
+   and threshold annotation border so all threshold-related elements share
+   the same hue family while differing only in opacity. */
+TRAJ._rgba = function(hex, alpha) {
+  var rgb = TRAJ._hexToRgb(hex);
+  if (!rgb) return 'rgba(255,90,90,' + alpha + ')';
+  var a = Number(alpha);
+  if (!isFinite(a)) a = 1;
+  if (a < 0) a = 0;
+  if (a > 1) a = 1;
+  return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + a + ')';
+};
+
+/*
+   Collect all time-series styling options in one place.
+
+   Rationale:
+     Before the style upgrade, colors were hard-wired directly into the plot
+     construction code. Once background/line/fill customization was added,
+     repeating the same fallback and alpha logic inline would have made the
+     render routine noisy and error-prone. Centralizing the style translation
+     here makes `_renderTimeSeries()` easier to read and ensures that a color
+     change propagates consistently to every related visual element.
+
+   Returned fields:
+     paperBg / plotBg   -> Plotly layout backgrounds
+     lineColor          -> main series line + markers + title accent
+     fillRgba           -> semi-transparent threshold exceedance polygons
+     thrLineColor       -> dashed threshold line
+     thrMarkerColor     -> highlighted exceedance markers
+     thrMarkerOutline   -> subtle outline for highlighted markers
+     annotationBorder   -> border color for the threshold label callout
+*/
+TRAJ._tsStyle = function() {
+  var bgMode = _trVal('traj-ts-bg-mode') || 'dark';
+  var bgColor = _trVal('traj-ts-bg-color') || '#0d1a2e';
+  var lineColor = _trVal('traj-ts-line-color') || '#38c0ff';
+  var fillColor = _trVal('traj-ts-fill-color') || '#ff5a5a';
+  var fillAlpha = parseFloat(_trVal('traj-ts-fill-alpha'));
+  if (!isFinite(fillAlpha)) fillAlpha = 0.12;
+  fillAlpha = Math.max(0, Math.min(1, fillAlpha));
+
+  var paperBg = '#070e1c';
+  var plotBg = '#0d1a2e';
+  if (bgMode === 'transparent') {
+    paperBg = 'rgba(0,0,0,0)';
+    plotBg = 'rgba(0,0,0,0)';
+  } else if (bgMode === 'custom') {
+    paperBg = bgColor;
+    plotBg = bgColor;
+  }
+
+  return {
+    bgMode: bgMode,
+    paperBg: paperBg,
+    plotBg: plotBg,
+    lineColor: lineColor,
+    fillColor: fillColor,
+    fillAlpha: fillAlpha,
+    fillRgba: TRAJ._rgba(fillColor, fillAlpha),
+    thrLineColor: fillColor,
+    thrMarkerColor: fillColor,
+    thrMarkerOutline: TRAJ._rgba(fillColor, 0.5),
+    annotationBorder: TRAJ._rgba(fillColor, 0.3)
+  };
+};
+
+/*
+   Render the lower time-series panel.
+
+   Render order matters here:
+     1. threshold exceedance fill polygons
+     2. highlighted exceedance markers
+     3. main line/marker series
+     4. dashed threshold line + annotation
+
+   That ordering keeps the fill visually behind the data while preserving
+   clear red markers at exceedance samples and a readable threshold label.
+*/
 TRAJ._renderTimeSeries = function() {
   var ds = TRAJ.dataset;
   if (!ds) return;
@@ -285,6 +544,7 @@ TRAJ._renderTimeSeries = function() {
   var thrVal    = (thrStr.trim() !== '') ? parseFloat(thrStr) : null;
   var thrDir    = _trVal('traj-thr-dir') || 'above';
   var timeField = ds.timeField;
+  var styleCfg = TRAJ._tsStyle();
 
   /** Test whether a value triggers the threshold */
   var thrTest = (thrDir === 'below')
@@ -318,16 +578,40 @@ TRAJ._renderTimeSeries = function() {
 
   /* Threshold exceedance shading — draw BEFORE main line */
   if (thrVal !== null && isFinite(thrVal)) {
-    /* Exceedance segments as filled scatter to baseline */
-    traces.push({
-      type: 'scatter', mode: 'none',
-      x: xIdx, y: yVals.map(function(v) { return thrTest(v) ? v : null; }),
-      fill: 'tozeroy',
-      fillcolor: 'rgba(255,90,90,0.12)',
-      hoverinfo: 'skip', showlegend: false
+    /*
+       Build one filled polygon per contiguous threshold-exceedance interval.
+       This avoids Plotly fill artifacts across null gaps and ensures shading
+       appears only where the curve is actually above/below the threshold.
+    */
+    var shadeSegments = TRAJ._buildThresholdSegments(xIdx, yVals, thrVal, thrDir);
+    shadeSegments.forEach(function(seg) {
+      /*
+         Convert one active threshold interval into a closed polygon:
+           forward  pass -> follow the true data curve across the interval
+           reverse pass -> return along the horizontal threshold baseline
+
+         Using `fill: 'toself'` on an explicit polygon prevents Plotly from
+         inventing connections across inactive gaps elsewhere in the record.
+      */
+      var polyX = seg.x.slice().concat(seg.x.slice().reverse());
+      var polyY = seg.y.slice().concat(seg.x.map(function() { return thrVal; }).reverse());
+      traces.push({
+        type: 'scatter', mode: 'lines',
+        x: polyX, y: polyY,
+        line: { width: 0, color: 'rgba(0,0,0,0)' },
+        fill: 'toself',
+        fillcolor: styleCfg.fillRgba,
+        hoverinfo: 'skip',
+        showlegend: false
+      });
     });
 
-    /* Highlight the exceedance points as red markers */
+    /*
+       Highlight the sampled points that themselves satisfy the criterion.
+       These markers complement the filled polygons: the polygons show the
+       continuous interval estimate, while the markers show the actual stored
+       samples that triggered the condition.
+    */
     var exX = [], exY = [], exH = [];
     for (var i = 0; i < yVals.length; i++) {
       if (thrTest(yVals[i])) {
@@ -341,8 +625,8 @@ TRAJ._renderTimeSeries = function() {
       traces.push({
         type: 'scatter', mode: 'markers',
         x: exX, y: exY,
-        marker: { size: 9, color: '#ff5a5a', symbol: 'circle',
-                  line: { color: 'rgba(255,255,255,0.5)', width: 1 } },
+        marker: { size: 9, color: styleCfg.thrMarkerColor, symbol: 'circle',
+                  line: { color: styleCfg.thrMarkerOutline, width: 1 } },
         text: exH, hoverinfo: 'text',
         showlegend: true, name: thrLabel
       });
@@ -353,8 +637,8 @@ TRAJ._renderTimeSeries = function() {
   traces.push({
     type: 'scatter', mode: 'lines+markers',
     x: xIdx, y: yVals,
-    line: { color: '#38c0ff', width: 2 },
-    marker: { size: 5, color: '#38c0ff' },
+    line: { color: styleCfg.lineColor, width: 2 },
+    marker: { size: 5, color: styleCfg.lineColor },
     text: hoverTexts, hoverinfo: 'text',
     showlegend: true, name: varField
   });
@@ -365,15 +649,15 @@ TRAJ._renderTimeSeries = function() {
     shapes.push({
       type: 'line', xref: 'paper', x0: 0, x1: 1,
       yref: 'y', y0: thrVal, y1: thrVal,
-      line: { color: '#ff5a5a', width: 1.5, dash: 'dash' }
+      line: { color: styleCfg.thrLineColor, width: 1.5, dash: 'dash' }
     });
   }
 
   var layout = {
-    title: { text: varField + ' vs Time', font: { color: '#38c0ff', size: 13, family: 'IBM Plex Sans, sans-serif' } },
+    title: { text: varField + ' vs Time', font: { color: styleCfg.lineColor, size: 13, family: 'IBM Plex Sans, sans-serif' } },
     margin: { l: 70, r: 20, t: 40, b: 60 },
-    paper_bgcolor: '#070e1c',
-    plot_bgcolor: '#0d1a2e',
+    paper_bgcolor: styleCfg.paperBg,
+    plot_bgcolor: styleCfg.plotBg,
     font: { color: '#8899aa', family: 'IBM Plex Mono, monospace', size: 10 },
     xaxis: {
       title: { text: 'Time (UTC)', font: { color: '#b0b8c8', size: 11 } },
@@ -399,9 +683,9 @@ TRAJ._renderTimeSeries = function() {
       y: thrVal, yref: 'y',
       text: 'threshold = ' + thrVal,
       showarrow: false,
-      font: { color: '#ff5a5a', size: 9, family: 'IBM Plex Mono, monospace' },
-      bgcolor: 'rgba(7,14,28,0.8)',
-      bordercolor: 'rgba(255,90,90,0.3)', borderwidth: 1, borderpad: 3
+      font: { color: styleCfg.thrLineColor, size: 9, family: 'IBM Plex Mono, monospace' },
+      bgcolor: (styleCfg.bgMode === 'transparent') ? 'rgba(7,14,28,0.65)' : 'rgba(7,14,28,0.8)',
+      bordercolor: styleCfg.annotationBorder, borderwidth: 1, borderpad: 3
     }] : []
   };
 
@@ -432,13 +716,19 @@ function _trVal(id) { var e = document.getElementById(id); return e ? e.value : 
    ═══════════════════════════════════════════════════════════════════ */
 
 function initTrajectoryViewer() {
-  /* Auto-render on control change */
+  /*
+     Auto-render on control change.
+
+     The new style controls intentionally re-render only the time-series
+     panel, not the map panel, because they affect only the lower plot. This
+     keeps UI feedback immediate and avoids unnecessary coastline/map redraws.
+  */
   ['traj-map-color'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('change', function() { if (TRAJ.dataset) TRAJ._renderMap(); });
   });
 
-  ['traj-ts-var', 'traj-ts-scale', 'traj-thr-val', 'traj-thr-dir'].forEach(function(id) {
+  ['traj-ts-var', 'traj-ts-scale', 'traj-thr-val', 'traj-thr-dir', 'traj-ts-bg-mode', 'traj-ts-bg-color', 'traj-ts-line-color', 'traj-ts-fill-color', 'traj-ts-fill-alpha'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('change', function() { if (TRAJ.dataset) TRAJ._renderTimeSeries(); });
   });
@@ -453,6 +743,16 @@ function initTrajectoryViewer() {
       if (TRAJ.dataset) TRAJ._renderTimeSeries();
     });
   }
+
+  /*
+     Color pickers and alpha slider also listen to `input` so users get live
+     visual feedback while dragging the control, not only after the control
+     loses focus or fires a final `change` event.
+  */
+  ['traj-ts-bg-color', 'traj-ts-line-color', 'traj-ts-fill-color', 'traj-ts-fill-alpha'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() { if (TRAJ.dataset) TRAJ._renderTimeSeries(); });
+  });
 
   /* File input */
   var fileInput = document.getElementById('traj-file');

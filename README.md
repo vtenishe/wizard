@@ -65,7 +65,7 @@ index.html                    Single-page application (both views)
 ├── img/
 │   ├── AMPS_logo.png
 │   └── AMPS_logo_500.png
-└── js/data/
+└── js/
     ├── AMPS_PARAM_Sep2017_storm.in   Sample parameter file
     ├── trajectory_sample.txt          Sample trajectory
     └── ts05_driving_sample.txt        Sample TS05 driving data
@@ -217,14 +217,48 @@ ZONE T="ISS_2026-02-07_to_2026-03-07", I=50, F=POINT
 - Hover probe showing full ISO timestamp + precise value
 - **Threshold exceedance visualization:**
   - Direction selector: "Above" or "Below" threshold
-  - Dashed red horizontal threshold line with labeled annotation
-  - Soft red filled region on triggering segments
-  - Red circle markers (larger, white-bordered) on triggering data points
+  - Dashed threshold line with labeled annotation
+  - Shaded exceedance region drawn only on the physically active side of the threshold
+  - Exceedance markers drawn at the actual sampled points that satisfy the condition
   - Hover on triggering points shows "ABOVE THRESHOLD" or "BELOW THRESHOLD"
   - Legend distinguishes main data from triggering points
+- **Time-series styling controls:**
+  - Background mode: `Dark`, `Custom`, or `Transparent`
+  - Custom background color picker
+  - Main line color picker
+  - Threshold-fill color picker
+  - Fill transparency control (`Fill α`)
+
+##### 5.2.2.a Threshold-shading implementation notes (important maintenance detail)
+
+The time-series viewer originally used a simple filled trace approach for threshold highlighting. That strategy is visually compact but can create false shaded patches when the line crosses the threshold multiple times and the inactive parts of the trace are represented by gaps/nulls. Plotly may still bridge parts of those gaps when filling, which is exactly the artifact that prompted the March 2026 fix.
+
+The current implementation in `js/19-trajectory-viewer.js` uses a more explicit geometric approach:
+
+1. Evaluate each pair of adjacent samples against the threshold criterion (`Above` or `Below`).
+2. Split the curve into **contiguous threshold-satisfying segments**.
+3. When the curve crosses the threshold between samples, compute the crossing location by **linear interpolation**.
+4. For each active segment, build a **closed polygon** that follows the data curve on one side and returns along the threshold line on the other.
+5. Render each polygon with Plotly `scatter` + `fill: 'toself'`.
+
+This eliminates the false-color artifact because the fill geometry is no longer inferred from a single discontinuous trace; it is explicitly defined interval by interval. The same logic works for both `Above` and `Below` threshold modes.
+
+##### 5.2.2.b Time-series style-control implementation notes
+
+The time-series panel now has a dedicated style helper (`TRAJ._tsStyle()`) that translates UI control values into Plotly colors and background settings. The helper exists to keep `_renderTimeSeries()` readable and to guarantee that all threshold-related elements remain visually synchronized.
+
+Specifically, one change in the fill color automatically propagates to:
+- the filled threshold polygons
+- the dashed threshold line
+- the highlighted threshold markers
+- the threshold annotation border and text accent
+
+`Transparent` background mode sets both `paper_bgcolor` and `plot_bgcolor` to fully transparent RGBA so exported PNGs can preserve transparency instead of baking in the dark theme background.
 
 **Key functions:**
 - `TRAJ.parse(text)` — parse Tecplot with quoted timestamps → `{ fieldNames, rows, timeField, title }`
+- `TRAJ._buildThresholdSegments()` — split the line into contiguous active threshold intervals and insert interpolated crossing points
+- `TRAJ._tsStyle()` — collect/normalize background, line, fill, and alpha settings for the time-series panel
 - `TRAJ._renderMap()` — build and render the ground track Plotly plot
 - `TRAJ._renderTimeSeries()` — build and render the time series Plotly plot
 - `renderTrajectory()` — master: calls both renderers
