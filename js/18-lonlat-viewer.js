@@ -41,6 +41,25 @@ LLMAP.currentZoneIndex = 0;
 LLMAP._coastlineTraces = null;
 LLMAP._coastlineAttempted = false;
 
+/*
+ * Persistent on-plot numeric probe stamps.
+ *
+ * The built-in Plotly hover readout is excellent for transient inspection,
+ * but it does not let the user leave a breadcrumb trail of values directly
+ * on the figure. For geospace maps this is often needed when comparing the
+ * same field across multiple geographic locations by eye.
+ *
+ * Data model used here:
+ *   LLMAP.stamps[key] = [
+ *     { x, y, z, label, field, zoneIndex, zoneTitle, lonMode }, ...
+ *   ]
+ *
+ * where `key` is tied to the currently visualized zone + field + longitude
+ * convention. This ensures that stamps belong to the exact visualized layer
+ * rather than leaking across unrelated fields or zones.
+ */
+LLMAP.stamps = Object.create(null);
+
 
 /* ═══════════════════════════════════════════════════════════════════
    §1  TECPLOT ASCII PARSER
@@ -293,6 +312,209 @@ LLMAP.makeCoastTrace = function(raw, usePm180, lineColor, lineWidth) {
 };
 
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   §4  PERSISTENT PROBE STAMPS
+   ═══════════════════════════════════════════════════════════════════ */
+
+LLMAP.getStampKey = function(zoneIdx, field, lonMode, stampMode) {
+  return String(zoneIdx) + '||' + String(field || '') + '||' + String(lonMode || 'as-is') + '||' + String(stampMode || 'full');
+};
+
+LLMAP.getCurrentStampKey = function() {
+  return LLMAP.getStampKey(_llZoneIndex(), _llVal('llmap-field'), _llVal('llmap-lonmode'), _llVal('llmap-stamp-mode') || 'full');
+};
+
+LLMAP.getCurrentStamps = function() {
+  var key = LLMAP.getCurrentStampKey();
+  if (!LLMAP.stamps[key]) LLMAP.stamps[key] = [];
+  return LLMAP.stamps[key];
+};
+
+LLMAP.syncStampModeToggle = function() {
+  var select = document.getElementById('llmap-stamp-mode');
+  var wrap = document.getElementById('llmap-stamp-mode-toggle');
+  if (!select || !wrap) return;
+  var mode = select.value || 'full';
+  Array.prototype.forEach.call(wrap.querySelectorAll('[data-stamp-mode]'), function(btn) {
+    btn.classList.toggle('on', btn.getAttribute('data-stamp-mode') === mode);
+  });
+};
+
+LLMAP.makeStampLabel = function(x, y, z, field, stampMode) {
+  /*
+   * Build the text label shown on-plot above each probe stamp marker.
+   *
+   * Two label modes are supported, selectable by the user through the
+   * stamp-mode toggle in the Lon/Lat viewer control panel:
+   *
+   *   'value-only'  — bare numeric value only (e.g. "1.23456").
+   *                    Useful when the user wants a clean, compact overlay
+   *                    that does not clutter the map with repeated field
+   *                    names and coordinate readouts, e.g. for publication
+   *                    figures or dense multi-stamp comparisons.
+   *
+   *   'full'        — field name, value, and geographic coordinates on two
+   *     (default)     lines (e.g. "Rc=1.23456\nlon=45.00°, lat=30.00°").
+   *                    Best for exploratory work where the user needs the
+   *                    full spatial context at a glance.
+   *
+   * In both modes the numeric value is formatted with toPrecision(6) for
+   * consistent significant-figure display across many orders of magnitude.
+   */
+  if (stampMode === 'value-only') return Number(z).toPrecision(6);
+  var valueLabel = field + '=' + Number(z).toPrecision(6);
+  return valueLabel + '<br>lon=' + Number(x).toFixed(2) + '°, lat=' + Number(y).toFixed(2) + '°';
+};
+
+LLMAP.addStamp = function(pt, field) {
+  if (!pt) return;
+  var stamps = LLMAP.getCurrentStamps();
+  var stampMode = _llVal('llmap-stamp-mode') || 'full';
+  var x = Number(pt.x), y = Number(pt.y), z = Number(pt.z);
+  if (!(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) return;
+
+  /*
+   * Avoid stacking duplicate labels on repeated clicks at the same sampled
+   * grid point. The tolerances are intentionally tiny because Plotly click
+   * events on structured grids already snap to the nearest plotted cell/node.
+   */
+  var eps = 1.0e-9;
+  var dup = stamps.find(function(s) {
+    return Math.abs(s.x - x) < eps && Math.abs(s.y - y) < eps;
+  });
+  if (dup) return;
+
+  stamps.push({
+    x: x,
+    y: y,
+    z: z,
+    field: field,
+    zoneIndex: _llZoneIndex(),
+    zoneTitle: (LLMAP.dataset && LLMAP.dataset.zones && LLMAP.dataset.zones[_llZoneIndex()]) ? LLMAP.dataset.zones[_llZoneIndex()].title : '',
+    lonMode: _llVal('llmap-lonmode') || 'as-is',
+    stampMode: stampMode,
+    label: LLMAP.makeStampLabel(x, y, z, field, stampMode)
+  });
+};
+
+LLMAP.removeNearestStampAtPixel = function(clientX, clientY) {
+  var plotDiv = document.getElementById('llmap-plot');
+  if (!plotDiv || !plotDiv._fullLayout) return false;
+  var stamps = LLMAP.getCurrentStamps();
+  if (!stamps.length) return false;
+
+  var fl = plotDiv._fullLayout;
+  var xa = fl.xaxis, ya = fl.yaxis;
+  if (!xa || !ya) return false;
+
+  var rect = plotDiv.getBoundingClientRect();
+  var px = clientX - rect.left;
+  var py = clientY - rect.top;
+
+  /*
+   * Find the stamp nearest to the right-click location in screen space.
+   * Pixel-space matching is the most intuitive for the user because zooming
+   * changes visible map scale while the click target on the screen remains the
+   * same. The threshold below can be adjusted later if needed.
+   */
+  var bestIdx = -1;
+  var bestD2 = Infinity;
+  for (var i = 0; i < stamps.length; i++) {
+    var sx = xa._offset + xa.l2p(stamps[i].x);
+    var sy = ya._offset + ya.l2p(stamps[i].y);
+    var d2 = (sx - px) * (sx - px) + (sy - py) * (sy - py);
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      bestIdx = i;
+    }
+  }
+
+  var removeRadiusPx = 18;
+  if (bestIdx >= 0 && bestD2 <= removeRadiusPx * removeRadiusPx) {
+    stamps.splice(bestIdx, 1);
+    return true;
+  }
+  return false;
+};
+
+LLMAP.buildStampTrace = function() {
+  var stamps = LLMAP.getCurrentStamps();
+  if (!stamps.length) return null;
+
+  /*
+   * User-configurable stamp font appearance.
+   *
+   * The font size and color are read live from their respective UI controls
+   * each time the map is re-rendered, so the user can adjust them at any
+   * point and all existing + future stamps update immediately on the next
+   * render cycle without needing to re-place them.
+   *
+   *   llmap-stamp-font-size   — <input type="number"> (6–28 px, default 10)
+   *     Parsed as an integer; if the element is missing or contains an
+   *     unparseable / out-of-range value, we fall back to the original
+   *     hardcoded default of 10 px to avoid broken rendering.
+   *
+   *   llmap-stamp-font-color  — <select> dropdown of preset hex colors
+   *     Falls back to near-white (#f8fafc) if the element is absent,
+   *     matching the original default so behaviour is unchanged when
+   *     the control is not present in the DOM (e.g. older HTML).
+   *
+   * Both values feed directly into the Plotly scatter-text `textfont`
+   * property, which accepts standard CSS color strings and numeric px
+   * sizes. The font family remains fixed at IBM Plex Mono for visual
+   * consistency with the rest of the AMPS dark-theme dashboard.
+   */
+  var fontSize = parseInt(_llVal('llmap-stamp-font-size'), 10);
+  if (!Number.isFinite(fontSize) || fontSize < 6) fontSize = 10;
+  var fontColor = _llVal('llmap-stamp-font-color') || '#f8fafc';
+
+  return {
+    type: 'scatter',
+    mode: 'markers+text',
+    x: stamps.map(function(s) { return s.x; }),
+    y: stamps.map(function(s) { return s.y; }),
+    text: stamps.map(function(s) { return s.label; }),
+    textposition: 'top center',
+    textfont: { color: fontColor, size: fontSize, family: 'IBM Plex Mono, monospace' },
+    marker: {
+      size: 7,
+      color: '#ffd04b',
+      line: { color: '#111827', width: 1 }
+    },
+    hoverinfo: 'skip',
+    showlegend: false,
+    cliponaxis: false
+  };
+};
+
+LLMAP.bindInteractiveStampEvents = function(plotDiv, field) {
+  if (!plotDiv) return;
+
+  /*
+   * Remove prior listeners before attaching new ones. The viewer redraws with
+   * Plotly.newPlot(), and without explicit cleanup each redraw would stack a
+   * fresh copy of the same event handler.
+   */
+  if (plotDiv._llClickHandler) plotDiv.removeListener('plotly_click', plotDiv._llClickHandler);
+  if (plotDiv._llContextHandler) plotDiv.removeEventListener('contextmenu', plotDiv._llContextHandler);
+
+  plotDiv._llClickHandler = function(ev) {
+    if (!ev || !ev.points || !ev.points.length) return;
+    var pt = ev.points[0];
+    LLMAP.addStamp(pt, field);
+    renderLonLatMap();
+  };
+  plotDiv.on('plotly_click', plotDiv._llClickHandler);
+
+  plotDiv._llContextHandler = function(ev) {
+    ev.preventDefault();
+    var removed = LLMAP.removeNearestStampAtPixel(ev.clientX, ev.clientY);
+    if (removed) renderLonLatMap();
+  };
+  plotDiv.addEventListener('contextmenu', plotDiv._llContextHandler);
+};
+
 /* ═══════════════════════════════════════════════════════════════════
    §4  MAIN RENDER  (Plotly.newPlot)
    ═══════════════════════════════════════════════════════════════════ */
@@ -374,6 +596,9 @@ async function renderLonLatMap() {
     }
   }
 
+  var stampTrace = LLMAP.buildStampTrace();
+  if (stampTrace) traces.push(stampTrace);
+
   var xMin = Math.min.apply(null, fixed.x);
   var xMax = Math.max.apply(null, fixed.x);
   var yMin = Math.min.apply(null, fixed.y);
@@ -418,6 +643,15 @@ async function renderLonLatMap() {
     responsive: true,
     displaylogo: false,
     modeBarButtonsToRemove: ['lasso2d', 'select2d']
+  }).then(function() {
+    LLMAP.bindInteractiveStampEvents(plotDiv, field);
+    var status = document.getElementById('llmap-status');
+    if (status && LLMAP.dataset) {
+      var nStamps = LLMAP.getCurrentStamps().length;
+      var stampModeLabel = ((_llVal('llmap-stamp-mode') || 'full') === 'value-only') ? 'value only' : 'value + coordinates';
+      status.textContent = 'Loaded map ready. Left click adds a persistent value stamp; right click near a stamp removes it. Stamp label mode: ' + stampModeLabel + '. Current stamp count: ' + nStamps + '.';
+      status.style.color = '#2dd4a0';
+    }
   });
 }
 
@@ -454,7 +688,18 @@ LLMAP.updateZoneInfo = function() {
 
 function initLonLatViewer() {
   var ids = [
-    'llmap-zone','llmap-field','llmap-cmap','llmap-lonmode','llmap-style',
+    'llmap-zone','llmap-field','llmap-cmap','llmap-lonmode','llmap-style','llmap-stamp-mode',
+    /*
+     * Stamp font appearance controls (added alongside stamp-mode).
+     *
+     * Including these IDs in the change-event wiring array ensures that
+     * whenever the user adjusts the stamp font size spinner or picks a
+     * new stamp font color from the dropdown, the map is immediately
+     * re-rendered with the updated text styling applied to every visible
+     * stamp. This gives live-preview feedback without requiring the user
+     * to press the explicit "Render" button.
+     */
+    'llmap-stamp-font-size','llmap-stamp-font-color',
     'llmap-reverse','llmap-smooth','llmap-coast',
     'llmap-coast-color','llmap-coast-width',
     'llmap-zmin','llmap-zmax','llmap-lock-scale'
@@ -463,6 +708,22 @@ function initLonLatViewer() {
     var el = document.getElementById(id);
     if (el) el.addEventListener('change', function() { if (LLMAP.dataset) { LLMAP.updateZoneInfo(); renderLonLatMap(); } });
   });
+
+  var stampToggle = document.getElementById('llmap-stamp-mode-toggle');
+  var stampSelect = document.getElementById('llmap-stamp-mode');
+  if (stampToggle && stampSelect) {
+    Array.prototype.forEach.call(stampToggle.querySelectorAll('[data-stamp-mode]'), function(btn) {
+      btn.addEventListener('click', function() {
+        var mode = btn.getAttribute('data-stamp-mode') || 'full';
+        if (stampSelect.value !== mode) {
+          stampSelect.value = mode;
+          LLMAP.syncStampModeToggle();
+          stampSelect.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+    LLMAP.syncStampModeToggle();
+  }
 
   var fileInput = document.getElementById('llmap-file');
   if (fileInput) {
@@ -519,6 +780,8 @@ function loadTecplotText(text, name) {
         fieldSel.appendChild(opt);
       });
     }
+
+    LLMAP.syncStampModeToggle();
 
     if (status) {
       var firstZone = ds.zones[0];

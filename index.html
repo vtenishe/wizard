@@ -3864,6 +3864,62 @@ TEMPORAL_MODE   TIME_SERIES</pre>
             <label class="llmap-check"><input id="llmap-smooth" type="checkbox" /> Smooth interpolation</label>
             <label class="llmap-check"><input id="llmap-coast" type="checkbox" checked /> Continent outlines</label>
           </div>
+          <div class="llmap-ctrl">
+            <label for="llmap-stamp-mode">Value stamp label</label>
+            <div class="tog" id="llmap-stamp-mode-toggle" style="margin-bottom:0;">
+              <button type="button" class="tog-btn on" data-stamp-mode="full">Value + coordinates</button>
+              <button type="button" class="tog-btn" data-stamp-mode="value-only">Value only</button>
+            </div>
+            <select id="llmap-stamp-mode" style="display:none;">
+              <option value="full" selected>Value + coordinates</option>
+              <option value="value-only">Value only</option>
+            </select>
+          </div>
+          <!--
+            Stamp font appearance controls.
+
+            These two inputs let the user customise how probe-stamp labels
+            look on the Plotly map, complementing the existing stamp-mode
+            toggle (value+coords vs value-only) above.
+
+            • Font size  (llmap-stamp-font-size)
+              Number spinner, range 6–28 px, default 10 px (matching the
+              original hardcoded value in buildStampTrace). Step of 1 px
+              gives fine-grained control. Useful when zooming into dense
+              regions where small text overlaps, or when preparing
+              publication-resolution PNG exports that need larger labels.
+
+            • Font color (llmap-stamp-font-color)
+              Dropdown of eight preset hex colours chosen to contrast well
+              against both dark map backgrounds and bright colourmap fills.
+              Default is near-white (#f8fafc), the original hardcoded value.
+              Presets reuse the same palette already offered for coastline
+              colour to keep the UI visually consistent.
+
+            Both controls trigger an immediate re-render via the change-event
+            wiring in initLonLatViewer(), so the user sees a live preview as
+            soon as they change a value. The selected values are read inside
+            LLMAP.buildStampTrace() each render cycle.
+          -->
+          <div class="llmap-row2">
+            <div class="llmap-ctrl">
+              <label for="llmap-stamp-font-size">Stamp font size</label>
+              <input id="llmap-stamp-font-size" type="number" step="1" min="6" max="28" value="10" />
+            </div>
+            <div class="llmap-ctrl">
+              <label for="llmap-stamp-font-color">Stamp font color</label>
+              <select id="llmap-stamp-font-color">
+                <option value="#f8fafc" selected>White</option>    <!-- default: matches original hardcoded stamp text colour -->
+                <option value="#ffd04b">Yellow</option>            <!-- high contrast on dark backgrounds                     -->
+                <option value="#38c0ff">Cyan</option>              <!-- AMPS accent colour — stands out on most colormaps     -->
+                <option value="#2dd4a0">Green</option>             <!-- good visibility on blue-heavy maps                    -->
+                <option value="#ff5a5a">Red</option>               <!-- strong contrast; useful on cool-palette maps          -->
+                <option value="#ff9f43">Orange</option>            <!-- warm alternative; readable on dark regions             -->
+                <option value="#d1d5db">Light gray</option>        <!-- subtle, low-profile label appearance                  -->
+                <option value="#000000">Black</option>             <!-- best when the map background is bright / high-value   -->
+              </select>
+            </div>
+          </div>
           <div class="llmap-row2">
             <div class="llmap-ctrl">
               <label for="llmap-coast-color">Coast color</label>
@@ -3886,7 +3942,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
             <button class="btn-secondary btn-sm" onclick="renderLonLatMap()" style="width:100%">&#8635; Render</button>
             <button class="btn-secondary btn-sm" id="llmap-download-png" style="width:100%">&#11015; PNG</button>
           </div>
-          <div class="llmap-status" id="llmap-status">Load a Tecplot file to visualize. Use Plotly toolbar to zoom, pan, and probe values.</div>
+          <div class="llmap-status" id="llmap-status">Load a Tecplot file to visualize. Use Plotly toolbar to zoom/pan. Left click adds a persistent value stamp; right click near a stamp removes it. Choose whether stamps show value + coordinates or only the plotted value.</div>
         </div>
 
         <!-- Plotly render target -->
