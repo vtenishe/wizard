@@ -1767,7 +1767,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     <div class="model-sel-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
 
       <!-- BATSRUS: Block-Adaptive Tree Solar-wind Roe Upwind Scheme -->
-      <div class="model-sel-card" id="msc-batsrus" onclick="selectFieldModel('BATSRUS')">
+      <div class="temp-card disabled" id="msc-batsrus" onclick="selectFieldModel('BATSRUS')">
         <div class="msc-icon">🌊</div>
         <div class="msc-title">BATSRUS MHD Output</div>
         <div class="msc-sub">Block-Adaptive Tree Solar-wind Roe-Upwind Scheme (Powell et al. 1999). Upload 3-D BATSRUS output file (.cdf or .h5 from a CCMC run). AMPS tri-linearly interpolates B. Most accurate for extreme storm events.</div>
@@ -1775,7 +1775,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
 
       <!-- GAMERA: Grid Agnostic MHD for Extended Research Applications -->
-      <div class="model-sel-card" id="msc-gamera" onclick="selectFieldModel('GAMERA')">
+      <div class="temp-card disabled" id="msc-gamera" onclick="selectFieldModel('GAMERA')">
         <div class="msc-icon">🎮</div>
         <div class="msc-title">GAMERA MHD Output</div>
         <div class="msc-sub">Grid Agnostic MHD for Extended Research Applications (Sorathia et al. 2020). High-resolution curvilinear-mesh global MHD. Upload GAMERA .h5 output. Beta support — contact CCMC if issues arise.</div>
@@ -3785,7 +3785,7 @@ TEMPORAL_MODE   TIME_SERIES</pre>
     <h2>AMPS <span>Visualization &amp; Analysis</span></h2>
     <div style="font-size:12px;color:var(--text-dim);max-width:700px;line-height:1.5;">
       Environment maps, energy spectra, cutoff rigidity, and radiation effects proxies
-      derived from AMPS simulation outputs and the Radiation Cookbook workflow.
+      derived from AMPS simulation outputs.
     </div>
   </div>
 
