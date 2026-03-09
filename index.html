@@ -3807,10 +3807,17 @@ TEMPORAL_MODE   TIME_SERIES</pre>
             <label for="llmap-file">Tecplot .dat file</label>
             <input id="llmap-file" type="file" accept=".dat,.txt,.csv" />
           </div>
-          <div class="llmap-ctrl">
-            <label for="llmap-field">Field</label>
-            <select id="llmap-field"><option>Load a file first</option></select>
+          <div class="llmap-row2">
+            <div class="llmap-ctrl">
+              <label for="llmap-zone">Zone</label>
+              <select id="llmap-zone" disabled><option>Load a file first</option></select>
+            </div>
+            <div class="llmap-ctrl">
+              <label for="llmap-field">Field</label>
+              <select id="llmap-field"><option>Load a file first</option></select>
+            </div>
           </div>
+          <div class="llmap-status" id="llmap-zone-info" style="margin-top:-2px;margin-bottom:8px;font-size:10px;color:var(--text-dim);"></div>
           <div class="llmap-row2">
             <div class="llmap-ctrl">
               <label for="llmap-cmap">Colormap</label>

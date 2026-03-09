@@ -37,6 +37,7 @@ LAST UPDATED: 2026-03-07
 const LLMAP = {};
 
 LLMAP.dataset = null;
+LLMAP.currentZoneIndex = 0;
 LLMAP._coastlineTraces = null;
 LLMAP._coastlineAttempted = false;
 
@@ -47,19 +48,68 @@ LLMAP._coastlineAttempted = false;
 
 LLMAP.parseTecplot = function(text) {
   const lines = text.split(/\r?\n/);
-  let varLine = null, zoneLine = null;
-  const dataLines = [];
+  let titleLine = null;
+  let varLine = null;
+  let currentZone = null;
+  const zones = [];
 
+  /*
+   * Multi-zone Tecplot parser.
+   *
+   * Previous behavior kept only the last encountered ZONE line and then
+   * collected every following data row into a single dataset. That worked
+   * for one-zone files, but it made structured-grid shell stacks or other
+   * multi-zone lon/lat products impossible to browse.
+   *
+   * New behavior:
+   *   - parse a single VARIABLES definition shared by all zones
+   *   - create one zone object per ZONE block
+   *   - preserve the zone title (ZONE T="...") for UI display
+   *   - validate I×J and point count for each zone independently
+   */
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || /^[#!]/.test(line)) continue;
-    if (/^variables/i.test(line)) { varLine = raw; continue; }
-    if (/^zone/i.test(line))      { zoneLine = raw; continue; }
-    if (varLine && zoneLine) dataLines.push(line);
+
+    if (/^title/i.test(line)) {
+      titleLine = raw;
+      continue;
+    }
+
+    if (/^variables/i.test(line)) {
+      varLine = raw;
+      continue;
+    }
+
+    if (/^zone/i.test(line)) {
+      if (!varLine) throw new Error('VARIABLES line must appear before ZONE blocks.');
+
+      const mi = raw.match(/I\s*=\s*(\d+)/i);
+      const mj = raw.match(/J\s*=\s*(\d+)/i);
+      const mt = raw.match(/T\s*=\s*"([^"]*)"/i);
+      const I = mi ? parseInt(mi[1], 10) : 0;
+      const J = mj ? parseInt(mj[1], 10) : 0;
+      if (!I || !J) throw new Error('Each ZONE must provide I and J dimensions.');
+
+      currentZone = {
+        title: mt ? mt[1] : 'Zone ' + (zones.length + 1),
+        rawZoneLine: raw,
+        I: I,
+        J: J,
+        rows: []
+      };
+      zones.push(currentZone);
+      continue;
+    }
+
+    if (!currentZone) continue;
+
+    const vals = line.split(/[\s,]+/).filter(Boolean).map(Number);
+    if (vals.length !== 0) currentZone.rows.push(vals);
   }
 
   if (!varLine) throw new Error('VARIABLES line not found.');
-  if (!zoneLine) throw new Error('ZONE line not found.');
+  if (zones.length === 0) throw new Error('ZONE line not found.');
 
   let fieldNames = [...varLine.matchAll(/"([^"]+)"/g)].map(m => m[1]);
   if (fieldNames.length === 0) {
@@ -67,25 +117,26 @@ LLMAP.parseTecplot = function(text) {
   }
   if (fieldNames.length === 0) throw new Error('No variable names found.');
 
-  const mi = zoneLine.match(/I\s*=\s*(\d+)/i);
-  const mj = zoneLine.match(/J\s*=\s*(\d+)/i);
-  const I = mi ? parseInt(mi[1], 10) : 0;
-  const J = mj ? parseInt(mj[1], 10) : 0;
-  if (!I || !J) throw new Error('ZONE I and J dimensions required.');
-
-  const rows = [];
-  for (const line of dataLines) {
-    const vals = line.split(/[\s,]+/).filter(Boolean).map(Number);
-    if (vals.length !== fieldNames.length) continue;
-    const row = {};
-    for (let i = 0; i < fieldNames.length; i++) row[fieldNames[i]] = vals[i];
-    rows.push(row);
+  for (const zone of zones) {
+    const rows = [];
+    for (const vals of zone.rows) {
+      if (vals.length !== fieldNames.length) continue;
+      const row = {};
+      for (let i = 0; i < fieldNames.length; i++) row[fieldNames[i]] = vals[i];
+      rows.push(row);
+    }
+    if (rows.length !== zone.I * zone.J) {
+      throw new Error(`Zone "${zone.title}": expected ${zone.I * zone.J} points (I×J=${zone.I}×${zone.J}), got ${rows.length}.`);
+    }
+    zone.rows = rows;
   }
 
-  if (rows.length !== I * J) {
-    throw new Error(`Expected ${I * J} points (I×J=${I}×${J}), got ${rows.length}.`);
-  }
-  return { fieldNames, I, J, rows };
+  const globalTitleMatch = titleLine ? titleLine.match(/TITLE\s*=\s*"([^"]*)"/i) : null;
+  return {
+    title: globalTitleMatch ? globalTitleMatch[1] : '',
+    fieldNames,
+    zones
+  };
 };
 
 
@@ -101,14 +152,14 @@ LLMAP._findField = function(names, patterns) {
   return null;
 };
 
-LLMAP.buildGrid = function(ds, field, lonMode) {
-  const lonField = LLMAP._findField(ds.fieldNames, [/^lon/i, /longitude/i, /^phi/i]) || ds.fieldNames[0];
-  const latField = LLMAP._findField(ds.fieldNames, [/^lat/i, /latitude/i, /^theta/i]) || ds.fieldNames[1];
+LLMAP.buildGrid = function(zone, field, lonMode) {
+  const lonField = LLMAP._findField(LLMAP.dataset.fieldNames, [/^lon/i, /longitude/i, /^phi/i]) || LLMAP.dataset.fieldNames[0];
+  const latField = LLMAP._findField(LLMAP.dataset.fieldNames, [/^lat/i, /latitude/i, /^theta/i]) || LLMAP.dataset.fieldNames[1];
 
   const lonRow0 = [];
-  for (let i = 0; i < ds.I; i++) lonRow0.push(ds.rows[i][lonField]);
+  for (let i = 0; i < zone.I; i++) lonRow0.push(zone.rows[i][lonField]);
   const latCol0 = [];
-  for (let j = 0; j < ds.J; j++) latCol0.push(ds.rows[j * ds.I][latField]);
+  for (let j = 0; j < zone.J; j++) latCol0.push(zone.rows[j * zone.I][latField]);
 
   let lons = lonRow0.slice();
   let lats = latCol0.slice();
@@ -118,18 +169,18 @@ LLMAP.buildGrid = function(ds, field, lonMode) {
     const order = lons.map(function(v, idx) { return { v: v, idx: idx }; }).sort(function(a, b) { return a.v - b.v; });
     const sortedLons = order.map(function(o) { return o.v; });
     const z = [];
-    for (let j = 0; j < ds.J; j++) {
+    for (let j = 0; j < zone.J; j++) {
       const row = [];
-      for (let k = 0; k < order.length; k++) row.push(ds.rows[j * ds.I + order[k].idx][field]);
+      for (let k = 0; k < order.length; k++) row.push(zone.rows[j * zone.I + order[k].idx][field]);
       z.push(row);
     }
     return { lons: sortedLons, lats: lats, z: z };
   }
 
   const z = [];
-  for (let j = 0; j < ds.J; j++) {
+  for (let j = 0; j < zone.J; j++) {
     const row = [];
-    for (let i = 0; i < ds.I; i++) row.push(ds.rows[j * ds.I + i][field]);
+    for (let i = 0; i < zone.I; i++) row.push(zone.rows[j * zone.I + i][field]);
     z.push(row);
   }
   return { lons: lons, lats: lats, z: z };
@@ -248,10 +299,12 @@ LLMAP.makeCoastTrace = function(raw, usePm180, lineColor, lineWidth) {
 
 async function renderLonLatMap() {
   var ds = LLMAP.dataset;
-  if (!ds) return;
+  if (!ds || !ds.zones || !ds.zones.length) return;
   if (typeof Plotly === 'undefined') { console.error('Plotly not loaded'); return; }
 
   /* Read controls */
+  var zoneIdx = Math.max(0, Math.min(_llZoneIndex(), ds.zones.length - 1));
+  var zone    = ds.zones[zoneIdx];
   var field   = _llVal('llmap-field')   || ds.fieldNames.find(function(f) { return !/^lon|^lat/i.test(f); });
   var cmap    = _llVal('llmap-cmap')    || 'Turbo';
   var lonMode = _llVal('llmap-lonmode') || 'as-is';
@@ -267,7 +320,7 @@ async function renderLonLatMap() {
   if (!field) return;
 
   /* Build grid */
-  var grid  = LLMAP.buildGrid(ds, field, lonMode);
+  var grid  = LLMAP.buildGrid(zone, field, lonMode);
   var fixed = LLMAP.maybeTranspose(grid.lons, grid.lats, grid.z);
 
   var colorscale = cmap;
@@ -328,7 +381,7 @@ async function renderLonLatMap() {
 
   /* Layout — dark theme matching AMPS dashboard */
   var layout = {
-    title: { text: field + ' map', font: { color: '#38c0ff', size: 14, family: 'IBM Plex Sans, sans-serif' } },
+    title: { text: field + ' map — ' + zone.title, font: { color: '#38c0ff', size: 14, family: 'IBM Plex Sans, sans-serif' } },
     margin: { l: 60, r: 80, t: 45, b: 55 },
     paper_bgcolor: '#070e1c',
     plot_bgcolor:  '#0d1a2e',
@@ -375,6 +428,24 @@ async function renderLonLatMap() {
 
 function _llVal(id) { var e = document.getElementById(id); return e ? e.value : ''; }
 function _llChk(id) { var e = document.getElementById(id); return e ? e.checked : false; }
+function _llZoneIndex() {
+  var e = document.getElementById('llmap-zone');
+  var v = e ? parseInt(e.value, 10) : 0;
+  return Number.isFinite(v) ? v : 0;
+}
+
+LLMAP.updateZoneInfo = function() {
+  var ds = LLMAP.dataset;
+  var info = document.getElementById('llmap-zone-info');
+  if (!info) return;
+  if (!ds || !ds.zones || !ds.zones.length) {
+    info.textContent = '';
+    return;
+  }
+  var zoneIdx = Math.max(0, Math.min(_llZoneIndex(), ds.zones.length - 1));
+  var zone = ds.zones[zoneIdx];
+  info.textContent = 'Zone ' + (zoneIdx + 1) + ' of ' + ds.zones.length + ' · ' + zone.title + ' · Grid ' + zone.I + '×' + zone.J;
+};
 
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -383,14 +454,14 @@ function _llChk(id) { var e = document.getElementById(id); return e ? e.checked 
 
 function initLonLatViewer() {
   var ids = [
-    'llmap-field','llmap-cmap','llmap-lonmode','llmap-style',
+    'llmap-zone','llmap-field','llmap-cmap','llmap-lonmode','llmap-style',
     'llmap-reverse','llmap-smooth','llmap-coast',
     'llmap-coast-color','llmap-coast-width',
     'llmap-zmin','llmap-zmax','llmap-lock-scale'
   ];
   ids.forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.addEventListener('change', function() { if (LLMAP.dataset) renderLonLatMap(); });
+    if (el) el.addEventListener('change', function() { if (LLMAP.dataset) { LLMAP.updateZoneInfo(); renderLonLatMap(); } });
   });
 
   var fileInput = document.getElementById('llmap-file');
@@ -422,9 +493,24 @@ function loadTecplotFile(file) {
 function loadTecplotText(text, name) {
   var status   = document.getElementById('llmap-status');
   var fieldSel = document.getElementById('llmap-field');
+  var zoneSel  = document.getElementById('llmap-zone');
   try {
     LLMAP.dataset = LLMAP.parseTecplot(text);
+    LLMAP.currentZoneIndex = 0;
     var ds = LLMAP.dataset;
+
+    if (zoneSel) {
+      zoneSel.innerHTML = '';
+      ds.zones.forEach(function(z, idx) {
+        var opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = (idx + 1) + ': ' + z.title;
+        zoneSel.appendChild(opt);
+      });
+      zoneSel.value = '0';
+      zoneSel.disabled = (ds.zones.length <= 1);
+    }
+
     if (fieldSel) {
       fieldSel.innerHTML = '';
       ds.fieldNames.filter(function(f) { return !/^lon|^lat/i.test(f); }).forEach(function(f) {
@@ -433,11 +519,16 @@ function loadTecplotText(text, name) {
         fieldSel.appendChild(opt);
       });
     }
+
     if (status) {
-      status.textContent = 'Loaded: ' + (name || 'file') + ' · Grid: ' + ds.I + '×' + ds.J +
-        ' · Vars: ' + ds.fieldNames.join(', ') + ' · ' + ds.rows.length + ' pts';
+      var firstZone = ds.zones[0];
+      status.textContent = 'Loaded: ' + (name || 'file') + ' · ' + ds.zones.length + ' zone(s)' +
+        ' · First grid: ' + firstZone.I + '×' + firstZone.J +
+        ' · Vars: ' + ds.fieldNames.join(', ');
       status.style.color = '#2dd4a0';
     }
+
+    LLMAP.updateZoneInfo();
     renderLonLatMap();
   } catch (err) {
     if (status) { status.textContent = 'Parse error: ' + err.message; status.style.color = '#ff5a5a'; }
