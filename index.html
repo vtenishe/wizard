@@ -489,7 +489,7 @@ MAINTAINER NOTE
               
               <div class="model-section">
                 <h5>Trajectory File</h5>
-                <p><strong>Format:</strong> NAIRAS Gregorian (9 columns) or MJD (4 columns)</p>
+                <p><strong>Format:</strong> Gregorian (9 columns) or MJD (4 columns)</p>
                 <p><strong>Columns (Gregorian):</strong></p>
                 <code style="display:block;background:#0a1628;padding:8px;margin:8px 0;font-size:11px;">
 YYYY MM DD HH mm ss.s Lat[deg] Lon[deg] Alt[km]
@@ -3358,7 +3358,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <span class="oc-badge badge-green">POINTS</span></div>
       <div class="opt-card sel mode-card" id="mc-traj" onclick="setMode('TRAJECTORY',this)"><div class="oc-icon">&#128760;</div>
         <div class="oc-title">Mode B &#8212; Spacecraft Trajectory</div>
-        <div class="oc-sub">NAIRAS-format timestamped trajectory (Gregorian or MJD). Direct comparison with in situ data.</div>
+        <div class="oc-sub">Timestamped trajectory (Gregorian or MJD). Direct comparison with in situ data.</div>
         <span class="oc-badge badge-green">TRAJECTORY</span></div>
       <div class="opt-card mode-card" id="mc-shells" onclick="setMode('SHELLS',this)"><div class="oc-icon">&#127760;</div>
         <div class="oc-title">Mode C &#8212; Spherical Shells</div>
@@ -3369,7 +3369,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       <div class="frow c2" style="margin-bottom:14px;">
         <div class="field"><label>Coordinate System</label>
           <select id="coord-sys">
-            <option value="GEO" selected>GEO (default &#8212; NAIRAS native)</option>
+            <option value="GEO" selected>GEO</option>
             <option value="GSM">GSM</option><option value="SM">SM</option>
           </select>
         </div>
@@ -3380,8 +3380,8 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
       </div>
       <div class="dropzone" id="traj-dropzone" onclick="loadTrajExample()">
         <div class="dz-icon">&#128760;</div>
-        <div class="dz-primary">Drop trajectory file or click to load Sep 2017 Van Allen Probe A example</div>
-        <div class="dz-sub">NAIRAS Gregorian (9 cols) or MJD (4 cols) &middot; .txt / .csv / .dat</div>
+        <div class="dz-primary">Drop trajectory file</div>
+        <div class="dz-sub">Timestamps: Gregorian (9 cols) or MJD (4 cols) &middot; .txt / .csv / .dat</div>
       </div>
       <div id="traj-preview-panel" style="display:none;margin-top:12px;">
         <div class="hlabel"><h4>Parsed Trajectory Preview</h4><span style="font-size:11px;color:var(--green);">&#10003; All validation checks passed</span></div>
