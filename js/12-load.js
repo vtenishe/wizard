@@ -318,6 +318,7 @@ const KEYWORD_MAP = [
   // ═══════ STEP 9: Output Domain  (POINTS,SHELLS in special cases) ═══════
   { kw: 'OUTPUT_MODE',      prop: 'outputMode',    type: 'str', step: 9 },
   { kw: 'FLUX_DT',          prop: 'fluxDt',        type: 'num', step: 9 },
+  { kw: 'POINTS_FRAME',     prop: 'pointsFrame',   type: 'str', step: 9 },
 
   // ═══════ STEP 10: Output Options  (ENERGY_BINS in special cases) ═══════
   { kw: 'FLUX_TYPE',        prop: 'fluxType',      type: 'str',  step: 10 },
@@ -537,6 +538,11 @@ function syncAllUI(kv) {
   const modeCards = { POINTS:'mc-points', TRAJECTORY:'mc-traj', SHELLS:'mc-shells' };
   if (modeCards[S.outputMode] && typeof setMode === 'function') setMode(S.outputMode, $(modeCards[S.outputMode]));
   setVal('flux-dt', S.fluxDt); setVal('points-text', S.pointsText || '');
+  // Restore POINTS frame selector UI
+  if (S.pointsFrame && typeof setPointsFrame === 'function') {
+    const pfCards = { GEO:'pf-geo', GSM:'pf-gsm', SM:'pf-sm' };
+    setPointsFrame(S.pointsFrame, $(pfCards[S.pointsFrame] || 'pf-geo'));
+  }
   setVal('shell-count', S.shellCount); setVal('shell-res-deg', S.shellResDeg);
   if (Array.isArray(S.shellAltsKm)) for (let i = 0; i < 5; i++) setVal('shell-alt-' + (i+1), S.shellAltsKm[i] != null ? S.shellAltsKm[i] : '');
   if (typeof updateShells === 'function') updateShells();

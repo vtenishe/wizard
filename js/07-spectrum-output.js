@@ -341,6 +341,63 @@ function updatePoints() {
   if (typeof updateSidebar === 'function') updateSidebar();
 }
 
+
+/**
+ * Select the coordinate frame of reference for POINTS mode.
+ *
+ * Highlights the selected frame card, updates S.pointsFrame, adjusts the
+ * placeholder hint text and the textarea placeholder to match the selected
+ * frame, and refreshes the sidebar/review.
+ *
+ * Emitted as POINTS_FRAME in AMPS_PARAM.in (see 08-review.js).
+ *
+ * Frame definitions:
+ *   GEO — Geographic (Earth-fixed): Lat [°], Lon [°], Alt [km]
+ *   GSM — Geocentric Solar Magnetospheric: X, Y, Z [RE]
+ *   SM  — Solar Magnetic: X, Y, Z [RE]
+ *
+ * @param {string}      frame — 'GEO' | 'GSM' | 'SM'
+ * @param {HTMLElement} [card] — the clicked card element
+ */
+function setPointsFrame(frame, card) {
+  S.pointsFrame = frame;
+
+  /* Highlight the selected card */
+  ['pf-geo', 'pf-gsm', 'pf-sm'].forEach(id => {
+    const el = $(id);
+    if (el) {
+      el.style.borderColor = 'var(--border)';
+      el.style.background  = 'transparent';
+    }
+  });
+  if (card) {
+    card.style.borderColor = 'var(--yellow)';
+    card.style.background  = 'rgba(255,208,75,.05)';
+  }
+
+  /* Update the hint box and textarea placeholder to match frame */
+  const hintEl = $('points-frame-hint');
+  const ta     = $('points-text');
+
+  const hints = {
+    GEO: '<b>GEO format:</b> Enter one point per line as <code>Lat[°] &nbsp; Lon[°] &nbsp; Alt[km]</code> — e.g. <code>51.5 &nbsp; -0.12 &nbsp; 450.0</code>',
+    GSM: '<b>GSM format:</b> Enter one point per line as <code>X &nbsp; Y &nbsp; Z [R<sub>E</sub>]</code> — e.g. <code>6.6 &nbsp; 0.0 &nbsp; 0.5</code>',
+    SM:  '<b>SM format:</b> Enter one point per line as <code>X &nbsp; Y &nbsp; Z [R<sub>E</sub>]</code> — e.g. <code>6.6 &nbsp; 0.0 &nbsp; 0.5</code>'
+  };
+
+  const placeholders = {
+    GEO: '51.5  -0.12  450.0\n28.5  -81.4  400.0\n\u2026',
+    GSM: '6.6  0.0  0.5\n-6.0  3.0  -1.2\n\u2026',
+    SM:  '6.6  0.0  0.5\n-6.0  3.0  -1.2\n\u2026'
+  };
+
+  if (hintEl) hintEl.innerHTML = hints[frame] || hints.GEO;
+  if (ta)     ta.placeholder   = placeholders[frame] || placeholders.GEO;
+
+  /* Refresh downstream */
+  if (typeof updateSidebar === 'function') updateSidebar();
+}
+
 /**
  * Sync SHELLS-mode configuration inputs to S.
  *

@@ -375,6 +375,7 @@ const S = {
                               //   (1) preserve user formatting (spaces vs commas),
                               //   (2) keep the UI simple (no CSV parser in-browser), and
                               //   (3) pass-through to AMPS_PARAM.in in a transparent way.
+  pointsFrame: 'GEO',          // coordinate frame for POINTS mode: 'GEO' | 'GSM' | 'SM'
 
   // SHELLS mode:
   shellCount:  1,               // number of shells (1..5)

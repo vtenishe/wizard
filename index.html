@@ -3441,7 +3441,50 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
     </div>
     <div id="panel-mode-a" style="display:none;" class="subsection">
       <div class="subsection-title">Individual Points</div>
-      <div class="infobox info-blue">Enter up to 500 (lat, lon, alt) points. One per line: <code>lat lon alt_km</code>. Or use GSM mode: <code>X Y Z RE</code>.</div>
+
+      <!-- ── Coordinate Frame Selector ─────────────────────────────────── -->
+      <div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--bg-mid);margin-bottom:14px;">
+        <div class="hlabel">
+          <h4>Coordinate Frame of Reference</h4>
+          <span class="tag tag-new">Required</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">
+          Select the coordinate system used for the point coordinates below. This determines how AMPS interprets each row. Maps to <code>POINTS_FRAME</code> in AMPS_PARAM.in.
+        </div>
+
+        <div class="frow c3">
+          <div class="opt-card" id="pf-geo" onclick="setPointsFrame('GEO',this)" style="padding:12px 10px;cursor:pointer;border:2px solid var(--yellow);background:rgba(255,208,75,.05);border-radius:var(--radius-lg);transition:all .18s;">
+            <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">&#127758; GEO <span class="oc-badge badge-green" style="margin-left:6px;font-size:9px;">DEFAULT</span></div>
+            <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+              <b>Geographic (GEO)</b> — Earth-fixed frame. Columns: <code>Lat [°] &nbsp; Lon [°] &nbsp; Alt [km]</code>.<br>
+              Latitude: geocentric, −90° to +90°. Longitude: east, −180° to +180°. Altitude: above WGS-84 ellipsoid.<br>
+              <span style="color:var(--accent-bright);">Best for:</span> ground stations, aircraft tracks, ISS/LEO passes.
+            </div>
+          </div>
+          <div class="opt-card" id="pf-gsm" onclick="setPointsFrame('GSM',this)" style="padding:12px 10px;cursor:pointer;border:2px solid var(--border);border-radius:var(--radius-lg);transition:all .18s;">
+            <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">&#128225; GSM</div>
+            <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+              <b>Geocentric Solar Magnetospheric (GSM)</b> — Columns: <code>X &nbsp; Y &nbsp; Z [R<sub>E</sub>]</code>.<br>
+              X-axis: Earth→Sun. Z-axis: projection of magnetic dipole onto plane ⊥ X. Y completes right-hand system (≈ duskward).<br>
+              <span style="color:var(--accent-bright);">Best for:</span> magnetotail studies, ring current, radiation belt L-shell sweeps.
+            </div>
+          </div>
+          <div class="opt-card" id="pf-sm" onclick="setPointsFrame('SM',this)" style="padding:12px 10px;cursor:pointer;border:2px solid var(--border);border-radius:var(--radius-lg);transition:all .18s;">
+            <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">&#128204; SM</div>
+            <div style="font-size:10px;color:var(--text-dim);line-height:1.5;">
+              <b>Solar Magnetic (SM)</b> — Columns: <code>X &nbsp; Y &nbsp; Z [R<sub>E</sub>]</code>.<br>
+              Z-axis: aligned with the magnetic dipole axis. Y-axis: perpendicular to the dipole–Sun plane (≈ duskward). X completes the system.<br>
+              <span style="color:var(--accent-bright);">Best for:</span> drift-shell mapping, equatorial pitch-angle studies, L-value analysis.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic placeholder hint that updates with frame selection -->
+        <div id="points-frame-hint" class="infobox info-blue" style="margin-top:12px;">
+          <b>GEO format:</b> Enter one point per line as <code>Lat[°] &nbsp; Lon[°] &nbsp; Alt[km]</code> — e.g. <code>51.5 &nbsp; -0.12 &nbsp; 450.0</code>
+        </div>
+      </div>
+
       <div class="field"><label>Point List</label>
         <!--
           OUTPUT DOMAIN / POINTS MODE
@@ -3459,7 +3502,7 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
               only when outputMode === 'POINTS'.
         -->
 
-        <textarea id="points-text" rows="5" placeholder="51.5  -0.12  450.0&#10;28.5  -81.4  400.0&#10;&#8230;" oninput="updatePoints()" ></textarea></div>
+        <textarea id="points-text" rows="5" placeholder="51.5  -0.12  450.0&#10;28.5  -81.4  400.0&#10;&#8230;" oninput="updatePoints()" style="font-family:var(--font-mono);"></textarea></div>
     </div>
     <div id="panel-mode-c" style="display:none;" class="subsection">
       <div class="subsection-title">Spherical Shell Configuration</div>

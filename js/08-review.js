@@ -130,10 +130,19 @@ let outDomainExtra = '';
       .map(l => l.trim())
       .filter(l => l && !l.startsWith('#'));
     const n = raw.length;
+    // Column labels that correspond to the selected frame
+    const colLabels = {
+      GEO: 'Lat[deg]  Lon[deg]  Alt[km]',
+      GSM: 'X[RE]  Y[RE]  Z[RE]',
+      SM:  'X[RE]  Y[RE]  Z[RE]'
+    };
+    const colComment = colLabels[S.pointsFrame] || colLabels.GEO;
         // Emit each point as a single line starting with the POINT keyword.
     const body = raw.map(l => `POINT                 ${l}`).join('\n');
     outDomainExtra =
+      `POINTS_FRAME           ${S.pointsFrame||'GEO'}              ! coordinate frame: GEO (lat/lon/alt) | GSM (X,Y,Z RE) | SM (X,Y,Z RE)\n` +
       `N_POINTS               ${n}                 ! number of points provided below\n` +
+      `! columns: ${colComment}\n` +
       `POINTS_BEGIN\n` +
       `${body || '! (no points specified)'}\n` +
       `POINTS_END`;
