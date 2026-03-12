@@ -127,9 +127,40 @@ function setTempMode(m) {
     c.classList.toggle('sel', c.dataset.mode === m)
   );
 
-  /* Show/hide the time-series configuration form.
-     STEADY_STATE needs no temporal config; TIME_SERIES and MHD need it. */
-  $('ts-form').style.display = m !== 'STEADY_STATE' ? 'block' : 'none';
+  /* Show/hide the steady-state and time-series configuration forms.
+     STEADY_STATE shows the epoch picker; TIME_SERIES and MHD show cadence config. */
+  if ($('ss-form')) $('ss-form').style.display = m === 'STEADY_STATE' ? 'block' : 'none';
+  if ($('ts-form')) $('ts-form').style.display = m !== 'STEADY_STATE' ? 'block' : 'none';
+
+  /* Sync the steady-state timestamp input from the current S.epoch */
+  if (m === 'STEADY_STATE' && $('ss-timestamp')) {
+    $('ss-timestamp').value = S.epoch || '2017-09-10T16:00';
+  }
+
+  updateSidebar();
+}
+
+/**
+ * Handle changes to the steady-state Time Stamp input.
+ *
+ * Syncs the value to S.epoch (the canonical STEADY_STATE epoch) and also
+ * propagates to the field-model epoch inputs in Step 3 so the two stay
+ * consistent.
+ *
+ * Called from oninput on #ss-timestamp.
+ */
+function onSsTimestampChange() {
+  const val = $('ss-timestamp')?.value || '';
+  if (!val) return;
+
+  S.epoch = val;
+
+  /* Keep Step 3 field-model epoch inputs in sync */
+  if ($('ts05-epoch'))  $('ts05-epoch').value  = val;
+  if ($('t96-epoch'))   $('t96-epoch').value   = val;
+  if ($('t01-epoch'))   $('t01-epoch').value   = val;
+  if ($('ta16-epoch'))  $('ta16-epoch').value  = val;
+  if ($('ta15-epoch'))  $('ta15-epoch').value  = val;
 
   updateSidebar();
 }

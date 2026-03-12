@@ -615,6 +615,9 @@ function updateSidebar(){
 
   /* ── Steps 7–10: Temporal, spectrum, output ── */
   set('sb-temporal', S.tempMode.replace('_',' '),'');
+  /* Keep the steady-state timestamp input in sync with S.epoch
+     (epoch may have been changed from a Step 3 field-model form) */
+  if ($('ss-timestamp') && S.epoch) $('ss-timestamp').value = S.epoch;
   const prettySpec = {
     POWER_LAW: 'POWER LAW',
     POWER_LAW_CUTOFF: 'PL + EXP CUTOFF',

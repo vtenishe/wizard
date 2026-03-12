@@ -3030,6 +3030,23 @@ E[MeV/n]    dJ/dE[particles/cm²/s/sr/(MeV/n)]
         <div class="tc-badge"><span class="oc-badge badge-purple">COUPLED_MHD — 2026</span></div>
       </div>
     </div>
+    <!-- STEADY-STATE SUB-FORM: shown only when Steady-State mode is selected -->
+    <div id="ss-form" style="display:none;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--bg-mid);margin-bottom:14px;">
+      <div class="hlabel">
+        <h4>Steady-State Epoch</h4>
+        <span class="tag tag-new">Active</span>
+      </div>
+
+      <div class="frow c4">
+        <div class="field">
+          <label>Time Stamp <span class="req">*</span></label>
+          <input id="ss-timestamp" type="datetime-local" value="2017-09-10T16:00" oninput="onSsTimestampChange()"/>
+          <div class="hint">UTC. Snapshot epoch for the frozen field configuration. Maps to <code>EPOCH</code> in AMPS_PARAM.in</div>
+        </div>
+      </div>
+
+      <div class="infobox info-blue" style="margin-top:10px;"><b>Tip:</b> In steady-state mode the background field is frozen at this single epoch. The TS05 driving parameters from Step&nbsp;3 are evaluated once at this time stamp. Choose the moment of peak storm depression for worst-case cutoff maps, or a quiet-time epoch for baseline comparisons.</div>
+    </div>
     <!-- TIME-SERIES SUB-FORM: shown only when Time-Series mode is selected -->
     <div id="ts-form" style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--bg-mid);">
       <div class="hlabel">
