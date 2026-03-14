@@ -16,85 +16,456 @@
 %   - Generated PDFs live in doc/*.pdf; sources are in doc/latex/*.tex.
 %   - Keep equations compatible with pdflatex.
 %
-% LAST UPDATED: 2026-02-21
+% LAST UPDATED: 2026-03-14
 %=====================================================================
 % ==============================================================================
 % FILE:    flux_and_spectrum_definitions.tex
 % PROJECT: AMPS CCMC SEP/GCR Transport Interface
-% PURPOSE: Definitions of flux / intensity / spectra and unit conventions.
+% PURPOSE: Definitions of flux / intensity / spectra and unit conventions,
+%          including the gridless density/spectrum solver and its dipole
+%          analytic comparison benchmarks.
 %
 % BUILD:
 %   pdflatex -interaction=nonstopmode -halt-on-error flux_and_spectrum_definitions.tex
 % OUTPUT:
 %   ../flux_and_spectrum_definitions.pdf
-% ============================================================================== 
+% ==============================================================================
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,bm}
 \usepackage{hyperref}
 \usepackage{siunitx}
 \usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
 \setlist{nosep}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
 
-\title{Flux and Spectrum Definitions Used by AMPS}
+\title{Flux, Spectrum, Density, and Anisotropic Boundary Conditions Used by AMPS}
 \author{AMPS Interface Documentation}
 \date{\today}
 
 \begin{document}
 \maketitle
 
-\section{Differential intensity (``differential flux'')}
-Throughout the AMPS interface, the particle spectrum is specified as a \emph{differential directional intensity}
-\begin{equation}
-  J(E) \equiv \frac{dN}{dA\,dt\,d\Omega\,dE},
-\end{equation}
-with units typically
-\begin{equation}
-  J(E)\;[\text{p}~\text{cm}^{-2}\,\text{s}^{-1}\,\text{sr}^{-1}\,(\text{MeV}/\text{n})^{-1}].
-\end{equation}
-If you are working in SI, replace cm$^{-2}$ with m$^{-2}$.
+\begin{abstract}
+This note documents the quantities used by the AMPS gridless energetic-particle
+post-processing tools for cutoff rigidity, local spectrum, omnidirectional flux,
+and number density. It also describes how isotropic and anisotropic boundary
+spectra are implemented in the current code, and how the internal dipole-field
+reference solutions used for nightly tests are constructed for comparison with
+numerical model output in both \texttt{POINTS} and \texttt{SHELLS} modes.
+\end{abstract}
 
-\paragraph{Energy per nucleon.}
-For ions, AMPS commonly uses $E$ in \si{MeV/nucleon}. This makes spectral shapes comparable across species.
+\section{Differential intensity and related quantities}
+Throughout the AMPS interface, the particle spectrum is specified as a
+\emph{differential directional intensity}
+\begin{equation}
+  J(E,\Omega) \equiv \frac{dN}{dA\,dt\,d\Omega\,dE},
+\end{equation}
+with typical units
+\begin{equation}
+  J(E,\Omega)\;[\text{particle}~\text{m}^{-2}\,\text{s}^{-1}\,\text{sr}^{-1}\,\text{MeV}^{-1}].
+\end{equation}
+The boundary spectrum supplied to the gridless density/spectrum tool is a model
+for this quantity at the outer boundary of the tracing domain.
 
-\section{Integral flux and pfu}
-NOAA/SWPC frequently reports integral proton fluxes above a threshold energy,
+\paragraph{Energy variable.}
+For ions, AMPS often uses kinetic energy per nucleon in \si{MeV/nucleon} in the
+user interface. Internally, the density/spectrum integration is carried out over
+an energy grid $E_i$ in \si{MeV}; the same spectral model is queried at each
+energy point and folded with geomagnetic transmissivity.
+
+\paragraph{Omnidirectional differential flux.}
+The omnidirectional differential flux is the solid-angle integral of the
+intensity,
 \begin{equation}
-  F(>E_0) = \int_{E_0}^{\infty} J(E)\,dE,
+  j(E) = \int_{4\pi} J(E,\Omega)\,d\Omega.
 \end{equation}
-often in ``pfu'' where
+If the distribution is isotropic, then
 \begin{equation}
-  1~\text{pfu} = 1~\text{proton}~\text{cm}^{-2}\,\text{s}^{-1}\,\text{sr}^{-1} \quad \text{(integral)}.
+  j(E)=4\pi J(E).
 \end{equation}
-When fitting spectra to integral channels, AMPS performs the above integral of the chosen model.
+In anisotropic cases the factor $4\pi$ cannot be inserted by hand; the angular
+integral must be evaluated with the actual angular weighting.
+
+\paragraph{Integral flux and pfu.}
+The omnidirectional integral flux above threshold $E_0$ is
+\begin{equation}
+  F(>E_0)=\int_{E_0}^{\infty} j(E)\,dE,
+\end{equation}
+or, equivalently, in isotropic form,
+\begin{equation}
+  F(>E_0)=4\pi\int_{E_0}^{\infty} J(E)\,dE.
+\end{equation}
+NOAA/SWPC often reports proton event fluxes in pfu, where
+\begin{equation}
+  1~\text{pfu}=1~\text{proton}~\text{cm}^{-2}\,\text{s}^{-1}\,\text{sr}^{-1}
+\end{equation}
+for an \emph{integral} channel. When fitting a model to integral channels, AMPS
+computes the energy integral of the chosen spectral model.
+
+\section{From intensity to local spectrum, flux, and density}
+The gridless solver does not solve a full transport equation in phase space.
+Instead, for each evaluation location $\bm{x}_0$ and energy $E$, it computes the
+fraction of directions at the outer boundary that can access that point by
+backtracing particles in the geomagnetic field. This fraction is the
+\emph{transmissivity} $T(E,\bm{x}_0)$.
+
+\subsection{Boundary spectrum and local spectrum}
+Let $J_b(E)$ denote the boundary differential intensity model at the outer
+boundary. In the isotropic case the local differential intensity is
+\begin{equation}
+  J_{\mathrm{loc}}(E;\bm{x}_0)=T(E,\bm{x}_0)\,J_b(E).
+  \label{eq:Jloc_iso}
+\end{equation}
+Thus the magnetosphere acts as an energy- and location-dependent filter on the
+specified boundary spectrum.
+
+\subsection{Number density from intensity}
+For an isotropic distribution, the differential number density $n_E(E)$ and
+intensity are related by
+\begin{equation}
+  n_E(E)=\frac{4\pi}{v(E)}J(E),
+\end{equation}
+where $v(E)$ is the particle speed corresponding to kinetic energy $E$. The
+number density is therefore
+\begin{equation}
+  n(\bm{x}_0)=4\pi\int \frac{J_{\mathrm{loc}}(E;\bm{x}_0)}{v(E)}\,dE.
+  \label{eq:density_def}
+\end{equation}
+This factor $1/v(E)$ is physically important: low-energy particles contribute
+more strongly to density than to integral flux because they linger longer per
+unit path length.
+
+\subsection{Omnidirectional integral flux}
+The total omnidirectional integral flux over the modeled energy band is
+\begin{equation}
+  F(\bm{x}_0)=4\pi\int J_{\mathrm{loc}}(E;\bm{x}_0)\,dE.
+  \label{eq:flux_def}
+\end{equation}
+For a user-defined channel $[E_1,E_2]$, the channel flux is
+\begin{equation}
+  F_{[E_1,E_2]}(\bm{x}_0)=4\pi\int_{E_1}^{E_2} J_{\mathrm{loc}}(E;\bm{x}_0)\,dE.
+  \label{eq:flux_channel_def}
+\end{equation}
+The code evaluates Eqs.~\eqref{eq:density_def}--\eqref{eq:flux_channel_def}
+with trapezoidal quadrature on the same energy grid used for transmissivity.
+
+\subsection{Relativistic conversion between energy and speed}
+Let $m_0$ be the particle rest mass and $T$ the kinetic energy in joules. The
+Lorentz factor is
+\begin{equation}
+  \gamma = 1 + \frac{T}{m_0 c^2},
+\end{equation}
+and the speed is
+\begin{equation}
+  v(E)=c\sqrt{1-\frac{1}{\gamma^2}}.
+\end{equation}
+This relativistic speed is used consistently when converting local intensity to
+number density.
+
+\section{Isotropic and anisotropic boundary spectra}
+\subsection{Isotropic boundary mode}
+If the boundary distribution is isotropic, the boundary intensity depends only on
+energy,
+\begin{equation}
+  J_b(E,\Omega)=J_b(E).
+\end{equation}
+In that case the only angular dependence entering the local solution is the
+geomagnetic accessibility. The code samples a finite direction set
+$\{\Omega_k\}_{k=1}^{N_\Omega}$ and computes
+\begin{equation}
+  T(E,\bm{x}_0) \approx \frac{1}{N_\Omega}\sum_{k=1}^{N_\Omega} I_k(E,\bm{x}_0),
+  \label{eq:T_iso_discrete}
+\end{equation}
+where $I_k=1$ if the reversed trajectory launched from $\bm{x}_0$ in direction
+$\Omega_k$ escapes the outer boundary and $I_k=0$ otherwise.
+
+Substituting Eq.~\eqref{eq:T_iso_discrete} into Eq.~\eqref{eq:Jloc_iso} yields
+the discrete isotropic approximation implemented in the code.
+
+\subsection{Anisotropic boundary mode}
+If the boundary distribution is anisotropic, the code models it as an isotropic
+spectral shape multiplied by a directional and/or spatial weighting factor. In
+that case the boundary intensity is written schematically as
+\begin{equation}
+  J_b(E,\Omega,\bm{x}_{\mathrm{exit}})
+  = J_b(E)\,f_{\mathrm{aniso}}(\Omega,\bm{x}_{\mathrm{exit}}),
+\end{equation}
+where $\bm{x}_{\mathrm{exit}}$ is the position where the backtraced trajectory
+reaches the outer boundary. In the present implementation the anisotropy factor
+is separated into
+\begin{equation}
+  f_{\mathrm{aniso}} = f_{\mathrm{PAD}}(\mu)\,f_{\mathrm{spatial}}(\bm{x}_{\mathrm{exit}}),
+  \qquad \mu = \cos\alpha,
+  \label{eq:aniso_factorization}
+\end{equation}
+where $\alpha$ is the pitch angle with respect to the local magnetic field at the
+exit point.
+
+The code therefore computes a weighted transmissivity
+\begin{equation}
+  T_{\mathrm{aniso}}(E,\bm{x}_0)
+  \approx
+  \frac{\sum_{k=1}^{N_\Omega} I_k(E,\bm{x}_0)\,w_k}
+       {\sum_{k=1}^{N_\Omega} w_k},
+  \qquad w_k = f_{\mathrm{PAD}}(\mu_k)\,f_{\mathrm{spatial}}(\bm{x}_{\mathrm{exit},k}).
+  \label{eq:T_aniso_discrete}
+\end{equation}
+If all weights are unity, Eq.~\eqref{eq:T_aniso_discrete} reduces to the
+isotropic average in Eq.~\eqref{eq:T_iso_discrete}.
+
+\subsection{Physics of the anisotropy model}
+The anisotropic option is meant to represent the physically common situation in
+which the outer-boundary population is not uniformly distributed in direction or
+space. Examples include:
+\begin{itemize}
+  \item field-aligned or anti-field-aligned streaming following solar injection,
+  \item bidirectional populations produced by magnetic mirroring or trapping,
+  \item day-night or regional asymmetries in the outer magnetosphere, and
+  \item user-prescribed pitch-angle distributions for sensitivity studies.
+\end{itemize}
+The purpose of the implementation is not to solve a self-consistent kinetic
+transport problem at the boundary, but to apply a physically transparent weighting
+model to the trajectories that successfully connect the outer boundary to the
+observation point.
+
+\subsection{Pitch-angle distribution models}
+The code supports several pitch-angle weighting laws through
+\texttt{EvalAnisotropyFactor}:
+\begin{itemize}
+  \item \texttt{ISOTROPIC}: $f_{\mathrm{PAD}}=1$;
+  \item \texttt{SINALPHA\_N}: $f_{\mathrm{PAD}}=(\sin\alpha)^N=(1-\mu^2)^{N/2}$;
+  \item \texttt{COSALPHA\_N}: $f_{\mathrm{PAD}}=|\cos\alpha|^N=|\mu|^N$;
+  \item \texttt{BIDIRECTIONAL}: a symmetric enhancement about $\mu=\pm 1$.
+\end{itemize}
+These provide a simple way to emulate broad classes of distributions ranging from
+quasi-perpendicular populations to strongly field-aligned beams.
+
+\subsection{Spatial weighting models}
+The present implementation also permits a multiplicative spatial weighting,
+$ f_{\mathrm{spatial}}(\bm{x}_{\mathrm{exit}})$, at the exit point of the
+backtraced trajectory. For example, a day-night prescription can assign different
+weights on the dayside and nightside outer boundary. The physical interpretation
+is that the intensity incident on the outer boundary is not spatially uniform,
+so trajectories connecting to favored boundary regions contribute more strongly to
+the local population.
+
+\subsection{Local spectrum, density, and flux in anisotropic mode}
+Once the weighted transmissivity of Eq.~\eqref{eq:T_aniso_discrete} is obtained,
+the remaining formulas are unchanged:
+\begin{align}
+  J_{\mathrm{loc}}(E;\bm{x}_0) &= T_{\mathrm{aniso}}(E,\bm{x}_0)\,J_b(E), \\
+  n(\bm{x}_0) &= 4\pi\int \frac{J_{\mathrm{loc}}(E;\bm{x}_0)}{v(E)}\,dE, \\
+  F(\bm{x}_0) &= 4\pi\int J_{\mathrm{loc}}(E;\bm{x}_0)\,dE.
+\end{align}
+Thus anisotropy changes the \emph{effective transmission factor}, not the
+fundamental definitions of spectrum, density, or flux.
+
+\section{Numerical algorithm implemented in the gridless solver}
+For either \texttt{POINTS} or \texttt{SHELLS} mode, the density/spectrum solver
+follows the same algorithm.
+
+\begin{enumerate}
+  \item Build the requested energy grid $\{E_i\}$, either linearly or
+        logarithmically spaced.
+  \item Build the discrete direction set $\{\Omega_k\}$ used to sample arrival
+        directions at the evaluation point.
+  \item For each location $\bm{x}_0$ and energy $E_i$, convert energy to rigidity
+        $R_i$ and backtrace reversed trajectories in the prescribed magnetic field.
+  \item For each sampled direction, determine whether the trajectory reaches the
+        outer boundary (allowed) or intersects the inner loss sphere / fails the
+        termination criterion (forbidden).
+  \item Form the transmissivity using either the unweighted isotropic average,
+        Eq.~\eqref{eq:T_iso_discrete}, or the weighted anisotropic average,
+        Eq.~\eqref{eq:T_aniso_discrete}.
+  \item Evaluate the boundary spectrum $J_b(E_i)$ and form the local spectrum
+        $J_{\mathrm{loc}}(E_i)=T(E_i)J_b(E_i)$.
+  \item Integrate the local spectrum over energy to obtain total number density,
+        total omnidirectional integral flux, and any requested energy-channel fluxes.
+  \item Write output files containing the total scalar fields and, where requested,
+        the full transmissivity and local spectrum as functions of energy.
+\end{enumerate}
+
+\paragraph{POINTS mode.}
+In \texttt{POINTS} mode the tool evaluates a user-supplied list of locations and
+writes pointwise files for density, spectrum, and flux.
+
+\paragraph{SHELLS mode.}
+In \texttt{SHELLS} mode the tool evaluates a structured longitude-latitude grid on
+one or more altitude shells and writes the corresponding shell maps. The local
+physics and energy integration are identical to \texttt{POINTS} mode; only the
+sampling of $\bm{x}_0$ differs.
+
+\section{Analytic and semi-analytic dipole reference solutions used for nightly tests}
+To validate the implementation, the code contains internal reference calculations
+for the special case of a dipole geomagnetic field. These references are written
+to comparison files such as
+\begin{center}
+\texttt{density\_gridless\_points\_dipole\_compare.dat},\quad
+\texttt{spectrum\_gridless\_points\_dipole\_compare.dat},\quad
+\texttt{flux\_gridless\_points\_dipole\_compare.dat}
+\end{center}
+and their \texttt{SHELLS} analogs when nightly-test mode is enabled.
+
+\subsection{Purpose of the dipole benchmark}
+The benchmark is designed to test the entire chain
+\begin{equation}
+  \text{cutoff} \rightarrow \text{transmissivity} \rightarrow \text{local spectrum}
+  \rightarrow \text{density / flux integrals},
+\end{equation}
+while using a field model simple enough that the dominant geometric behavior is
+understood analytically. It is not intended to replace the full numerical model,
+but to provide a stable and interpretable regression test.
+
+\subsection{Vertical St\'ormer cutoff used in the reference}
+For a dipole field, the classical St\'ormer theory provides an analytic cutoff
+rigidity for special geometries. The internal benchmark uses the \emph{vertical}
+St\'ormer cutoff,
+\begin{equation}
+  R_{c,\mathrm{vert}}(\lambda,r)
+  \propto \frac{\cos^4\lambda}{r^2},
+\end{equation}
+where $\lambda$ is magnetic latitude and $r$ is radial distance in Earth radii.
+The code evaluates this quantity through an internal helper and uses it as a
+hard transition in rigidity space:
+\begin{equation}
+  H(E;\bm{x}_0)=
+  \begin{cases}
+    0, & R(E) < R_{c,\mathrm{vert}}(\bm{x}_0),\\
+    1, & R(E) \ge R_{c,\mathrm{vert}}(\bm{x}_0).
+  \end{cases}
+  \label{eq:stormer_step}
+\end{equation}
+Equation~\eqref{eq:stormer_step} is the spectrum-space analogue of the usual
+analytic dipole cutoff benchmark.
+
+\subsection{Isotropic geometric factor in the reference}
+The numerical solver uses curved trajectories in the dipole field. The internal
+analytic reference intentionally uses a simpler geometry: a straight-line
+``open-sky'' estimate for the fraction of directions from which a particle can
+reach the outer boundary without intersecting the inner spherical absorber. Let
+$G_{\mathrm{sky}}(\bm{x}_0)$ denote that purely geometric fraction of accessible
+solid angle. Then the isotropic reference transmissivity is
+\begin{equation}
+  T_{\mathrm{ref}}^{\mathrm{iso}}(E,\bm{x}_0)
+  = G_{\mathrm{sky}}(\bm{x}_0)\,H(E;\bm{x}_0).
+  \label{eq:Tref_iso}
+\end{equation}
+This separates the problem into a geometric factor and an energy threshold.
+
+\subsection{Anisotropic geometric factor in the reference}
+For anisotropic nightly tests, the reference cannot be reduced to a single
+constant open-sky factor because different accessible directions carry different
+weights. The code therefore computes a \emph{semi-analytic} reference by
+integrating the prescribed anisotropy weight over the straight-line accessible
+solid angle:
+\begin{equation}
+  G_{\mathrm{sky}}^{\mathrm{aniso}}(\bm{x}_0)
+  = \frac{\int_{\Omega \in \Omega_{\mathrm{open}}}
+     f_{\mathrm{aniso}}(\Omega,\bm{x}_{\mathrm{exit}})\,d\Omega}
+    {\int_{4\pi} f_{\mathrm{aniso}}(\Omega,\bm{x}_{\mathrm{exit}})\,d\Omega},
+  \label{eq:Gsky_aniso}
+\end{equation}
+where $\Omega_{\mathrm{open}}$ is the subset of directions that do not intersect
+the inner absorber in the straight-line construction. The anisotropic reference
+transmissivity is then
+\begin{equation}
+  T_{\mathrm{ref}}^{\mathrm{aniso}}(E,\bm{x}_0)
+  = G_{\mathrm{sky}}^{\mathrm{aniso}}(\bm{x}_0)\,H(E;\bm{x}_0).
+  \label{eq:Tref_aniso}
+\end{equation}
+This benchmark is still much simpler than the full backtracing solution, but it
+is sensitive to errors in anisotropy weighting, angular normalization, and the
+subsequent spectrum-folding and integration steps.
+
+\subsection{Reference local spectrum, density, and flux}
+Once $T_{\mathrm{ref}}(E,\bm{x}_0)$ is known from either
+Eq.~\eqref{eq:Tref_iso} or Eq.~\eqref{eq:Tref_aniso}, the reference local
+spectrum is
+\begin{equation}
+  J_{\mathrm{loc,ref}}(E;\bm{x}_0)=T_{\mathrm{ref}}(E,\bm{x}_0)\,J_b(E).
+\end{equation}
+The reference density and flux are then computed by the \emph{same} formulas as
+the numerical solution,
+\begin{align}
+  n_{\mathrm{ref}}(\bm{x}_0) &= 4\pi\int \frac{J_{\mathrm{loc,ref}}(E;\bm{x}_0)}{v(E)}\,dE, \\
+  F_{\mathrm{ref}}(\bm{x}_0) &= 4\pi\int J_{\mathrm{loc,ref}}(E;\bm{x}_0)\,dE, \\
+  F_{\mathrm{ref},[E_1,E_2]}(\bm{x}_0) &= 4\pi\int_{E_1}^{E_2} J_{\mathrm{loc,ref}}(E;\bm{x}_0)\,dE.
+\end{align}
+Using the same quadrature and the same boundary-spectrum evaluator in both the
+reference and numerical branches isolates errors in geomagnetic filtering and
+anisotropy handling from errors in spectral integration.
+
+\subsection{What is compared in the output files}
+The comparison files report, depending on the product:
+\begin{itemize}
+  \item numerical versus reference density,
+  \item numerical versus reference transmissivity spectra,
+  \item numerical versus reference local spectra, and
+  \item numerical versus reference total and channel-integrated fluxes.
+\end{itemize}
+These outputs are intentionally separated because different bugs show up most
+clearly in different products:
+\begin{itemize}
+  \item a cutoff or rigidity-conversion bug appears first in transmissivity and
+        local spectrum,
+  \item a speed-conversion bug appears most strongly in number density because of
+        the factor $1/v(E)$, and
+  \item a channel-integration or interpolation bug appears most strongly in the
+        integrated flux outputs.
+\end{itemize}
 
 \section{Rigidity spectra and variable changes}
-Some literature expresses spectra in rigidity $R$:
+Some literature expresses spectra in rigidity $R$ instead of energy:
 \begin{equation}
-  J_R(R) = \frac{dN}{dA\,dt\,d\Omega\,dR}.
+  J_R(R)=\frac{dN}{dA\,dt\,d\Omega\,dR}.
 \end{equation}
-Conversion uses $J_R(R) = J_E(E)\,\left|\frac{dE}{dR}\right|$.
-Because $R = pc/(Ze)$, $E(R)$ depends on species mass and charge.
-
-\section{Omnidirectional flux}
-The omnidirectional differential flux is
+The conversion between energy-space and rigidity-space spectra is
 \begin{equation}
-  j(E) = \int J(E,\Omega)\,d\Omega.
+  J_R(R)=J_E(E)\left|\frac{dE}{dR}\right|,
 \end{equation}
-If the distribution is isotropic, $j(E)=4\pi J(E)$.
-AMPS supports anisotropic source models, so the $4\pi$ factor should only be used when justified.
+where the mapping $E(R)$ depends on particle mass and charge because
+$R=pc/(Ze)$. The cutoff-rigidity solver and the density/spectrum solver therefore
+share the same species-dependent energy-rigidity conversion.
 
-\section{How the interface expects spectra}
+\section{Implementation notes for the current AMPS code}
+The present gridless density/spectrum tool uses the same trajectory classifier as
+the gridless cutoff-rigidity tool. This is important for consistency: the density
+solver does not maintain a separate magnetic-field evaluator, particle pusher, or
+termination logic. Instead, both cutoff and density calculations rely on the same
+single-particle accessibility test, and differ only in how they post-process the
+result:
 \begin{itemize}
-  \item You select a spectrum \emph{model} (power law, cutoff, Band, LIS force-field, or table).
-  \item You enter parameters in the units displayed by the UI.
-  \item The preview shows $J(E)$, and AMPS expects $J(E)$ in the input file.
+  \item cutoff rigidity seeks the threshold in rigidity for a given location and
+        direction set;
+  \item density/spectrum computes transmissivity over an energy grid and folds it
+        with a boundary spectrum.
 \end{itemize}
+This shared-core design reduces the risk that the two tools drift apart because
+of subtle implementation differences.
+
+\section{Summary}
+The AMPS gridless density/spectrum model computes local energetic-particle
+properties by filtering a specified boundary spectrum through geomagnetic
+transmissivity. In isotropic mode, transmissivity is the unweighted fraction of
+allowed directions; in anisotropic mode it is a weighted fraction reflecting the
+prescribed pitch-angle and spatial dependence at the outer boundary. The local
+spectrum is then integrated over energy to obtain omnidirectional flux and number
+density. For the dipole field, AMPS includes built-in analytic and semi-analytic
+reference solutions based on the vertical St\'ormer cutoff and a straight-line
+open-sky geometry, making it possible to compare numerical and reference results
+for density, spectrum, and flux in both \texttt{POINTS} and \texttt{SHELLS} modes
+without relying on external scripts.
 
 \section{References (selected)}
 \begin{itemize}
-  \item Grieder, P. K. F. (2001). \emph{Cosmic Rays at Earth}. (Rigidity and intensity conventions.)
-  \item NOAA/SWPC. ``GOES Proton Flux'' product documentation (pfu conventions).
+  \item Grieder, P. K. F. (2001), \emph{Cosmic Rays at Earth}. Elsevier.
+  \item Smart, D. F., and Shea, M. A. (2005), A review of geomagnetic cutoff rigidities for cosmic ray measurements, \emph{Advances in Space Research}, 36, 2012--2020.
+  \item NOAA/SWPC, GOES proton flux product documentation (pfu conventions).
+  \item St\"ormer, C. (1955), \emph{The Polar Aurora}. Oxford University Press.
 \end{itemize}
 
 \end{document}
